@@ -11,8 +11,4 @@ import org.springframework.transaction.annotation.Transactional;
 public class ParkingZoneQueryService {
 
     private final ParkingZoneRepository parkingZoneRepository;
-
-    public void findParkingZone () {
-        parkingZoneRepository.findAll();
-    }
 }
