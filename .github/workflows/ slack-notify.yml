@@ -1,0 +1,28 @@
+name: Slack Notify
+on:
+  workflow_call:
+    inputs:
+      status:
+        required: true
+        type: string
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: true
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification (success or failure)
+        uses: 8398a7/action-slack@v3
+        with:
+          mention: ${{ inputs.status == 'failure' && 'here' || '' }}
+          if_mention: failure
+          status: ${{ inputs.status }}
+          fields: workflow,job,commit,message,ref,author,took
+          text: |
+            ${{ inputs.status == 'success' && ':tada: PR 성공!' || ':x: PR 실패!' }}
+            *PR 제목:* ${{ github.event.pull_request.title }}
+            *작성자:* ${{ github.event.pull_request.user.login }}
+            *링크:* ${{ github.event.pull_request.html_url }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
