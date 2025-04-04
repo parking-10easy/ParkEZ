@@ -1,6 +1,8 @@
 package com.parkez.common.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -11,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-public abstract class BaseEntity {
+public abstract class BaseDeleteEntity {
 
     @CreatedDate
     @Column(updatable = false, nullable = false)
@@ -20,4 +22,6 @@ public abstract class BaseEntity {
     @LastModifiedDate
     @Column
     private LocalDateTime modifiedAt;
+
+    private LocalDateTime deletedAt;
 }
