@@ -6,9 +6,7 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum ParkingLotErrorCode implements ErrorCode {
-    NOT_OWNER("NOT_OWNER", HttpStatus.FORBIDDEN, "해당 주차장의 소유자가 아닙니다.");
-
-
+    NOT_OWNER("NOT_OWNER", HttpStatus.FORBIDDEN, "소유자 권한이 아닙니다.");
 
     private final String code;
     private final HttpStatus httpStatus;

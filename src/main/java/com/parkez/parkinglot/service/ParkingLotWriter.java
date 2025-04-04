@@ -28,8 +28,8 @@ public class ParkingLotWriter {
     }
 
     // Owner 검증
-    private void validateOwner (User user){
-        if(!user.getRole().equals(UserRole.ROLE_OWNER)){
+    private void validateOwner(User user) {
+        if (!UserRole.ROLE_OWNER.equals(user.getRole())) {
             throw new ParkingEasyException(ParkingLotErrorCode.NOT_OWNER);
         }
     }
