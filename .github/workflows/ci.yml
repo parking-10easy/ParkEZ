@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      coverage: ${{ steps.coverage.outputs.coverage }}
+      coverage: ${{ env.COVERAGE }}
 
     steps:
       - name: 현재 레포지토리의 코드를 체크아웃해서 Actions에 가져온다
@@ -90,7 +90,6 @@ jobs:
             echo ":흰색_확인_표시: 커버리지가 30% 이상입니다."
           fi
           echo "coverage=$PERCENTAGE" >> $GITHUB_ENV
-          echo "::set-output name=coverage::$PERCENTAGE"
 
         ## slack
   action-slack:
