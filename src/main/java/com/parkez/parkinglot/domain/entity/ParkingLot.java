@@ -1,21 +1,24 @@
 package com.parkez.parkinglot.domain.entity;
 
-import com.parkez.common.entity.BaseEntity;
+import com.parkez.common.entity.BaseDeleteEntity;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
 import com.parkez.parkinglot.domain.enums.SourceType;
 import com.parkez.user.domain.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Table(name = "parking_lot")
-public class ParkingLot extends BaseEntity {
+public class ParkingLot extends BaseDeleteEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,10 +37,10 @@ public class ParkingLot extends BaseEntity {
     private Double longitude;
 
     @Column(nullable = false)
-    private LocalDateTime openedAt;
+    private LocalTime openedAt;
 
     @Column(nullable = false)
-    private LocalDateTime closedAt;
+    private LocalTime closedAt;
 
     @Column(nullable = false)
     private BigDecimal pricePerHour;
@@ -58,12 +61,10 @@ public class ParkingLot extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ParkingLotStatus status;
 
-    private LocalDateTime deletedAt;
-
     @Builder
     private ParkingLot(User owner, String name, String address,
                       Double latitude, Double longitude,
-                      LocalDateTime openedAt, LocalDateTime closedAt,
+                       LocalTime openedAt, LocalTime closedAt,
                        BigDecimal pricePerHour, String description,
                       Integer quantity, ChargeType chargeType,
                       SourceType sourceType) {
