@@ -62,18 +62,28 @@ jobs:
       - name: gradlew 실행 권한 부여
         run: chmod +x gradlew
 
-      - name: 테스트 실행
-        run: |
-          ./gradlew test
+      - name: 테스트 + 커버리지 리포트 생성
+        run: ./gradlew test jacocoTestReport
 
-      - name: Test Coverage Report
-        id: jacoco
-        uses: madrapps/jacoco-report@v1.7.1
-        with:
-          title: Test Coverage Report
-          paths: ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 30
+      - name: 라인 커버리지 50% 이상 체크
+        run: |
+          echo "=== 라인 커버리지 검사 시작 ==="
+          COVERED=$(xmllint --xpath "string(//counter[@type='LINE']/@covered)" build/reports/jacoco/test/jacocoTestReport.xml)
+          MISSED=$(xmllint --xpath "string(//counter[@type='LINE']/@missed)" build/reports/jacoco/test/jacocoTestReport.xml)
+          TOTAL=$((COVERED + MISSED))
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "Total lines is 0. Something went wrong."
+            exit 1
+          fi
+          PERCENTAGE=$((COVERED * 100 / TOTAL))
+          echo "현재 라인 커버리지: $PERCENTAGE%"
+          if [ "$PERCENTAGE" -lt 30 ]; then
+            echo ":x: 커버리지가 30% 미만입니다. 실패 처리합니다."
+            exit 1
+          else
+            echo ":흰색_확인_표시: 커버리지가 30% 이상입니다."
+          fi
+          echo "coverage=$PERCENTAGE" >> $GITHUB_ENV
 
         ## slack
   action-slack:
@@ -82,5 +92,6 @@ jobs:
     uses: ./.github/workflows/slack-notify.yml
     with:
       status: ${{ needs.build.result }}
+      coverage: ${{ needs.build.outputs.coverage }}
     secrets:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

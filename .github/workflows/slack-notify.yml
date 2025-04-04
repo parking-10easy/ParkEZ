@@ -2,6 +2,9 @@ name: Slack Notify
 on:
   workflow_call:
     inputs:
+      coverage: # 추가
+        required: true
+        type: string
       status:
         required: true
         type: string
@@ -21,6 +24,7 @@ jobs:
           fields: workflow,job,commit,message,ref,author,took
           text: |
             ${{ inputs.status == 'success' && ':tada: PR 성공!' || ':x: PR 실패!' }}
+            *라인 커버리지:* ${{ inputs.coverage }}%
             *PR 제목:* ${{ github.event.pull_request.title }}
             *작성자:* ${{ github.event.pull_request.user.login }}
             *링크:* ${{ github.event.pull_request.html_url }}

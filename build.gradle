@@ -62,15 +62,17 @@ jacocoTestReport {
     dependsOn test
     reports {
         xml.required.set(true)
+        html.required.set(true)
     }
     afterEvaluate {
         classDirectories.setFrom(
-                files(classDirectories.files.collect {
-                    fileTree(dir: it, exclude: [
-                            '**/Q*.class',
-                            '**/com/flab/eattofit/EattofitApplication.class'
-                    ])
-                })
+                files(classDirectories.files.collect { fileTree(dir: it, exclude: [
+                        "**/controller/**",
+                        "**/config/**",
+                        "**/dto/**",
+                        "**/exception/**",
+                        "**/Q*.class"
+                ]) })
         )
     }
 }
