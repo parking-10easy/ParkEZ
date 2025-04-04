@@ -19,16 +19,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          ## gradle caching
-      - name: Gradle Caching
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
 
       - name: yml 파일 만들기
         run: |
