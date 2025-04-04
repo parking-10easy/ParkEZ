@@ -1,6 +1,6 @@
 package com.parkez.user.domain.enums;
 
-import com.parkez.user.exception.InvalidUserRoleException;
+import com.parkez.common.exception.ParkingEasyException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -18,7 +18,7 @@ public enum UserRole {
         return Arrays.stream(UserRole.values())
                 .filter(r -> r.name().equalsIgnoreCase(role))
                 .findFirst()
-                .orElseThrow(() -> new InvalidUserRoleException());
+                .orElseThrow(() -> new ParkingEasyException(null));
     }
 
     public static class Authority {
