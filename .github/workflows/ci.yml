@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 현재 레포지토리의 코드를 체크아웃해서 Actions에 가져온다
+        uses: actions/checkout@v4
+
+      - name: JDK 17 설치
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          ## gradle caching
+      - name: Gradle Caching
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: yml 파일 만들기
+        run: |
+          mkdir -p src/main/resources/
+          echo "$APPLICATION_YML" > src/main/resources/application.yml
+          echo "$APPLICATION_JWT" > src/main/resources/application-jwt.yml
+          echo "$APPLICATION_TEST" > src/main/resources/application-test.yml
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          APPLICATION_YML: ${{ secrets.APPLICATION_YML }}
+          APPLICATION_JWT: ${{ secrets.APPLICATION_JWT }}
+          APPLICATION_TEST: ${{ secrets.APPLICATION_TEST }}
+
+      - name: Docker Compose 실행
+        run: docker compose up -d
+
+      - name: Wait for MySQL & Redis to be healthy
+        run: |
+          echo "⏳ Waiting for containers to be healthy..."
+          docker compose ps
+          for service in mysql redis; do
+            echo "🔍 Waiting for $service"
+            until [ "$(docker inspect -f '{{.State.Health.Status}}' $(docker compose ps -q $service))" = "healthy" ]; do
+              echo "❗ $service is not healthy yet. Retrying..."
+              sleep 3
+            done
+            echo "✅ $service is healthy!"
+          done 
+
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x gradlew
+
+      - name: 테스트 실행
+        run: |
+          ./gradlew test
+
+      - name: Test Coverage Report
+        id: jacoco
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          title: Test Coverage Report
+          paths: ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 30
+
+        ## slack
+  action-slack:
+    needs: build
+    if: always() # Pick up events even if the job fails or is canceled.
+    uses: ./.github/workflows/slack-notify.yml
+    with:
+      status: ${{ needs.build.result }}
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
