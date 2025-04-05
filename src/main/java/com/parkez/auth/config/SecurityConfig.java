@@ -32,18 +32,28 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		String[] SWAGGER_URI = {
+			"/v3/api-docs/**",
+			"/swagger-ui/**",
+			"/swagger-ui.index.html",
+		};
+
 		return http
 			.csrf(AbstractHttpConfigurer::disable)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.addFilterBefore(new ExceptionHandlerFilter(), JwtAuthenticationFilter.class)
 			.addFilterBefore(jwtAuthenticationFilter, SecurityContextHolderAwareRequestFilter.class)
+			.addFilterBefore(new ExceptionHandlerFilter(), JwtAuthenticationFilter.class)
 			.formLogin(AbstractHttpConfigurer::disable)
 			.anonymous(AbstractHttpConfigurer::disable)
 			.httpBasic(AbstractHttpConfigurer::disable)
 			.logout(AbstractHttpConfigurer::disable)
 			.rememberMe(AbstractHttpConfigurer::disable)
-			.authorizeHttpRequests(auth -> auth.requestMatchers(new AntPathRequestMatcher("/api/*/auth/**")).permitAll()
-				.anyRequest().authenticated())
+			.authorizeHttpRequests(
+				auth -> auth
+					.requestMatchers(new AntPathRequestMatcher("/api/*/auth/**")).permitAll()
+					.requestMatchers(SWAGGER_URI).permitAll()
+					.anyRequest().authenticated()
+			)
 			.build();
 	}
 
