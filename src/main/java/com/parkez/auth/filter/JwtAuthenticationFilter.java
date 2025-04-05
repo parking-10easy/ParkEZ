@@ -12,7 +12,6 @@ import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.auth.jwt.JwtAuthenticationToken;
 import com.parkez.auth.jwt.JwtProvider;
 import com.parkez.auth.model.AuthUser;
-import com.parkez.common.exception.ErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.enums.UserRole;
 
