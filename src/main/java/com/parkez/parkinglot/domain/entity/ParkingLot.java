@@ -4,7 +4,6 @@ import com.parkez.common.entity.BaseDeleteEntity;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
 import com.parkez.parkinglot.domain.enums.SourceType;
-import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.user.domain.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -14,8 +13,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -63,9 +60,6 @@ public class ParkingLot extends BaseDeleteEntity {
 
     @Enumerated(EnumType.STRING)
     private ParkingLotStatus status;
-
-    @OneToMany(mappedBy = "parkingLot", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ParkingZone> parkingZones = new ArrayList<>();
 
     @Builder
     private ParkingLot(User owner, String name, String address,
