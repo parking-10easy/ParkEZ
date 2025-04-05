@@ -9,9 +9,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.parkez.auth.authentication.jwt.TokenWriter;
 import com.parkez.auth.dto.response.TokenResponse;
-import com.parkez.auth.jwt.JwtProvider;
-import com.parkez.auth.refresh.RefreshTokenStore;
+import com.parkez.auth.authentication.jwt.JwtProvider;
+import com.parkez.auth.authentication.refresh.RefreshTokenStore;
 import com.parkez.user.domain.enums.UserRole;
 
 @ExtendWith(MockitoExtension.class)

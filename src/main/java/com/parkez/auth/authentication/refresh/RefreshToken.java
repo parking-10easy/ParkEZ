@@ -1,4 +1,4 @@
-package com.parkez.auth.refresh;
+package com.parkez.auth.authentication.refresh;
 
 import com.parkez.common.entity.BaseEntity;
 

@@ -1,4 +1,4 @@
-package com.parkez.auth.refresh;
+package com.parkez.auth.authentication.refresh;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

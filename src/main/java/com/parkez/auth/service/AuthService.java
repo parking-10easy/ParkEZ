@@ -4,6 +4,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.parkez.auth.authentication.jwt.TokenWriter;
 import com.parkez.auth.dto.request.SignupUserRequest;
 import com.parkez.auth.dto.response.SignupResponse;
 import com.parkez.auth.dto.response.TokenResponse;

@@ -12,8 +12,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import com.parkez.auth.filter.ExceptionHandlerFilter;
-import com.parkez.auth.filter.JwtAuthenticationFilter;
+import com.parkez.auth.authentication.filter.ExceptionHandlerFilter;
+import com.parkez.auth.authentication.filter.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
 

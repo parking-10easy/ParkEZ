@@ -1,6 +1,6 @@
-package com.parkez.auth.filter;
+package com.parkez.auth.authentication.filter;
 
-import static com.parkez.auth.jwt.JwtProvider.*;
+import static com.parkez.auth.authentication.jwt.JwtProvider.*;
 
 import java.io.IOException;
 
@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.parkez.auth.exception.AuthErrorCode;
-import com.parkez.auth.jwt.JwtAuthenticationToken;
-import com.parkez.auth.jwt.JwtProvider;
-import com.parkez.auth.model.AuthUser;
+import com.parkez.auth.authentication.jwt.JwtAuthenticationToken;
+import com.parkez.auth.authentication.jwt.JwtProvider;
+import com.parkez.auth.authentication.principal.AuthUser;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.enums.UserRole;
 

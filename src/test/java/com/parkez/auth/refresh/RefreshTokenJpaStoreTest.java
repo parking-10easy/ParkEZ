@@ -1,6 +1,5 @@
 package com.parkez.auth.refresh;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import org.junit.jupiter.api.Nested;
@@ -9,7 +8,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import com.parkez.auth.authentication.refresh.RefreshToken;
+import com.parkez.auth.authentication.refresh.RefreshTokenJpaStore;
+import com.parkez.auth.authentication.refresh.RefreshTokenRepository;
 
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenJpaStoreTest {

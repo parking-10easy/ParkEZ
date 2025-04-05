@@ -1,4 +1,4 @@
-package com.parkez.auth.jwt;
+package com.parkez.auth.authentication.jwt;
 
 import java.util.Base64;
 import java.util.Date;

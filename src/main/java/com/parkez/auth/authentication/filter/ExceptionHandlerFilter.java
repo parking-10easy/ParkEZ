@@ -1,4 +1,4 @@
-package com.parkez.auth.filter;
+package com.parkez.auth.authentication.filter;
 
 import java.io.IOException;
 import java.io.PrintWriter;

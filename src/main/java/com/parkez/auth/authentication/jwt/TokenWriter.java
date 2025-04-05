@@ -1,10 +1,9 @@
-package com.parkez.auth.service;
+package com.parkez.auth.authentication.jwt;
 
 import org.springframework.stereotype.Service;
 
 import com.parkez.auth.dto.response.TokenResponse;
-import com.parkez.auth.jwt.JwtProvider;
-import com.parkez.auth.refresh.RefreshTokenStore;
+import com.parkez.auth.authentication.refresh.RefreshTokenStore;
 import com.parkez.user.domain.enums.UserRole;
 
 import lombok.RequiredArgsConstructor;
