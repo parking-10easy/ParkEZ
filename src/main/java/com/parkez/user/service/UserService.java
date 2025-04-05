@@ -7,6 +7,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserCommandService userCommandService;
-    private final UserQueryService userQueryService;
+    private final UserWriter userWriter;
+    private final UserReader userReader;
 }
