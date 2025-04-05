@@ -11,6 +11,7 @@ import com.parkez.auth.dto.response.TokenResponse;
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
 import com.parkez.user.service.UserWriter;
 
@@ -29,7 +30,7 @@ public class AuthService {
 	@Transactional
 	public SignupResponse signupUser(SignupUserRequest request) {
 
-		if (userReader.existUser(request.getEmail())) {
+		if (userReader.exist(request.getEmail())) {
 			throw new ParkingEasyException(AuthErrorCode.DUPLICATED_EMAIL);
 		}
 
@@ -45,6 +46,21 @@ public class AuthService {
 		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(savedUser.getId(), savedUser.getEmail(), savedUser.getRole(),savedUser.getNickname());
 		return SignupResponse.of(savedUser.getId(), savedUser.getEmail(), tokenResponse);
 
+	}
+
+	@Transactional
+	public TokenResponse signinUser(String email, String password) {
+		User user = userReader.getByEmailAndRole(email, UserRole.ROLE_USER);
+
+		validatePassword(password, user.getPassword());
+
+		return tokenWriter.createSigninTokenPair(user.getId(), user.getEmail(), user.getRole(),user.getNickname());
+	}
+
+	private void validatePassword(String password, String encodedPassword) {
+		if (!bCryptPasswordEncoder.matches(password, encodedPassword)) {
+			throw new ParkingEasyException(AuthErrorCode.INVALID_PASSWORD);
+		}
 	}
 
 }

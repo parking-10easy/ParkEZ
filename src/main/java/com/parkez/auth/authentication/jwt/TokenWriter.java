@@ -24,4 +24,13 @@ public class TokenWriter {
 		return TokenResponse.of(accessToken, refreshToken);
 	}
 
+	public TokenResponse createSigninTokenPair(Long userId, String email, UserRole role, String nickname) {
+		String accessToken = jwtProvider.createAccessToken(userId, email, role, nickname);
+		String refreshToken = jwtProvider.createRefreshToken(userId);
+
+		refreshTokenStore.replace(userId, refreshToken);
+
+		return TokenResponse.of(accessToken, refreshToken);
+	}
+
 }
