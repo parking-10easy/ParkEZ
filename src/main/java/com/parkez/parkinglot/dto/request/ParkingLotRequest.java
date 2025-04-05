@@ -46,7 +46,8 @@ public class ParkingLotRequest {
     private ParkingLotRequest(String name, String address,
                               LocalTime openedAt, LocalTime closedAt,
                               BigDecimal pricePerHour, String description,
-                              Integer quantity){
+                              Integer quantity
+    ){
         this.name = name;
         this.quantity = quantity;
         this.closedAt = closedAt;
