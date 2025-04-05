@@ -1,12 +1,13 @@
 package com.parkez.user.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserCommandService userCommandService;
-    private final UserQueryService userQueryService;
+    private final UserWriter userWriter;
+    private final UserReader userReader;
 }
