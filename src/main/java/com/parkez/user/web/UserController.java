@@ -1,6 +1,7 @@
 package com.parkez.user.web;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.parkez.auth.authentication.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.common.response.Response;
+import com.parkez.user.dto.request.UserProfileImageUpdateRequest;
 import com.parkez.user.dto.request.UserProfileUpdateRequest;
 import com.parkez.user.dto.response.MyProfileResponse;
 import com.parkez.user.dto.response.UserResponse;
@@ -47,6 +49,14 @@ public class UserController {
 
 		userService.updateProfile(authUser, request);
 
+		return Response.empty();
+	}
+
+	@Operation(summary = "내 프로필 사진 수정", description = "내 프로필 사진을 수정한다.")
+	@PatchMapping("/v1/users/profile-image")
+	public Response<Void> updateProfileImage(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
+		@RequestBody UserProfileImageUpdateRequest request) {
+		userService.updateProfileImage(authUser.getId(),request);
 		return Response.empty();
 	}
 

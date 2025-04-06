@@ -63,6 +63,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public void updateProfileImage(Long id, UserProfileImageUpdateRequest request) {
 
         User user = userReader.getActiveById(id);
