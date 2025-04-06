@@ -9,8 +9,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -30,16 +28,16 @@ public class ParkingZoneController {
 
     @GetMapping("/v1/parking-zones")
     @Operation(summary = "주차공간 다건 조회", description = "주차공간 다건 조회 기능입니다.")
-    public ResponseEntity<Page<ParkingZoneResponse>> getParkingZones(
+    public Response<ParkingZoneResponse> getParkingZones(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long parkingLotId) {
-        return ResponseEntity.ok(parkingZoneService.getParkingZones(page, size, parkingLotId));
+        return Response.fromPage(parkingZoneService.getParkingZones(page, size, parkingLotId));
     }
 
     @GetMapping("/v1/parking-zones/{parkingZoneId}")
     @Operation(summary = "주차공간 단건 조회", description = "주차공간 단건 조회 기능입니다.")
-    public Response<ParkingZoneResponse> getParkingZone(@PathVariable Long parkingZoneId ) {
+    public Response<ParkingZoneResponse> getParkingZone(@PathVariable Long parkingZoneId) {
         return Response.of(parkingZoneService.getParkingZone(parkingZoneId));
     }
 }
