@@ -1,7 +1,6 @@
 package com.parkez.user.domain.repository;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Optional;
 
@@ -65,9 +64,8 @@ class UserRepositoryTest {
 	@Test
 	public void 아이디_역할로_조회() {
 		//given
-		UserRole role = UserRole.ROLE_USER;
 		//when
-		Optional<User> result = userRepository.findByIdAndRole(1L, role);
+		Optional<User> result = userRepository.findById(1L);
 		//then
 		assertThat(result).isPresent();
 		assertThat(result.get()).extracting(

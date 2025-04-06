@@ -15,6 +15,7 @@ import com.parkez.auth.authentication.principal.AuthUser;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.dto.response.MyProfileResponse;
+import com.parkez.user.dto.response.UserResponse;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -52,7 +53,7 @@ class UserServiceTest {
 			ReflectionTestUtils.setField(user, "id", userId);
 			ReflectionTestUtils.setField(user, "role", userRole);
 			ReflectionTestUtils.setField(user, "profileImageUrl", profileImageUrl);
-			given(userReader.getActiveByIdAndRole(anyLong(), eq(UserRole.ROLE_USER))).willReturn(user);
+			given(userReader.getActiveById(anyLong())).willReturn(user);
 			//when
 			MyProfileResponse myProfileResponse = userService.getMyProfile(authUser);
 			//then
@@ -78,5 +79,38 @@ class UserServiceTest {
 
 		}
 	}
+
+	@Nested
+	class GetUser {
+		@Test
+		public void 유저_조회_성공() {
+			//given
+			long userId = 1L;
+			String nickname = "테스트 유저";
+			String phone = "010-1234-5678";
+			String profileImageUrl = "default.jpg";
+			User user = User.builder()
+				.nickname(nickname)
+				.phone(phone)
+				.build();
+			ReflectionTestUtils.setField(user, "id", userId);
+			given(userReader.getActiveById(anyLong())).willReturn(user);
+			//when
+			UserResponse userResponse = userService.getUser(userId);
+			//then
+			assertThat(userResponse)
+				.extracting(
+					"id",
+					"nickname",
+					"profileImageUrl"
+				)
+				.containsExactly(
+					userId,
+					nickname,
+					profileImageUrl
+				);
+		}
+	}
+
 
 }

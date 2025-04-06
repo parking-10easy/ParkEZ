@@ -1,7 +1,6 @@
 package com.parkez.user.service;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
@@ -125,9 +124,9 @@ class UserReaderTest {
 			ReflectionTestUtils.setField(user, "id", id);
 			ReflectionTestUtils.setField(user, "role", role);
 			ReflectionTestUtils.setField(user, "deletedAt", null); // 탈퇴 안 한 상태
-			given(userRepository.findByIdAndRole(anyLong(), any(UserRole.class))).willReturn(Optional.of(user));
+			given(userRepository.findById(anyLong())).willReturn(Optional.of(user));
 			//when
-			User result = userReader.getActiveByIdAndRole(id, role);
+			User result = userReader.getActiveById(id);
 			//then
 			assertThat(result).isEqualTo(user);
 		}
@@ -137,9 +136,9 @@ class UserReaderTest {
 			//given
 			Long id = 1L;
 			UserRole role = UserRole.ROLE_USER;
-			given(userRepository.findByIdAndRole(anyLong(), any(UserRole.class))).willReturn(Optional.empty());
+			given(userRepository.findById(anyLong())).willReturn(Optional.empty());
 			//when & then
-			assertThatThrownBy(() -> userReader.getActiveByIdAndRole(id, role))
+			assertThatThrownBy(() -> userReader.getActiveById(id))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessageContaining(UserErrorCode.USER_NOT_FOUND.getDefaultMessage());
 		}
@@ -156,9 +155,9 @@ class UserReaderTest {
 			ReflectionTestUtils.setField(user, "id", id);
 			ReflectionTestUtils.setField(user, "role", role);
 			ReflectionTestUtils.setField(user, "deletedAt", LocalDateTime.now());
-			given(userRepository.findByIdAndRole(anyLong(), any(UserRole.class))).willReturn(Optional.of(user));
+			given(userRepository.findById(anyLong())).willReturn(Optional.of(user));
 			//when & then
-			assertThatThrownBy(() -> userReader.getActiveByIdAndRole(id, role))
+			assertThatThrownBy(() -> userReader.getActiveById(id))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessageContaining(UserErrorCode.USER_ALREADY_DELETED.getDefaultMessage());
 		}
