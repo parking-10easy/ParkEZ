@@ -6,10 +6,7 @@ import com.parkez.parkinglot.service.ParkingLotService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
@@ -27,6 +24,14 @@ public class ParkingLotUserController {
             Pageable pageable
     ) {
         return Response.fromPage(parkingLotService.searchParkingLots(name, address, pageable));
+    }
+
+    // 주차장 단건 조회
+    @GetMapping("/v1/parking-lots/{parkingLotId}")
+    public Response<ParkingLotSearchResponse> getParkingLot(
+            @PathVariable Long parkingLotId
+    ){
+      return Response.of(parkingLotService.getParkingLot(parkingLotId));
     }
 
 }

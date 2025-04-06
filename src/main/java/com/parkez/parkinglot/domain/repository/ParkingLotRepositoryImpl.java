@@ -20,6 +20,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryRepository {
 
     private final JPAQueryFactory jqf;
 
+    // 다건 조회
     @Override
     public Page<ParkingLot> searchParkingLots(String name, String address, Pageable pageable) {
         BooleanBuilder builder = new BooleanBuilder();
@@ -40,4 +41,14 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryRepository {
 
         return new PageImpl<>(parkingLots, pageable, total != null ? total : 0);
     }
+
+    // 단건 조회
+    @Override
+    public ParkingLot findParkingLotById(Long parkingLotId) {
+        return jqf
+                .selectFrom(parkingLot)
+                .where(parkingLot.id.eq(parkingLotId))
+                .fetchOne();
+    }
+
 }

@@ -25,4 +25,9 @@ public class ParkingLotService {
     public Page<ParkingLotSearchResponse> searchParkingLots(String name, String address, Pageable pageable) {
         return parkingLotReader.searchParkingLots(name, address, pageable);
     }
+
+    // 주차장 단건 조회
+    public ParkingLotSearchResponse getParkingLot(Long parkingLotId) {
+        return ParkingLotSearchResponse.from(parkingLotReader.getParkingLot(parkingLotId));
+    }
 }
