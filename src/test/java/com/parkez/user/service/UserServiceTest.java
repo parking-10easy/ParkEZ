@@ -17,6 +17,7 @@ import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.entity.BusinessAccountInfo;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
+import com.parkez.user.dto.request.UserProfileImageUpdateRequest;
 import com.parkez.user.dto.request.UserProfileUpdateRequest;
 import com.parkez.user.dto.response.MyProfileResponse;
 import com.parkez.user.dto.response.UserResponse;
@@ -236,6 +237,62 @@ class UserServiceTest {
 					null,
 					null
 				);
+		}
+	}
+
+	@Nested
+	class UpdateProfileImage {
+
+		@Test
+		void 프로필_이미지_수정_URL_없을_때_기본이미지_설정() {
+			// given
+			Long userId = 1L;
+			String profileImageUrl = "";
+			UserProfileImageUpdateRequest request = new UserProfileImageUpdateRequest();
+			ReflectionTestUtils.setField(request, "profileImageUrl", profileImageUrl);
+			String defaultProfileImageUrl = "default.jpg";
+			User user = User.builder()
+				.profileImageUrl(profileImageUrl)
+				.build();
+			ReflectionTestUtils.setField(user,"id",userId);
+			ReflectionTestUtils.setField(userService, "defaultProfileImageUrl", "default.jpg");
+			given(userReader.getActiveById(anyLong())).willReturn(user);
+
+			// when
+			userService.updateProfileImage(userId, request);
+
+			// then
+			verify(userReader).getActiveById(userId);
+			Assertions.assertThat(user)
+				.extracting(
+					"profileImageUrl"
+				).isEqualTo(defaultProfileImageUrl);
+		}
+
+		@Test
+		void 프로필_이미지_수정_URL_입력_있을_때_수정_성공() {
+			// given
+			Long userId = 1L;
+			String profileImageUrl = "https://image.com/profile.jpg";
+			UserProfileImageUpdateRequest request = new UserProfileImageUpdateRequest();
+			ReflectionTestUtils.setField(request, "profileImageUrl", profileImageUrl);
+
+			User user = User.builder()
+				.profileImageUrl(profileImageUrl)
+				.build();
+			ReflectionTestUtils.setField(user,"id",userId);
+			given(userReader.getActiveById(anyLong())).willReturn(user);
+
+			// when
+			userService.updateProfileImage(userId, request);
+
+			// then
+			verify(userReader).getActiveById(userId);
+			Assertions.assertThat(user)
+				.extracting(
+					"profileImageUrl"
+				).isEqualTo(profileImageUrl);
+
 		}
 	}
 
