@@ -77,4 +77,9 @@ public class User {
 			.role(UserRole.ROLE_OWNER)
 			.build();
 	}
+
+	public boolean isDeleted() {
+		return this.deletedAt != null;
+	}
+
 }

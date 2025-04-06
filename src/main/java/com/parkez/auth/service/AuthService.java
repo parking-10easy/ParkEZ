@@ -50,7 +50,7 @@ public class AuthService {
 
 	@Transactional
 	public TokenResponse signinUser(String email, String password) {
-		User user = userReader.getByEmailAndRole(email, UserRole.ROLE_USER);
+		User user = userReader.getActiveByEmailAndRole(email, UserRole.ROLE_USER);
 
 		validatePassword(password, user.getPassword());
 

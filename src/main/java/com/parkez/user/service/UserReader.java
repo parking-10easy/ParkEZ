@@ -22,10 +22,26 @@ public class UserReader {
 		return userRepository.existsByEmail(email);
 	}
 
-	public User getByEmailAndRole(String email, UserRole role) {
-		return userRepository.findByEmailAndRole(email,role).orElseThrow(
+	public User getActiveByEmailAndRole(String email, UserRole role) {
+		User user = userRepository.findByEmailAndRole(email, role).orElseThrow(
 			() -> new ParkingEasyException(UserErrorCode.EMAIL_NOT_FOUND)
 		);
+		validateActiveUser(user);
+		return user;
 	}
 
+	public User getActiveByIdAndRole(Long id, UserRole userRole) {
+		User user = userRepository.findByIdAndRole(id, userRole).orElseThrow(
+			() -> new ParkingEasyException(UserErrorCode.USER_NOT_FOUND)
+		);
+		validateActiveUser(user);
+		return user;
+
+	}
+
+	private static void validateActiveUser(User user) {
+		if (user.isDeleted()) {
+			throw new ParkingEasyException(UserErrorCode.USER_ALREADY_DELETED);
+		}
+	}
 }

@@ -10,7 +10,7 @@ import com.parkez.user.domain.enums.UserRole;
 public interface UserRepository extends JpaRepository<User, Long> {
 	boolean existsByEmail(String email);
 
-	Optional<User> findUserByEmail(String email);
-
 	Optional<User> findByEmailAndRole(String email, UserRole role);
+
+	Optional<User> findByIdAndRole(Long id, UserRole userRole);
 }
