@@ -15,6 +15,7 @@ public class ReservationController {
 
     private final ReservationFacadeService reservationFacadeService;
 
+    // 예약 생성
     @PostMapping("/v1/reservations")
     public Response<ReservationResponse> createReservation(
             @Valid @RequestBody ReservationRequest request
@@ -51,5 +52,15 @@ public class ReservationController {
     ) {
         Long userId = 1L;
         return Response.fromPage(reservationFacadeService.getOwnerReservations(userId, parkingZoneId, page, size));
+    }
+
+    // 예약 취소
+    @DeleteMapping("v1/reservations/{reservationId}")
+    public Response<Void> cancelReservation(
+            @PathVariable Long reservationId
+    ) {
+        Long userId = 1L;
+        reservationFacadeService.cancelReservation(userId, reservationId);
+        return Response.empty();
     }
 }

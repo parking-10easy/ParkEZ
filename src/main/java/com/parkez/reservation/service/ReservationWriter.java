@@ -47,4 +47,8 @@ public class ReservationWriter {
         reservationRepository.save(reservation);
         return reservation;
     }
+
+    public void cancel(Reservation reservation) {
+        reservation.cancel();
+    }
 }

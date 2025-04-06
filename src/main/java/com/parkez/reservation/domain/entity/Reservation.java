@@ -51,4 +51,8 @@ public class Reservation extends BaseDeleteEntity {
         this.price = price;
         this.status = ReservationStatus.PENDING;
     }
+
+    public void cancel() {
+        this.status = ReservationStatus.CANCELED;
+    }
 }

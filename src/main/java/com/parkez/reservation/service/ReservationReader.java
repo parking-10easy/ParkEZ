@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +30,7 @@ public class ReservationReader {
        return reservationRepository.findByUserId(userId, pageable);
     }
 
-    public Reservation findMyReservation(Long userId, Long reservationId) {
+    public Reservation findReservation(Long userId, Long reservationId) {
 
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(
                 () -> new ParkingEasyException(ReservationErrorCode.NOT_FOUND_RESERVATION)

@@ -1,6 +1,7 @@
 package com.parkez.reservation.dto.response;
 
 import com.parkez.reservation.domain.entity.Reservation;
+import com.parkez.reservation.domain.enums.ReservationStatus;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +19,7 @@ public class ReservationResponse {
     private final LocalDateTime startDateTime;
     private final LocalDateTime endDateTime;
     private final BigDecimal price;
+    private final ReservationStatus status;
     private final LocalDateTime createdAt;
 
     public static ReservationResponse from(Reservation reservation) {
@@ -29,6 +31,7 @@ public class ReservationResponse {
                 reservation.getStartDateTime(),
                 reservation.getEndDateTime(),
                 reservation.getPrice(),
+                reservation.getStatus(),
                 reservation.getCreatedAt()
         );
     }
