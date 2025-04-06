@@ -30,8 +30,8 @@ public class UserReader {
 		return user;
 	}
 
-	public User getActiveByIdAndRole(Long id, UserRole userRole) {
-		User user = userRepository.findByIdAndRole(id, userRole).orElseThrow(
+	public User getActiveById(Long id) {
+		User user = userRepository.findById(id).orElseThrow(
 			() -> new ParkingEasyException(UserErrorCode.USER_NOT_FOUND)
 		);
 		validateActiveUser(user);
@@ -44,4 +44,5 @@ public class UserReader {
 			throw new ParkingEasyException(UserErrorCode.USER_ALREADY_DELETED);
 		}
 	}
+
 }

@@ -1,6 +1,7 @@
 package com.parkez.user.web;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -8,6 +9,7 @@ import com.parkez.auth.authentication.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.common.response.Response;
 import com.parkez.user.dto.response.MyProfileResponse;
+import com.parkez.user.dto.response.UserResponse;
 import com.parkez.user.service.UserService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +22,11 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
 	private final UserService userService;
+
+	@GetMapping("/v1/users/{id}")
+	public Response<UserResponse> getUser(@PathVariable Long id) {
+		return Response.of(userService.getUser(id));
+	}
 
 	@GetMapping("/v1/users/me")
 	public Response<MyProfileResponse> getMyProfile(@AuthenticatedUser AuthUser authUser) {

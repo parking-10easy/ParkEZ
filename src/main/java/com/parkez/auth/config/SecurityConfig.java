@@ -56,6 +56,7 @@ public class SecurityConfig {
 			.authorizeHttpRequests(
 				auth -> auth
 					.requestMatchers(new AntPathRequestMatcher("/api/*/auth/**")).permitAll()
+					.requestMatchers(new AntPathRequestMatcher("/api/*/users/{id}")).permitAll()
 					.requestMatchers(SWAGGER_URI).permitAll()
 					.anyRequest().authenticated()
 			)
