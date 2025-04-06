@@ -36,4 +36,10 @@ public class ParkingZoneController {
             @RequestParam(required = false) Long parkingLotId) {
         return ResponseEntity.ok(parkingZoneService.getParkingZones(page, size, parkingLotId));
     }
+
+    @GetMapping("/v1/parking-zones/{parkingZoneId}")
+    @Operation(summary = "주차공간 단건 조회", description = "주차공간 단건 조회 기능입니다.")
+    public Response<ParkingZoneResponse> getParkingZone(@PathVariable Long parkingZoneId ) {
+        return Response.of(parkingZoneService.getParkingZone(parkingZoneId));
+    }
 }

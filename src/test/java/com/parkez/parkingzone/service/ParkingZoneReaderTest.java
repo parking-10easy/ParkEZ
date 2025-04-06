@@ -1,5 +1,6 @@
 package com.parkez.parkingzone.service;
 
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
@@ -14,8 +15,10 @@ import org.springframework.data.domain.*;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,5 +74,51 @@ class ParkingZoneReaderTest {
         assertThat(result.getContent().get(1).getName()).isEqualTo("B구역");
 
         verify(parkingZoneRepository, times(1)).findAllOrderByModifiedAt(any(Pageable.class), eq(parkingLotId));
+    }
+
+    @Test
+    void 주차공간을_정상적으로_단건_조회한다() {
+        // given
+        Long parkingLotId = 1L;
+
+        ParkingZone parkingZone1 = ParkingZone.builder()
+                .parkingLot(parkingLot)
+                .name("A구역")
+                .imageUrl("http://example.com/image.jpg")
+                .build();
+
+        ParkingZone parkingZone2 = ParkingZone.builder()
+                .parkingLot(parkingLot)
+                .name("B구역")
+                .imageUrl("http://example.com/image2.jpg")
+                .build();
+
+        ReflectionTestUtils.setField(parkingZone1, "id", 1L);
+        ReflectionTestUtils.setField(parkingZone2, "id", 2L);
+
+        when(parkingZoneRepository.findById(1L)).thenReturn(Optional.of(parkingZone1));
+        when(parkingZoneRepository.findById(2L)).thenReturn(Optional.of(parkingZone2));
+
+        // when
+        ParkingZone result1 = parkingZoneReader.getParkingZone(1L);
+        ParkingZone result2 = parkingZoneReader.getParkingZone(2L);
+
+        // then
+        assertThat(result1).isNotNull();
+        assertThat(result1.getId()).isEqualTo(1L);
+        assertThat(result2.getId()).isEqualTo(2L);
+        assertThat(result1.getName()).isEqualTo("A구역");
+        assertThat(result2.getName()).isEqualTo("B구역");
+    }
+
+    @Test
+    void 존재하지_않는_주차공간을_조회하면_예외가_발생한다() {
+        // given
+        when(parkingZoneRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThrows(ParkingEasyException.class,
+                () -> parkingZoneReader.getParkingZone(99L),
+                "해당 주차공간을 찾을 수 없습니다.");
     }
 }

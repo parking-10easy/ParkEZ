@@ -26,4 +26,7 @@ public class ParkingZoneService {
         return parkingZoneReader.getParkingZones(page, size, parkingLotId);
     }
 
+    public ParkingZoneResponse getParkingZone(Long parkingZoneId) {
+        return ParkingZoneResponse.from(parkingZoneReader.getParkingZone(parkingZoneId));
+    }
 }

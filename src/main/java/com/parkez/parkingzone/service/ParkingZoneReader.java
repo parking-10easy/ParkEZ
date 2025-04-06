@@ -1,8 +1,10 @@
 package com.parkez.parkingzone.service;
 
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
+import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,4 +33,9 @@ public class ParkingZoneReader {
         ));
 }
 
+    public ParkingZone getParkingZone(Long parkingZoneId) {
+        return parkingZoneRepository.findById(parkingZoneId).orElseThrow(
+                () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
+        );
+    }
 }
