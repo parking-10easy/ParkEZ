@@ -1,10 +1,12 @@
 package com.parkez.parkingLot;
 
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.SourceType;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
+import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
@@ -24,6 +26,7 @@ import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
@@ -126,4 +129,26 @@ public class ParkingLotReaderTest {
         assertEquals(1, result.getTotalElements());
         assertEquals("어려운주차장", result.getContent().get(0).getName());
     }
+
+    @Test
+    void 아이디로_주차장_단건_조회한다(){
+        Long parkingLotId = 1L;
+        when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(parkingLot1);
+
+        ParkingLot found = parkingLotReader.getParkingLot(parkingLotId);
+        assertEquals("참쉬운주차장", found.getName());
+
+    }
+
+    @Test
+    void 아이디로_주차장_단건_조회_실패(){
+        Long parkingLotId = 999L;
+        when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(null);
+
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
+            parkingLotReader.getParkingLot(parkingLotId);
+        });
+        assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
+    }
+
 }
