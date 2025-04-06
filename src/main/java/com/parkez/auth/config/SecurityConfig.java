@@ -14,6 +14,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import com.parkez.auth.authentication.filter.ExceptionHandlerFilter;
 import com.parkez.auth.authentication.filter.JwtAuthenticationFilter;
+import com.parkez.auth.authentication.handler.CustomAuthenticationEntryPoint;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final ExceptionHandlerFilter exceptionHandlerFilter;
+	private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
 	@Bean
 	public BCryptPasswordEncoder bCryptPasswordEncoder() {
@@ -41,8 +44,10 @@ public class SecurityConfig {
 		return http
 			.csrf(AbstractHttpConfigurer::disable)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+			.exceptionHandling(exceptionHandling -> exceptionHandling
+				.authenticationEntryPoint(customAuthenticationEntryPoint))
+			.addFilterBefore(exceptionHandlerFilter, SecurityContextHolderAwareRequestFilter.class)
 			.addFilterBefore(jwtAuthenticationFilter, SecurityContextHolderAwareRequestFilter.class)
-			.addFilterBefore(new ExceptionHandlerFilter(), JwtAuthenticationFilter.class)
 			.formLogin(AbstractHttpConfigurer::disable)
 			.anonymous(AbstractHttpConfigurer::disable)
 			.httpBasic(AbstractHttpConfigurer::disable)

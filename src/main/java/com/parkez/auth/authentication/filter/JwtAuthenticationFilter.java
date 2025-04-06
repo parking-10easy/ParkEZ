@@ -8,10 +8,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.auth.authentication.jwt.JwtAuthenticationToken;
 import com.parkez.auth.authentication.jwt.JwtProvider;
 import com.parkez.auth.authentication.principal.AuthUser;
+import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.enums.UserRole;
 
@@ -62,7 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			}
 		}
 
-		filterChain.doFilter(request,response);
+		filterChain.doFilter(request, response);
 	}
 
 	private void setAuthentication(Claims claims) {
@@ -71,7 +71,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		UserRole userRole = UserRole.of(claims.get("userRole", String.class));
 		String nickname = claims.get("nickname", String.class);
 
-		AuthUser authUser = new AuthUser(userId, email, userRole, nickname);
+		AuthUser authUser = AuthUser.builder()
+			.id(userId)
+			.email(email)
+			.userRole(userRole)
+			.nickname(nickname)
+			.build();
 		JwtAuthenticationToken authenticationToken = new JwtAuthenticationToken(authUser);
 		SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 	}

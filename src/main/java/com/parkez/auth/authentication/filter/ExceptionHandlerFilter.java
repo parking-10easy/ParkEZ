@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +18,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
+@Component
 @Slf4j
 public class ExceptionHandlerFilter extends OncePerRequestFilter {
 
@@ -27,7 +29,7 @@ public class ExceptionHandlerFilter extends OncePerRequestFilter {
 		FilterChain filterChain) throws ServletException, IOException {
 		try {
 			filterChain.doFilter(request, response);
-		} catch (ParkingEasyException e) {
+		}catch (ParkingEasyException e) {
 			log.error("[ExceptionHandlerFilter] ParkingEasyException 발생: {}", e.getMessage(), e);
 			setErrorResponse(response, e.getErrorCode());
 		}
@@ -39,7 +41,7 @@ public class ExceptionHandlerFilter extends OncePerRequestFilter {
 		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 		response.setCharacterEncoding("UTF-8");
 
-		ErrorResponse errorResponse = ErrorResponse.of(errorCode.getCode(), errorCode.getDefaultMessage());
+		ErrorResponse errorResponse = ErrorResponse.of(errorCode);
 
 		PrintWriter writer = response.getWriter();
 		writer.write(objectMapper.writeValueAsString(errorResponse));
