@@ -3,6 +3,8 @@ package com.parkez.user.domain.entity;
 import com.parkez.user.domain.enums.UserRole;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -82,4 +84,10 @@ public class User {
 		return this.deletedAt != null;
 	}
 
+	public void updateProfile(String nickname, String phone, String businessNumber, String bankName, String bankAccount,
+		String depositorName) {
+		this.nickname = nickname;
+		this.phone = phone;
+		this.businessAccountInfo =new BusinessAccountInfo(businessNumber,depositorName,bankName,bankAccount);
+	}
 }
