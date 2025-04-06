@@ -50,4 +50,8 @@ public class ParkingZone extends BaseDeleteEntity {
     public void updateParkingZoneStatus(ParkingZoneStatus status) {
         this.status = status;
     }
+
+    public void updateParkingZoneImage(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
 }

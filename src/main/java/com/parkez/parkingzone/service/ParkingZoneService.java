@@ -3,10 +3,12 @@ package com.parkez.parkingzone.service;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
+import com.parkez.parkingzone.dto.request.ParkingZoneUpdateImageRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
 import com.parkez.parkingzone.dto.response.ParkingZoneCreateResponse;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -38,5 +40,9 @@ public class ParkingZoneService {
 
     public ParkingZoneResponse updateParkingZoneStatus(Long parkingZoneId, ParkingZoneUpdateStatusRequest request) {
         return ParkingZoneResponse.from(parkingZoneWriter.updateParkingZoneStatus(parkingZoneId, request));
+    }
+
+    public ParkingZoneResponse updateParkingZoneImage(Long parkingZoneId, ParkingZoneUpdateImageRequest request) {
+        return ParkingZoneResponse.from(parkingZoneWriter.updateParkingZoneImage(parkingZoneId, request));
     }
 }

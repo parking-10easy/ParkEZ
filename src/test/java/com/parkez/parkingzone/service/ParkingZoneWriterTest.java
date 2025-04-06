@@ -6,6 +6,7 @@ import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
 import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
+import com.parkez.parkingzone.dto.request.ParkingZoneUpdateImageRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
@@ -40,6 +41,7 @@ class ParkingZoneWriterTest {
     private ParkingZoneCreateRequest createRequest;
     private ParkingZoneUpdateRequest updateRequest;
     private ParkingZoneUpdateStatusRequest updateStatusRequest;
+    private ParkingZoneUpdateImageRequest updateImageRequest;
 
     @BeforeEach
     void setUp() {
@@ -55,6 +57,10 @@ class ParkingZoneWriterTest {
 
         updateStatusRequest = ParkingZoneUpdateStatusRequest.builder()
                 .status(ParkingZoneStatus.UNAVAILABLE)
+                .build();
+
+        updateImageRequest = ParkingZoneUpdateImageRequest.builder()
+                .imageUrl("http://example.com/image수정.jpg")
                 .build();
     }
 
@@ -147,6 +153,41 @@ class ParkingZoneWriterTest {
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                 () -> parkingZoneWriter.updateParkingZoneStatus(99L, updateStatusRequest));
+
+        assertThat(exception.getErrorCode()).isEqualTo(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND);
+    }
+
+    @Test
+    void ParkingZone의_이미지를_수정할_수_있다() {
+        // given
+        ParkingZone savedParkingZone = ParkingZone.builder()
+                .parkingLot(parkingLot)
+                .name(createRequest.getName())
+                .imageUrl(createRequest.getImageUrl())
+                .build();
+
+        ReflectionTestUtils.setField(savedParkingZone, "id", 1L);
+
+        when(parkingZoneRepository.findById(1L)).thenReturn(Optional.of(savedParkingZone));
+
+        // when
+        ParkingZone result = parkingZoneWriter.updateParkingZoneImage(1L, updateImageRequest);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getImageUrl()).isEqualTo(updateImageRequest.getImageUrl());
+
+        Mockito.verify(parkingZoneRepository, Mockito.never()).save(any(ParkingZone.class));
+    }
+
+    @Test
+    void 존재하지_않는_주차공간의_이미지를_수정하면_예외가_발생한다() {
+        // given
+        when(parkingZoneRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // when & then
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                () -> parkingZoneWriter.updateParkingZoneImage(99L, updateImageRequest));
 
         assertThat(exception.getErrorCode()).isEqualTo(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND);
     }
