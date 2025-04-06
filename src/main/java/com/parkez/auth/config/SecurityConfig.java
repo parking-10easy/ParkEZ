@@ -2,6 +2,7 @@ package com.parkez.auth.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -11,11 +12,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
 import com.parkez.auth.authentication.filter.ExceptionHandlerFilter;
 import com.parkez.auth.authentication.filter.JwtAuthenticationFilter;
 import com.parkez.auth.authentication.handler.CustomAuthenticationEntryPoint;
 
+import io.swagger.v3.oas.models.PathItem;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -56,7 +59,7 @@ public class SecurityConfig {
 			.authorizeHttpRequests(
 				auth -> auth
 					.requestMatchers(new AntPathRequestMatcher("/api/*/auth/**")).permitAll()
-					.requestMatchers(new AntPathRequestMatcher("/api/*/users/{id}")).permitAll()
+					.requestMatchers(new RegexRequestMatcher("/api/v[^/]+/users/[0-9]+$", null)).permitAll()
 					.requestMatchers(SWAGGER_URI).permitAll()
 					.anyRequest().authenticated()
 			)
