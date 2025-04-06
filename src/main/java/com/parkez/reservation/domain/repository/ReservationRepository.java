@@ -3,7 +3,6 @@ package com.parkez.reservation.domain.repository;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.entity.Reservation;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -29,4 +28,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     boolean existsByUserId(Long userId);
 
     Page<Reservation> findByUserId(Long userId, Pageable pageable);
+
+    boolean existsByParkingZoneId(Long parkingZoneId);
+
+    Page<Reservation> findByParkingZoneId(Long parkingZoneId, Pageable pageable);
 }

@@ -34,11 +34,22 @@ public class ReservationController {
     }
 
     // 나의 예약 단건 조회
-    @GetMapping("v1/users/me/reservations/{reservationId}")
+    @GetMapping("/v1/users/me/reservations/{reservationId}")
     public Response<ReservationResponse> getMyReservation(
             @PathVariable Long reservationId
     ) {
         Long userId = 1L;
         return Response.of(reservationFacadeService.getMyReservation(userId, reservationId));
+    }
+
+    // Owner 본인 소유 주차장의 예약 내역 리스트 조회
+    @GetMapping("/v1/users/me/parking-zones/{parkingZoneId}/reservations")
+    public Response<ReservationResponse> getOwnerReservations(
+            @PathVariable Long parkingZoneId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Long userId = 1L;
+        return Response.fromPage(reservationFacadeService.getOwnerReservations(userId, parkingZoneId, page, size));
     }
 }

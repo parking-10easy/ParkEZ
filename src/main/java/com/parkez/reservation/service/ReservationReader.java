@@ -6,9 +6,13 @@ import com.parkez.reservation.domain.repository.ReservationRepository;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collections;
 
 @Service
 @Transactional(readOnly = true)
@@ -21,7 +25,7 @@ public class ReservationReader {
 
         // 예약 내역이 없을 경우 빈 페이지 전달
         if (!reservationRepository.existsByUserId(userId)) {
-            return Page.empty();
+            return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
 
        return reservationRepository.findByUserId(userId, pageable);
@@ -39,5 +43,15 @@ public class ReservationReader {
         }
 
         return reservation;
+    }
+
+    public Page<Reservation> findOwnerReservations(Long parkingZoneId, PageRequest pageable) {
+
+        // 예약 내역이 없을 경우 빈 페이지 전달
+        if (!reservationRepository.existsByParkingZoneId(parkingZoneId)) {
+            return new PageImpl<>(Collections.emptyList(), pageable, 0);
+        }
+
+        return reservationRepository.findByParkingZoneId(parkingZoneId, pageable);
     }
 }
