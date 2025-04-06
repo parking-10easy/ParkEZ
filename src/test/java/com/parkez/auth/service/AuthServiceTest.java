@@ -116,7 +116,7 @@ class AuthServiceTest {
 			String phone = "1234";
 			User user = User.createUser(email,password,nickname,phone);
 			ReflectionTestUtils.setField(user,"id", 1L);
-			given(userReader.getByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(user);
+			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(user);
 			given(bCryptPasswordEncoder.matches(anyString(),anyString())).willReturn(false);
 			//when & then
 			assertThatThrownBy(() ->authService.signinUser(email, password))
@@ -132,7 +132,7 @@ class AuthServiceTest {
 			String email = "user@example.com";
 			String password = "password";
 
-			given(userReader.getByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willThrow(new ParkingEasyException(UserErrorCode.EMAIL_NOT_FOUND));
+			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willThrow(new ParkingEasyException(UserErrorCode.EMAIL_NOT_FOUND));
 			//when & then
 			assertThatThrownBy(() ->authService.signinUser(email, password))
 				.isInstanceOf(ParkingEasyException.class)
@@ -154,7 +154,7 @@ class AuthServiceTest {
 			User user = User.createUser(email,password,nickname,phone);
 			ReflectionTestUtils.setField(user,"id", 1L);
 			TokenResponse tokenResponse = TokenResponse.of(accessToken, refreshToken);
-			given(userReader.getByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(user);
+			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(user);
 			given(bCryptPasswordEncoder.matches(anyString(), anyString())).willReturn(true);
 			given(tokenWriter.createSigninTokenPair(anyLong(),anyString(),any(UserRole.class),anyString())).willReturn(tokenResponse);
 			//when
