@@ -6,6 +6,7 @@ import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
 import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateRequest;
+import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,20 @@ public class ParkingZoneWriter {
 //        }
 
         parkingZone.updateParkingZone(request.getName());
+
+        return parkingZone;
+    }
+
+    public ParkingZone updateParkingZoneStatus(Long parkingZoneId, ParkingZoneUpdateStatusRequest request) {
+        ParkingZone parkingZone = parkingZoneRepository.findById(parkingZoneId).orElseThrow(
+                () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
+        );
+
+//        if (!parkingZone.getParkingLot().getOwner().getId().equals(authUser.getId())){
+//            new ParkingEasyException(ParkingZoneErrorCode.FORBIDDEN_TO_UPDATE);
+//        }
+
+        parkingZone.updateParkingZoneStatus(request.getStatus());
 
         return parkingZone;
     }

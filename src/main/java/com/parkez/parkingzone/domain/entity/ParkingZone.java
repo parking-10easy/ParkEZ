@@ -46,4 +46,8 @@ public class ParkingZone extends BaseDeleteEntity {
     public void updateParkingZone(String name) {
         this.name = name;
     }
+
+    public void updateParkingZoneStatus(ParkingZoneStatus status) {
+        this.status = status;
+    }
 }

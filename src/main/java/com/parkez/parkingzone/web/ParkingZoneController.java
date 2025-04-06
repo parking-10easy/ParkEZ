@@ -3,6 +3,7 @@ package com.parkez.parkingzone.web;
 import com.parkez.common.response.Response;
 import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateRequest;
+import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
 import com.parkez.parkingzone.dto.response.ParkingZoneCreateResponse;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import com.parkez.parkingzone.service.ParkingZoneService;
@@ -49,5 +50,14 @@ public class ParkingZoneController {
             @PathVariable Long parkingZoneId,
             @Valid @RequestBody ParkingZoneUpdateRequest request) {
         return Response.of(parkingZoneService.updateParkingZone(parkingZoneId, request));
+    }
+
+    @PatchMapping("/v1/parking-zones/{parkingZoneId}/status")
+    @Operation(summary = "주차공간 상태 변경", description = "주차공간 상태 변경 기능입니다.")
+    public Response<ParkingZoneResponse> updateParkingZoneStatus(
+//            @AuthUser AuthUser authUser,
+            @PathVariable Long parkingZoneId,
+            @Valid @RequestBody ParkingZoneUpdateStatusRequest request) {
+        return Response.of(parkingZoneService.updateParkingZoneStatus(parkingZoneId, request));
     }
 }

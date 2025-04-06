@@ -4,6 +4,7 @@ import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateRequest;
+import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
 import com.parkez.parkingzone.dto.response.ParkingZoneCreateResponse;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import lombok.RequiredArgsConstructor;
@@ -33,5 +34,9 @@ public class ParkingZoneService {
 
     public ParkingZoneResponse updateParkingZone(Long parkingZoneId, ParkingZoneUpdateRequest request) {
         return ParkingZoneResponse.from(parkingZoneWriter.updateParkingZone(parkingZoneId, request));
+    }
+
+    public ParkingZoneResponse updateParkingZoneStatus(Long parkingZoneId, ParkingZoneUpdateStatusRequest request) {
+        return ParkingZoneResponse.from(parkingZoneWriter.updateParkingZoneStatus(parkingZoneId, request));
     }
 }
