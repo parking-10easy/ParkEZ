@@ -97,6 +97,7 @@ class UserServiceTest {
 			User user = User.builder()
 				.nickname(nickname)
 				.phone(phone)
+				.profileImageUrl(profileImageUrl)
 				.build();
 			ReflectionTestUtils.setField(user, "id", userId);
 			given(userReader.getActiveById(anyLong())).willReturn(user);

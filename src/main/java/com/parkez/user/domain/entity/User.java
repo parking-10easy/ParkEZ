@@ -3,8 +3,6 @@ package com.parkez.user.domain.entity;
 import com.parkez.user.domain.enums.UserRole;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,13 +10,13 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import org.springframework.util.StringUtils;
+
 @Entity
 @Getter
 @Table(name = "users")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
-
-    private static final String DEFAULT_PROFILE_IMAGE_URL = "default.jpg";
 
     @Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,35 +45,38 @@ public class User {
 	@Builder
 	private User(String email, String password, String nickname, String phone,
 		BusinessAccountInfo businessAccountInfo,
+		String profileImageUrl,
 		UserRole role) {
 		this.email = email;
 		this.password = password;
 		this.nickname = nickname;
 		this.phone = phone;
 		this.businessAccountInfo = businessAccountInfo;
-		this.profileImageUrl = DEFAULT_PROFILE_IMAGE_URL;
+		this.profileImageUrl = profileImageUrl;
 		this.role = role;
 	}
 
 	public static User createUser(String email, String encodedPassword, String nickname,
-		String phone) {
+		String phone,String profileImageUrl) {
 		return User.builder()
 			.email(email)
 			.password(encodedPassword)
 			.nickname(nickname)
 			.phone(phone)
+			.profileImageUrl(profileImageUrl)
 			.role(UserRole.ROLE_USER)
 			.build();
 	}
 
 	public static User createOwner(String email, String encodedPassword, String nickname, String phone,
-		BusinessAccountInfo businessAccountInfo) {
+		BusinessAccountInfo businessAccountInfo,String profileImageUrl) {
 		return User.builder()
 			.email(email)
 			.password(encodedPassword)
 			.nickname(nickname)
 			.phone(phone)
 			.businessAccountInfo(businessAccountInfo)
+			.profileImageUrl(profileImageUrl)
 			.role(UserRole.ROLE_OWNER)
 			.build();
 	}
@@ -89,5 +90,9 @@ public class User {
 		this.nickname = nickname;
 		this.phone = phone;
 		this.businessAccountInfo =new BusinessAccountInfo(businessNumber,depositorName,bankName,bankAccount);
+	}
+
+	public void updateProfileImage(String profileImageUrl, String defaultProfileImageUrl) {
+		this.profileImageUrl = StringUtils.hasText(profileImageUrl) ? profileImageUrl : defaultProfileImageUrl;
 	}
 }

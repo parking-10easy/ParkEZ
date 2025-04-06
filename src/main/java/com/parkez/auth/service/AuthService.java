@@ -1,5 +1,6 @@
 package com.parkez.auth.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,9 @@ public class AuthService {
 	private final TokenWriter tokenWriter;
 	private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
+	@Value("${user.default-profile-image-url}")
+	private String defaultProfileImageUrl;
+
 	@Transactional
 	public SignupResponse signupUser(SignupUserRequest request) {
 
@@ -40,7 +44,8 @@ public class AuthService {
 			request.getEmail(),
 			encodedPassword,
 			request.getNickname(),
-			request.getPhone()
+			request.getPhone(),
+			defaultProfileImageUrl
 		);
 		User savedUser = userWriter.create(user);
 		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(savedUser.getId(), savedUser.getEmail(), savedUser.getRole(),savedUser.getNickname());

@@ -26,7 +26,8 @@ class UserRepositoryTest {
 		String password = "1234";
 		String nickname = "테스터";
 		String phone = "010-1234-5678";
-		User user = User.createUser(email, password, nickname, phone);
+		String defaultProfileImageUrl = "default.jpg";
+		User user = User.createUser(email, password, nickname, phone,defaultProfileImageUrl);
 		userRepository.save(user);
 	}
 

@@ -69,8 +69,9 @@ class AuthServiceTest {
 			String passwordCheck = "1Q2w3e4r!";
 			String nickname = "user";
 			String phone = "010-1234-5678";
+			String defaultProfileImageUrl = "default.jpg";
 			SignupUserRequest request = createSignupUserRequest(email, password, passwordCheck, nickname, phone);
-			User user = User.createUser(email, password, nickname, phone);
+			User user = User.createUser(email, password, nickname, phone,defaultProfileImageUrl);
 			Long userId = 1L;
 			ReflectionTestUtils.setField(user, "id", userId);
 			String accessToken = "mockAccess";
@@ -114,7 +115,8 @@ class AuthServiceTest {
 			String password = "password";
 			String nickname = "test";
 			String phone = "1234";
-			User user = User.createUser(email,password,nickname,phone);
+			String defaultProfileImageUrl = "default.jpg";
+			User user = User.createUser(email,password,nickname,phone,defaultProfileImageUrl);
 			ReflectionTestUtils.setField(user,"id", 1L);
 			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(user);
 			given(bCryptPasswordEncoder.matches(anyString(),anyString())).willReturn(false);
@@ -151,7 +153,8 @@ class AuthServiceTest {
 			String refreshToken = "mockRefresh";
 			String nickname = "test";
 			String phone = "1234";
-			User user = User.createUser(email,password,nickname,phone);
+			String defaultProfileImageUrl = "default.jpg";
+			User user = User.createUser(email,password,nickname,phone,defaultProfileImageUrl);
 			ReflectionTestUtils.setField(user,"id", 1L);
 			TokenResponse tokenResponse = TokenResponse.of(accessToken, refreshToken);
 			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(user);
