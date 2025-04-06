@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.parkez.auth.authentication.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.common.response.Response;
+import com.parkez.user.dto.request.UserChangePasswordRequest;
 import com.parkez.user.dto.request.UserProfileImageUpdateRequest;
 import com.parkez.user.dto.request.UserProfileUpdateRequest;
 import com.parkez.user.dto.response.MyProfileResponse;
@@ -57,6 +58,13 @@ public class UserController {
 	public Response<Void> updateProfileImage(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
 		@RequestBody UserProfileImageUpdateRequest request) {
 		userService.updateProfileImage(authUser.getId(),request);
+		return Response.empty();
+	}
+
+	@Operation(summary = "비밀번호 변경", description = "비밀번호를 변경한다.")
+	@PatchMapping("/v1/users/password")
+	public Response<Void> changePassword(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser, @Valid @RequestBody UserChangePasswordRequest request) {
+		userService.changePassword(authUser.getId(), request);
 		return Response.empty();
 	}
 

@@ -95,4 +95,8 @@ public class User {
 	public void updateProfileImage(String profileImageUrl, String defaultProfileImageUrl) {
 		this.profileImageUrl = StringUtils.hasText(profileImageUrl) ? profileImageUrl : defaultProfileImageUrl;
 	}
+
+	public void updatePassword(String encodedPassword) {
+		this.password = encodedPassword;
+	}
 }
