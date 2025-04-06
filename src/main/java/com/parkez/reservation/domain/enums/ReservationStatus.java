@@ -13,5 +13,5 @@ public enum ReservationStatus {
     COMPLETED("사용 완료 됨")
     ;
 
-    private final String message;
+    private final String description;
 }
