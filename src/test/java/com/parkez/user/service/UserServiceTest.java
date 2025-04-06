@@ -1,5 +1,6 @@
 package com.parkez.user.service;
 
+import static com.parkez.user.constant.UserConstants.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
@@ -372,6 +373,28 @@ class UserServiceTest {
 			Assertions.assertThatThrownBy(()->userService.changePassword(userId, request))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessage(UserErrorCode.USER_PASSWORD_SAME_AS_OLD.getDefaultMessage());
+		}
+	}
+
+	@Nested
+	class DeleteUser {
+		@Test
+		void 회원탈퇴_소프트딜리트_성공() {
+			// given
+			Long userId = 1L;
+			User user = User.builder()
+				.nickname("기존 닉네임")
+				.build();
+
+			given(userReader.getActiveById(anyLong())).willReturn(user);
+
+			// when
+			userService.deleteUser(userId);
+
+			// then
+			Assertions.assertThat(user.getNickname()).isEqualTo(WITHDRAWAL_NICKNAME);
+			Assertions.assertThat(user.isDeleted()).isTrue();
+			Assertions.assertThat(user.getDeletedAt()).isNotNull();
 		}
 	}
 
