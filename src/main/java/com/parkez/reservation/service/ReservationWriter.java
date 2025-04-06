@@ -1,8 +1,10 @@
 package com.parkez.reservation.service;
 
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.repository.ReservationRepository;
+import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,13 @@ public class ReservationWriter {
             LocalDateTime endDateTime,
             BigDecimal price
     ) {
+
+        // 이미 해당 시간에 예약이 존재할 경우
+        boolean exists = reservationRepository.existsReservation(parkingZone, startDateTime, endDateTime);
+        if (exists) {
+            throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED);
+        }
+
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
