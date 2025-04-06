@@ -4,7 +4,9 @@ import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
 import com.parkez.parkingzone.dto.response.ParkingZoneCreateResponse;
+import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,4 +21,9 @@ public class ParkingZoneService {
         ParkingLot parkingLot = parkingLotReader.getParkingLot(request.getParkingLotId());
         return ParkingZoneCreateResponse.from(parkingZoneWriter.createParkingZone(request, parkingLot));
     }
+
+    public Page<ParkingZoneResponse> getParkingZones(int page, int size, Long parkingLotId) {
+        return parkingZoneReader.getParkingZones(page, size, parkingLotId);
+    }
+
 }
