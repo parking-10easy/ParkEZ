@@ -70,4 +70,13 @@ public class ParkingZoneController {
             @Valid @RequestBody ParkingZoneUpdateImageRequest request) {
         return Response.of(parkingZoneService.updateParkingZoneImage(parkingZoneId, request));
     }
+
+    @DeleteMapping("/v1/parking-zones/{parkingZoneId}")
+    @Operation(summary = "주차공간 삭제", description = "주차공간 삭제 기능입니다.")
+    public Response<Void> deleteParkingZone(
+//            @AuthUser AuthUser authUser,
+            @PathVariable Long parkingZoneId) {
+        parkingZoneService.deleteParkingZone(parkingZoneId);
+        return Response.empty();
+    }
 }

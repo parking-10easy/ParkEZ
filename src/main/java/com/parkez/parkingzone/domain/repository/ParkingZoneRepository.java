@@ -4,6 +4,7 @@ import com.parkez.parkingzone.domain.entity.ParkingZone;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -14,4 +15,9 @@ public interface ParkingZoneRepository extends JpaRepository<ParkingZone, Long> 
             "AND pz.deletedAt IS NULL " +
             "ORDER BY pz.modifiedAt DESC")
     Page<ParkingZone> findAllOrderByModifiedAt(Pageable pageable, @Param("parkingLotId") Long parkingLotId);
+
+    @Modifying
+    @Query("UPDATE ParkingZone pz SET pz.deletedAt = CURRENT_TIMESTAMP " +
+            "WHERE pz.id = :parkingZoneId")
+    void softDeleteById(@Param("parkingZoneId") Long parkingZoneId);
 }

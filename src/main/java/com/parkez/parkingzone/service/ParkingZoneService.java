@@ -45,4 +45,8 @@ public class ParkingZoneService {
     public ParkingZoneResponse updateParkingZoneImage(Long parkingZoneId, ParkingZoneUpdateImageRequest request) {
         return ParkingZoneResponse.from(parkingZoneWriter.updateParkingZoneImage(parkingZoneId, request));
     }
+
+    public void deleteParkingZone(Long parkingZoneId) {
+        parkingZoneWriter.deleteParkingZone(parkingZoneId);
+    }
 }

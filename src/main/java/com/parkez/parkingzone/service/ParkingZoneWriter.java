@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -69,5 +71,17 @@ public class ParkingZoneWriter {
         parkingZone.updateParkingZoneImage(request.getImageUrl());
 
         return parkingZone;
+    }
+
+    public void deleteParkingZone(Long parkingZoneId) {
+        ParkingZone parkingZone = parkingZoneRepository.findById(parkingZoneId).orElseThrow(
+                () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
+        );
+
+//        if (!parkingZone.getParkingLot().getOwner().getId().equals(authUser.getId())){
+//            new ParkingEasyException(ParkingZoneErrorCode.FORBIDDEN_TO_UPDATE);
+//        }
+
+        parkingZoneRepository.softDeleteById(parkingZoneId);
     }
 }

@@ -19,12 +19,13 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ParkingZoneWriterTest {
@@ -188,6 +189,43 @@ class ParkingZoneWriterTest {
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                 () -> parkingZoneWriter.updateParkingZoneImage(99L, updateImageRequest));
+
+        assertThat(exception.getErrorCode()).isEqualTo(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND);
+    }
+
+    @Test
+    void ParkingZone을_삭제할_수_있다() {
+        // given
+        ParkingZone savedParkingZone = ParkingZone.builder()
+                .parkingLot(parkingLot)
+                .name(createRequest.getName())
+                .imageUrl(createRequest.getImageUrl())
+                .build();
+
+        ReflectionTestUtils.setField(savedParkingZone, "id", 1L);
+
+        when(parkingZoneRepository.findById(1L)).thenReturn(Optional.of(savedParkingZone));
+        doAnswer(invocation -> {
+            ReflectionTestUtils.setField(savedParkingZone, "deletedAt", LocalDateTime.now()); // deletedAt 설정
+            return null;
+        }).when(parkingZoneRepository).softDeleteById(1L);
+
+        // when
+        parkingZoneWriter.deleteParkingZone(1L);
+
+        // then
+        verify(parkingZoneRepository).softDeleteById(1L);
+        assertThat(ReflectionTestUtils.getField(savedParkingZone, "deletedAt")).isNotNull();
+    }
+
+    @Test
+    void 존재하지_않는_주차공간을_삭제하면_예외가_발생한다() {
+        // given
+        when(parkingZoneRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // when & then
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                () -> parkingZoneWriter.deleteParkingZone(99L));
 
         assertThat(exception.getErrorCode()).isEqualTo(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND);
     }
