@@ -26,5 +26,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
                               @Param("start") LocalDateTime start,
                               @Param("end") LocalDateTime end);
 
+    boolean existsByUserId(Long userId);
+
     Page<Reservation> findByUserId(Long userId, Pageable pageable);
 }

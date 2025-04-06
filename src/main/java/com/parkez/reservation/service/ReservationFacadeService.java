@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -59,5 +58,12 @@ public class ReservationFacadeService {
         Page<Reservation> pageMyReservations = reservationReader.findMyReservations(userId, pageable);
 
         return pageMyReservations.map(ReservationResponse::from);
+    }
+
+    public ReservationResponse getMyReservation(Long userId, Long reservationId) {
+
+        Reservation myReservation = reservationReader.findMyReservation(userId, reservationId);
+
+        return ReservationResponse.from(myReservation);
     }
 }

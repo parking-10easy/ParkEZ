@@ -6,10 +6,7 @@ import com.parkez.reservation.dto.response.ReservationResponse;
 import com.parkez.reservation.service.ReservationFacadeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -28,11 +25,20 @@ public class ReservationController {
 
     // 나의 예약 내역 조회
     @GetMapping("/v1/users/me/reservations")
-    public Response<List<ReservationResponse>> getMyReservations(
+    public Response<ReservationResponse> getMyReservations(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Long userId = 1L;
         return Response.fromPage(reservationFacadeService.getMyReservations(userId, page, size));
+    }
+
+    // 나의 예약 단건 조회
+    @GetMapping("v1/users/me/reservations/{reservationId}")
+    public Response<ReservationResponse> getMyReservation(
+            @PathVariable Long reservationId
+    ) {
+        Long userId = 1L;
+        return Response.of(reservationFacadeService.getMyReservation(userId, reservationId));
     }
 }
