@@ -3,6 +3,7 @@ package com.parkez.user.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.Builder;
 import lombok.Getter;
 
 @Getter
@@ -19,4 +20,12 @@ public class UserChangePasswordRequest {
 	@Schema(description = "사용자 새 비밀번호", example = "1q2W3e4r!")
 	private String newPassword;
 
+	public UserChangePasswordRequest() {
+	}
+
+	@Builder
+	private UserChangePasswordRequest(String oldPassword, String newPassword) {
+		this.oldPassword = oldPassword;
+		this.newPassword = newPassword;
+	}
 }

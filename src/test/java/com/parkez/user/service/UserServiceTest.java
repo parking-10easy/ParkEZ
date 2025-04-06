@@ -10,13 +10,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.parkez.auth.authentication.principal.AuthUser;
+import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.entity.BusinessAccountInfo;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
+import com.parkez.user.dto.request.UserChangePasswordRequest;
 import com.parkez.user.dto.request.UserProfileImageUpdateRequest;
 import com.parkez.user.dto.request.UserProfileUpdateRequest;
 import com.parkez.user.dto.response.MyProfileResponse;
@@ -28,6 +31,9 @@ class UserServiceTest {
 
 	@Mock
 	private UserReader userReader;
+
+	@Mock
+	private BCryptPasswordEncoder bCryptPasswordEncoder;
 
 	@InjectMocks
 	private UserService userService;
@@ -171,7 +177,7 @@ class UserServiceTest {
 			User user = User.builder()
 				.nickname("홍길동1")
 				.phone("011-1234-5678")
-				.businessAccountInfo(new BusinessAccountInfo(null,null,null,null))
+				.businessAccountInfo(new BusinessAccountInfo(null, null, null, null))
 				.build();
 			given(userReader.getActiveById(anyLong())).willReturn(user);
 			//when
@@ -214,7 +220,7 @@ class UserServiceTest {
 			User user = User.builder()
 				.nickname("홍길동1")
 				.phone("011-1234-5678")
-				.businessAccountInfo(new BusinessAccountInfo(null,null,null,null))
+				.businessAccountInfo(new BusinessAccountInfo(null, null, null, null))
 				.build();
 			given(userReader.getActiveById(anyLong())).willReturn(user);
 			//when
@@ -254,7 +260,7 @@ class UserServiceTest {
 			User user = User.builder()
 				.profileImageUrl(profileImageUrl)
 				.build();
-			ReflectionTestUtils.setField(user,"id",userId);
+			ReflectionTestUtils.setField(user, "id", userId);
 			ReflectionTestUtils.setField(userService, "defaultProfileImageUrl", "default.jpg");
 			given(userReader.getActiveById(anyLong())).willReturn(user);
 
@@ -280,7 +286,7 @@ class UserServiceTest {
 			User user = User.builder()
 				.profileImageUrl(profileImageUrl)
 				.build();
-			ReflectionTestUtils.setField(user,"id",userId);
+			ReflectionTestUtils.setField(user, "id", userId);
 			given(userReader.getActiveById(anyLong())).willReturn(user);
 
 			// when
@@ -293,6 +299,79 @@ class UserServiceTest {
 					"profileImageUrl"
 				).isEqualTo(profileImageUrl);
 
+		}
+	}
+
+	@Nested
+	class ChangePassword {
+		@Test
+		public void 비밀번호_변경_정상적으로_수행할_수_있다() {
+			//given
+			Long userId = 1L;
+			String oldPassword = "oldPassword123";
+			String newPassword = "newPassword456";
+			String encodedOldPassword = "encodedOldPassword";
+			String encodedNewPassword = "encodedNewPassword";
+			User user = User.builder()
+				.password(encodedOldPassword)
+				.build();
+			given(userReader.getActiveById(userId)).willReturn(user);
+			given(bCryptPasswordEncoder.matches(oldPassword, encodedOldPassword)).willReturn(true);
+			given(bCryptPasswordEncoder.matches(newPassword, encodedOldPassword)).willReturn(false);
+			given(bCryptPasswordEncoder.encode(newPassword)).willReturn(encodedNewPassword);
+			UserChangePasswordRequest request = UserChangePasswordRequest.builder()
+				.oldPassword(oldPassword)
+				.newPassword(newPassword)
+				.build();
+			//when
+			userService.changePassword(userId, request);
+			//then
+			Assertions.assertThat(user.getPassword()).isEqualTo(encodedNewPassword);
+		}
+
+		@Test
+		public void 비밀번호_변경_실패_기존비밀번호_틀림() {
+			//given
+			Long userId = 1L;
+			String oldPassword = "wrongOldPassword";
+			String newPassword = "newPassword456";
+			String encodedOldPassword = "encodedOldPassword";
+			User user = User.builder()
+				.password(encodedOldPassword)
+				.build();
+			given(userReader.getActiveById(userId)).willReturn(user);
+			given(bCryptPasswordEncoder.matches(oldPassword, encodedOldPassword)).willReturn(false);
+			UserChangePasswordRequest request = UserChangePasswordRequest.builder()
+				.oldPassword(oldPassword)
+				.newPassword(newPassword)
+				.build();
+			//when & then
+			Assertions.assertThatThrownBy(()->userService.changePassword(userId, request))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(AuthErrorCode.INVALID_PASSWORD.getDefaultMessage());
+		}
+
+		@Test
+		public void 비밀번호_변경_실패_새비밀번호가_기존과_같음() {
+			//given
+			Long userId = 1L;
+			String oldPassword = "oldPassword123";
+			String newPassword = "oldPassword123";
+			String encodedOldPassword = "encodedOldPassword";
+			User user = User.builder()
+				.password(encodedOldPassword)
+				.build();
+			given(userReader.getActiveById(userId)).willReturn(user);
+			given(bCryptPasswordEncoder.matches(oldPassword, encodedOldPassword)).willReturn(true);
+			given(bCryptPasswordEncoder.matches(newPassword, encodedOldPassword)).willReturn(true);
+			UserChangePasswordRequest request = UserChangePasswordRequest.builder()
+				.oldPassword(oldPassword)
+				.newPassword(newPassword)
+				.build();
+			//when & then
+			Assertions.assertThatThrownBy(()->userService.changePassword(userId, request))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(UserErrorCode.USER_PASSWORD_SAME_AS_OLD.getDefaultMessage());
 		}
 	}
 
