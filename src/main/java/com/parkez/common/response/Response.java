@@ -2,6 +2,8 @@ package com.parkez.common.response;
 
 import org.springframework.data.domain.Page;
 
+import java.util.List;
+
 public interface Response<T> {
 
     T getData();
@@ -14,7 +16,7 @@ public interface Response<T> {
         return new DefaultResponse<>(null);
     }
 
-    static <T> Response<T> fromPage(Page<T> pageData) {
+    static <T> Response<List<T>> fromPage(Page<T> pageData) {
         return new PageResponse<>(
                 pageData.getContent(),
                 pageData.getPageable().getPageNumber(),

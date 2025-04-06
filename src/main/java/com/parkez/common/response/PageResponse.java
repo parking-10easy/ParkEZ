@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PageResponse<T> implements Response<T> {
+public class PageResponse<T> implements Response<List<T>> {
 
     private final List<T> data;
     private final int pageNumber;
@@ -24,7 +24,7 @@ public class PageResponse<T> implements Response<T> {
     }
 
     @Override
-    public T getData() {
-        return (T)data;
+    public List<T> getData() {
+        return data;
     }
 }

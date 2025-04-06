@@ -10,10 +10,14 @@ import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -46,5 +50,14 @@ public class ReservationFacadeService {
         );
 
         return ReservationResponse.from(reservation);
+    }
+
+    public Page<ReservationResponse> getMyReservations(Long userId, int page, int size) {
+
+        int adjustedPage = (page > 0) ? page - 1: 0;
+        PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by("createdAt").descending());
+        Page<Reservation> pageMyReservations = reservationReader.findMyReservations(userId, pageable);
+
+        return pageMyReservations.map(ReservationResponse::from);
     }
 }
