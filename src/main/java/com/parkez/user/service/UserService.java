@@ -1,5 +1,9 @@
 package com.parkez.user.service;
 
+import static com.parkez.user.constant.UserConstants.*;
+
+import java.time.LocalDateTime;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -95,4 +99,9 @@ public class UserService {
 
     }
 
+    @Transactional
+    public void deleteUser(Long id) {
+        User user = userReader.getActiveById(id);
+        user.softDelete(WITHDRAWAL_NICKNAME, LocalDateTime.now());
+    }
 }

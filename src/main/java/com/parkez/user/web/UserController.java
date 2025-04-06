@@ -1,5 +1,6 @@
 package com.parkez.user.web;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,6 +66,13 @@ public class UserController {
 	@PatchMapping("/v1/users/password")
 	public Response<Void> changePassword(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser, @Valid @RequestBody UserChangePasswordRequest request) {
 		userService.changePassword(authUser.getId(), request);
+		return Response.empty();
+	}
+
+	@Operation(summary = "회원 탈퇴", description = "회원 탈퇴한다.")
+	@DeleteMapping("/v1/users/me")
+	public Response<Void> deleteUser(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser) {
+		userService.deleteUser(authUser.getId());
 		return Response.empty();
 	}
 

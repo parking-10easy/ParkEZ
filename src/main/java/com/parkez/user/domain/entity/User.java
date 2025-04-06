@@ -1,5 +1,6 @@
 package com.parkez.user.domain.entity;
 
+import com.parkez.common.entity.BaseDeleteEntity;
 import com.parkez.user.domain.enums.UserRole;
 
 import jakarta.persistence.*;
@@ -16,7 +17,7 @@ import org.springframework.util.StringUtils;
 @Getter
 @Table(name = "users")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class User {
+public class User extends BaseDeleteEntity {
 
     @Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -98,5 +99,10 @@ public class User {
 
 	public void updatePassword(String encodedPassword) {
 		this.password = encodedPassword;
+	}
+
+	public void softDelete(String withdrawalNickname, LocalDateTime now) {
+		this.nickname = withdrawalNickname;
+		this.deletedAt = now;
 	}
 }
