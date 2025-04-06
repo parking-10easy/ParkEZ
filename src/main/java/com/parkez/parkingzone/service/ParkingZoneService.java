@@ -3,6 +3,7 @@ package com.parkez.parkingzone.service;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
+import com.parkez.parkingzone.dto.request.ParkingZoneUpdateRequest;
 import com.parkez.parkingzone.dto.response.ParkingZoneCreateResponse;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import lombok.RequiredArgsConstructor;
@@ -28,5 +29,9 @@ public class ParkingZoneService {
 
     public ParkingZoneResponse getParkingZone(Long parkingZoneId) {
         return ParkingZoneResponse.from(parkingZoneReader.getParkingZone(parkingZoneId));
+    }
+
+    public ParkingZoneResponse updateParkingZone(Long parkingZoneId, ParkingZoneUpdateRequest request) {
+        return ParkingZoneResponse.from(parkingZoneWriter.updateParkingZone(parkingZoneId, request));
     }
 }

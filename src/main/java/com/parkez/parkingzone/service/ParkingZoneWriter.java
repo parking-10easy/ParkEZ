@@ -1,9 +1,12 @@
 package com.parkez.parkingzone.service;
 
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
 import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
+import com.parkez.parkingzone.dto.request.ParkingZoneUpdateRequest;
+import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,5 +25,19 @@ public class ParkingZoneWriter {
                 .imageUrl(request.getImageUrl())
                 .build();
         return parkingZoneRepository.save(parkingZone);
+    }
+
+    public ParkingZone updateParkingZone(Long parkingZoneId, ParkingZoneUpdateRequest request) {
+        ParkingZone parkingZone = parkingZoneRepository.findById(parkingZoneId).orElseThrow(
+                () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
+        );
+
+//        if (!parkingZone.getParkingLot().getOwner().getId().equals(authUser.getId())){
+//            new ParkingEasyException(ParkingZoneErrorCode.FORBIDDEN_TO_UPDATE);
+//        }
+
+        parkingZone.updateParkingZone(request.getName());
+
+        return parkingZone;
     }
 }
