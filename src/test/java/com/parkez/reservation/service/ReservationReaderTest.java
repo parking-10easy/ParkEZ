@@ -113,4 +113,41 @@ class ReservationReaderTest {
                 () -> reservationReader.findReservation(userId, reservationId));
         assertEquals(ReservationErrorCode.NOT_MY_RESERVATION, exception.getErrorCode());
     }
+
+    @Test
+    void parking_zone_에_대한_예약_내역_리스트_조회_테스트() {
+        // given
+        Long parkingZoneId = 1L;
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        Reservation reservation = Reservation.builder().build();
+
+        Page<Reservation> reservationPage = new PageImpl<>(List.of(reservation));
+
+        given(reservationRepository.existsByParkingZoneId(anyLong())).willReturn(true);
+        given(reservationRepository.findByParkingZoneId(anyLong(), any(PageRequest.class))).willReturn(reservationPage);
+
+        // when
+        Page<Reservation> result = reservationReader.findOwnerReservations(parkingZoneId, pageable);
+
+        // then
+        assertNotNull(result);
+        assertEquals(reservation, result.getContent().get(0));
+    }
+
+    @Test
+    void parking_zone_에_대한_예약_내역_리스트_조회_시_빈_페이지_전달() {
+        // given
+        Long parkingZoneId = 1L;
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        given(reservationRepository.existsByParkingZoneId(anyLong())).willReturn(false);
+
+        // when
+        Page<Reservation> result = reservationReader.findOwnerReservations(parkingZoneId, pageable);
+
+        // then
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+    }
 }
