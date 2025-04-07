@@ -105,7 +105,7 @@ class AuthServiceTest {
 	}
 
 	@Nested
-	class Signin {
+	class SigninUser {
 
 		@Test
 		public void 유저_로그인_입력한_비밀번호가_다르면_예외_발생() {
@@ -249,6 +249,86 @@ class AuthServiceTest {
 				accessToken,
 				refreshToken
 			);
+		}
+	}
+
+	@Nested
+	class SigninOwner {
+
+		@Test
+		public void 오너_로그인_입력한_비밀번호가_다르면_예외_발생() {
+			//given
+			String email = "owner@example.com";
+			String password = "password";
+			String nickname = "test";
+			String phone = "1234";
+			String businessNumber = "123-45-67890";
+			String bankName = "국민은행";
+			String bankAccount = "123456-78-901234";
+			String depositorName = "홍길동";
+			String defaultProfileImageUrl = "default.jpg";
+			BusinessAccountInfo businessAccountInfo = BusinessAccountInfo.create(businessNumber, depositorName,
+				bankName, bankAccount);
+			User user = User.createOwner(email, password, nickname, phone,businessAccountInfo, defaultProfileImageUrl);
+			ReflectionTestUtils.setField(user, "id", 1L);
+			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_OWNER))).willReturn(user);
+			given(bCryptPasswordEncoder.matches(anyString(), anyString())).willReturn(false);
+			//when & then
+			assertThatThrownBy(() -> authService.signinOwner(email, password))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(AuthErrorCode.INVALID_PASSWORD.getDefaultMessage());
+			verify(userWriter, never()).create(any(User.class));
+			verify(tokenWriter, never()).createSignupTokenPair(anyLong(), anyString(), any(UserRole.class),
+				anyString());
+		}
+
+		@Test
+		public void 오너_로그인_존재하지_않은_이메일로_로그인시_예외_발생() {
+			//given
+			String email = "owner@example.com";
+			String password = "password";
+
+			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_OWNER))).willThrow(
+				new ParkingEasyException(UserErrorCode.EMAIL_NOT_FOUND));
+			//when & then
+			assertThatThrownBy(() -> authService.signinOwner(email, password))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(UserErrorCode.EMAIL_NOT_FOUND.getDefaultMessage());
+			verify(bCryptPasswordEncoder, never()).matches(anyString(), anyString());
+			verify(userWriter, never()).create(any(User.class));
+			verify(tokenWriter, never()).createSignupTokenPair(anyLong(), anyString(), any(UserRole.class),
+				anyString());
+		}
+
+		@Test
+		public void 유저_로그인_정상적으로_로그인_할_수_있다() {
+			//given
+			String email = "user@example.com";
+			String password = "password";
+			String accessToken = "mockAccess";
+			String refreshToken = "mockRefresh";
+			String nickname = "test";
+			String phone = "1234";
+			String defaultProfileImageUrl = "default.jpg";
+			User user = User.createUser(email, password, nickname, phone, defaultProfileImageUrl);
+			ReflectionTestUtils.setField(user, "id", 1L);
+			TokenResponse tokenResponse = TokenResponse.of(accessToken, refreshToken);
+			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(user);
+			given(bCryptPasswordEncoder.matches(anyString(), anyString())).willReturn(true);
+			given(
+				tokenWriter.createSigninTokenPair(anyLong(), anyString(), any(UserRole.class), anyString())).willReturn(
+				tokenResponse);
+			//when
+			TokenResponse result = authService.signinUser(email, password);
+			//then
+			assertThat(result)
+				.extracting(
+					"accessToken",
+					"refreshToken"
+				).containsExactly(
+					accessToken,
+					refreshToken
+				);
 		}
 	}
 
