@@ -21,17 +21,29 @@ public class Reservation extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parking_zone_id", nullable = false)
     private ParkingZone parkingZone;
+
+    @Column(nullable = false)
     private String parkingLotName;
+
+    @Column(nullable = false)
     private LocalDateTime startDateTime;
+
+    @Column(nullable = false)
     private LocalDateTime endDateTime;
+
+    @Column(nullable = false)
     private BigDecimal price;
+
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ReservationStatus status;
 
     @Builder

@@ -27,7 +27,7 @@ public class ReservationReader {
             return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
 
-       return reservationRepository.findByUserId(userId, pageable);
+        return reservationRepository.findByUserId(userId, pageable);
     }
 
     public Reservation findReservation(Long userId, Long reservationId) {
