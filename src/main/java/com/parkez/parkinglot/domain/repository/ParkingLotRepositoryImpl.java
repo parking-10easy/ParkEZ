@@ -30,6 +30,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryRepository {
         if (StringUtils.hasText(address)) {
             builder.and(parkingLot.address.contains(address));
         }
+        builder.and(parkingLot.deletedAt.isNull());
         List<ParkingLot> parkingLots = jqf
                 .selectFrom(parkingLot)
                 .where(builder)
@@ -47,7 +48,8 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryRepository {
     public ParkingLot findParkingLotById(Long parkingLotId) {
         return jqf
                 .selectFrom(parkingLot)
-                .where(parkingLot.id.eq(parkingLotId))
+                .where(parkingLot.id.eq(parkingLotId)
+                        .and(parkingLot.deletedAt.isNull()))
                 .fetchOne();
     }
 
