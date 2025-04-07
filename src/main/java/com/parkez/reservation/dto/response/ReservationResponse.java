@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class ReservationResponse {
 
     @Schema(description = "예약 id", example = "1")
-    private final Long ReservationId;
+    private final Long reservationId;
 
     @Schema(description = "유저 id", example = "1")
     private final Long userId;

@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class MyReservationResponse {
 
     @Schema(description = "예약 id", example = "1")
-    private final Long ReservationId;
+    private final Long reservationId;
 
     @Schema(description = "유저 id", example = "1")
     private final Long userId;
@@ -27,7 +27,7 @@ public class MyReservationResponse {
     private final String parkingLotName;
 
     @Schema(description = "리뷰 작성 여부", example = "false")
-    private final boolean isReviewWritten;
+    private final boolean reviewWritten;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd HH:mm")
     @Schema(description = "예약 시작 날짜 및 시간", example = "2025.04.07 10:00")
