@@ -6,6 +6,7 @@ import com.parkez.parkinglot.service.ParkingLotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class ParkingLotUserController {
     public Response<ParkingLotSearchResponse> searchParkingLots(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String address,
-            Pageable pageable
+            @ParameterObject Pageable pageable
     ) {
         return Response.fromPage(parkingLotService.searchParkingLots(name, address, pageable));
     }
