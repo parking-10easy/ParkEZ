@@ -2,9 +2,11 @@ package com.parkez.parkingLot;
 
 
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.parkinglot.domain.entity.FakeImage;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
+import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
@@ -21,6 +23,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -184,6 +188,41 @@ public class ParkingLotWriterTest {
         when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot);
         ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                 parkingLotWriter.deleteParkingLot(user, parkingLotId)
+        );
+        assertEquals(ParkingLotErrorCode.NOT_OWNER, exception.getErrorCode());
+    }
+
+    @Test
+    void 주차장_이미지를_수정한다() {
+        Long parkingLotId = 1L;
+        when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot);
+        ParkingLotImagesRequest imagesRequest = ParkingLotImagesRequest.builder()
+                .imageUrls(List.of(
+                        "https://example.com/images/parking_lot_1.jpg",
+                        "https://example.com/images/parking_lot_2.jpg"
+                ))
+                .build();
+        parkingLotWriter.updateParkingLotImages(owner, parkingLotId, imagesRequest);
+        List<String> updatedImageUrls = parkingLot.getImages().stream()
+                .map(FakeImage::getImageUrl)
+                .toList();
+        assertNotNull(updatedImageUrls);
+        assertEquals(2, updatedImageUrls.size());
+        assertTrue(updatedImageUrls.contains("https://example.com/images/parking_lot_1.jpg"));
+        assertTrue(updatedImageUrls.contains("https://example.com/images/parking_lot_2.jpg"));
+    }
+
+    @Test
+    void 주차장_이미지_수정을_실패한다() {
+        Long parkingLotId = 1L;
+        when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot);
+
+        ParkingLotImagesRequest imagesRequest = ParkingLotImagesRequest.builder()
+                .imageUrls(List.of("https://example.com/images/parking_lot_1.jpg"))
+                .build();
+
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                parkingLotWriter.updateParkingLotImages(user, parkingLotId, imagesRequest)
         );
         assertEquals(ParkingLotErrorCode.NOT_OWNER, exception.getErrorCode());
     }
