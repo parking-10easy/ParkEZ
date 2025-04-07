@@ -91,6 +91,20 @@ class ReservationReaderTest {
     }
 
     @Test
+    void 예약_단건_조회_시_예약이_없을_경우_예외() {
+        // given
+        Long userId = 1L;
+        Long reservationId = 1L;
+
+        given(reservationRepository.findById(anyLong())).willReturn(Optional.empty());
+
+        // when & then
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                () -> reservationReader.findReservation(userId, reservationId));
+        assertEquals(ReservationErrorCode.NOT_FOUND_RESERVATION, exception.getErrorCode());
+    }
+
+    @Test
     void 예약_단건_조회_시_본인이_한_예약이_아닐_경우_예외() {
         // given
         Long userId = 1L;

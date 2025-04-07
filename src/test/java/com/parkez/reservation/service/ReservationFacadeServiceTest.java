@@ -204,6 +204,62 @@ class ReservationFacadeServiceTest {
     }
 
     @Test
+    void 내_예약_리스트_조회_시_정상적이지_않은_page_기입_테스트() {
+        // given
+        Long ownerId = 1L;
+        Long userId = 2L;
+        int page = 0;
+        int size = 10;
+
+        User owner = User.builder().build();
+        ReflectionTestUtils.setField(owner, "id", ownerId);
+        User user = User.builder().build();
+        ReflectionTestUtils.setField(user, "id", userId);
+
+        ParkingLot parkingLot = ParkingLot.builder()
+                .owner(owner)
+                .name("test")
+                .build();
+        ReflectionTestUtils.setField(parkingLot, "id", 1L);
+
+        ParkingZone parkingZone = ParkingZone.builder()
+                .parkingLot(parkingLot)
+                .build();
+        ReflectionTestUtils.setField(parkingZone, "id", 1L);
+
+        Reservation reservation = Reservation.builder()
+                .user(user)
+                .parkingZone(parkingZone)
+                .parkingLotName(parkingZone.getParkingLot().getName())
+                .build();
+        ReflectionTestUtils.setField(reservation, "id", 1L);
+
+        Reservation reviewedReservation = Reservation.builder()
+                .user(user)
+                .parkingZone(parkingZone)
+                .parkingLotName(parkingZone.getParkingLot().getName())
+                .build();
+        ReflectionTestUtils.setField(reviewedReservation, "id", 2L); // 리뷰 작성된 예약
+
+        Page<Reservation> pageMyReservations = new PageImpl<>(List.of(reservation, reviewedReservation));
+
+
+        given(reservationReader.findMyReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
+        given(reviewQueryService.findReviewedReservationIds(anyList())).willReturn(Set.of(reviewedReservation.getId()));
+
+        // when
+        Page<MyReservationResponse> result = reservationFacadeService.getMyReservations(userId, page, size);
+
+        // then
+        assertNotNull(result);
+        assertEquals(1L, result.getContent().get(0).getReservationId());
+        assertFalse(result.getContent().get(0).isReviewWritten());
+        assertEquals(2L, result.getContent().get(1).getReservationId());
+        assertTrue(result.getContent().get(1).isReviewWritten());
+        assertEquals(2, result.getTotalElements());
+    }
+
+    @Test
     void 내_예약_단건_조회_테스트() {
         // given
         Long userId = 1L;
@@ -241,6 +297,48 @@ class ReservationFacadeServiceTest {
         Long userId = 1L;
         Long parkingZoneId = 1L;
         int page = 1;
+        int size = 10;
+
+        User user = User.builder().build();
+        ReflectionTestUtils.setField(user, "id", userId);
+
+        ParkingLot parkingLot = ParkingLot.builder()
+                .owner(user)
+                .name("test")
+                .build();
+
+        ParkingZone parkingZone = ParkingZone.builder()
+                .parkingLot(parkingLot)
+                .build();
+        ReflectionTestUtils.setField(parkingZone, "id", 1L);
+
+        Reservation reservation = Reservation.builder()
+                .user(user)
+                .parkingZone(parkingZone)
+                .parkingLotName(parkingZone.getParkingLot().getName())
+                .build();
+        ReflectionTestUtils.setField(reservation, "id", 1L); // 리뷰 작성된 예약
+
+        Page<Reservation> pageMyReservations = new PageImpl<>(List.of(reservation));
+
+        given(parkingZoneQueryService.existsById(anyLong())).willReturn(true);
+        given(parkingZoneQueryService.findById(anyLong())).willReturn(parkingZone);
+        given(reservationReader.findOwnerReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
+
+        // when
+        Page<ReservationResponse> result = reservationFacadeService.getOwnerReservations(userId, parkingZoneId, page, size);
+
+        // then
+        assertNotNull(result);
+        assertEquals(parkingZoneId, result.getContent().get(0).getParkingZoneId());
+    }
+
+    @Test
+    void parking_zone_에_대한_예약_내역_리스트_조회_시_정상적이지_않은_page_기입_테스트() {
+        // given
+        Long userId = 1L;
+        Long parkingZoneId = 1L;
+        int page = 0;
         int size = 10;
 
         User user = User.builder().build();
@@ -414,5 +512,25 @@ class ReservationFacadeServiceTest {
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                 () -> reservationFacadeService.cancelReservation(userId, reservationId));
         assertEquals(ReservationErrorCode.CANT_CANCEL_CANCELED_RESERVATION, exception.getErrorCode());
+    }
+
+    @Test
+    void 예약_취소_시_1시간_이내일_경우_예외() {
+        // given
+        Long userId = 1L;
+        Long reservationId = 1L;
+        LocalDateTime startDateTime = LocalDateTime.now();
+
+        Reservation reservation = Reservation.builder().build();
+        ReflectionTestUtils.setField(reservation, "id", reservationId);
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
+        ReflectionTestUtils.setField(reservation, "startDateTime", startDateTime);
+
+        given(reservationReader.findReservation(anyLong(), any(Long.class))).willReturn(reservation);
+
+        // when & then
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                () -> reservationFacadeService.cancelReservation(userId, reservationId));
+        assertEquals(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR, exception.getErrorCode());
     }
 }
