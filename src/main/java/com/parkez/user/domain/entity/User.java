@@ -86,11 +86,10 @@ public class User extends BaseDeleteEntity {
 		return this.deletedAt != null;
 	}
 
-	public void updateProfile(String nickname, String phone, String businessNumber, String bankName, String bankAccount,
-		String depositorName) {
+	public void updateProfile(String nickname, String phone, BusinessAccountInfo businessAccountInfo) {
 		this.nickname = nickname;
 		this.phone = phone;
-		this.businessAccountInfo =new BusinessAccountInfo(businessNumber,depositorName,bankName,bankAccount);
+		this.businessAccountInfo = businessAccountInfo;
 	}
 
 	public void updateProfileImage(String profileImageUrl, String defaultProfileImageUrl) {

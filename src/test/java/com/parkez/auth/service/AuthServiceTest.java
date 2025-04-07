@@ -55,7 +55,7 @@ class AuthServiceTest {
 			String nickname = "user";
 			String phone = "010-1234-5678";
 			SignupUserRequest request = createSignupUserRequest(email, password, passwordCheck, nickname, phone);
-			given(userReader.exist(anyString())).willReturn(true);
+			given(userReader.existByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(true);
 			//when & then
 			assertThatThrownBy(()-> authService.signupUser(request)).isInstanceOf(ParkingEasyException.class)
 				.hasMessage(AuthErrorCode.DUPLICATED_EMAIL.getDefaultMessage());
@@ -78,7 +78,7 @@ class AuthServiceTest {
 			String refreshToken = "mockRefresh";
 			String encodedPassword = "password";
 			TokenResponse tokenResponse = TokenResponse.of(accessToken, refreshToken);
-			given(userReader.exist(anyString())).willReturn(false);
+			given(userReader.existByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(false);
 			given(bCryptPasswordEncoder.encode(anyString())).willReturn(encodedPassword);
 
 			given(userWriter.create(any(User.class))).willReturn(user);

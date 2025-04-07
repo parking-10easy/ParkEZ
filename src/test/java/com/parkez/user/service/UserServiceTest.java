@@ -178,7 +178,7 @@ class UserServiceTest {
 			User user = User.builder()
 				.nickname("홍길동1")
 				.phone("011-1234-5678")
-				.businessAccountInfo(new BusinessAccountInfo(null, null, null, null))
+				.businessAccountInfo(BusinessAccountInfo.create(null, null, null, null))
 				.build();
 			given(userReader.getActiveById(anyLong())).willReturn(user);
 			//when
@@ -221,7 +221,7 @@ class UserServiceTest {
 			User user = User.builder()
 				.nickname("홍길동1")
 				.phone("011-1234-5678")
-				.businessAccountInfo(new BusinessAccountInfo(null, null, null, null))
+				.businessAccountInfo(BusinessAccountInfo.create(null, null, null, null))
 				.build();
 			given(userReader.getActiveById(anyLong())).willReturn(user);
 			//when

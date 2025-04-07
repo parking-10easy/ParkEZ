@@ -34,8 +34,8 @@ class UserRepositoryTest {
 	@Test
 	public void 이메일로_존재여부_확인() {
 		//when
-		boolean existsTrue = userRepository.existsByEmail("test@example.com");
-		boolean existsFalse = userRepository.existsByEmail("test1@example.com");
+		boolean existsTrue = userRepository.existsByEmailAndRole("test@example.com", UserRole.ROLE_USER);
+		boolean existsFalse = userRepository.existsByEmailAndRole("test1@example.com", UserRole.ROLE_USER);
 		//then
 		assertThat(existsTrue).isTrue();
 		assertThat(existsFalse).isFalse();

@@ -18,8 +18,8 @@ public class UserReader {
 
 	private final UserRepository userRepository;
 
-	public boolean exist(String email) {
-		return userRepository.existsByEmail(email);
+	public boolean existByEmailAndRole(String email, UserRole role) {
+		return userRepository.existsByEmailAndRole(email,role);
 	}
 
 	public User getActiveByEmailAndRole(String email, UserRole role) {

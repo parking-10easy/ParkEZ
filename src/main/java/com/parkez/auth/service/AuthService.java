@@ -6,16 +6,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.parkez.auth.authentication.jwt.TokenWriter;
+import com.parkez.auth.dto.request.SignupOwnerRequest;
 import com.parkez.auth.dto.request.SignupUserRequest;
 import com.parkez.auth.dto.response.SignupResponse;
 import com.parkez.auth.dto.response.TokenResponse;
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.user.domain.entity.BusinessAccountInfo;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
 import com.parkez.user.service.UserWriter;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -34,7 +37,7 @@ public class AuthService {
 	@Transactional
 	public SignupResponse signupUser(SignupUserRequest request) {
 
-		if (userReader.exist(request.getEmail())) {
+		if (userReader.existByEmailAndRole(request.getEmail(), UserRole.ROLE_USER)) {
 			throw new ParkingEasyException(AuthErrorCode.DUPLICATED_EMAIL);
 		}
 
@@ -48,7 +51,8 @@ public class AuthService {
 			defaultProfileImageUrl
 		);
 		User savedUser = userWriter.create(user);
-		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(savedUser.getId(), savedUser.getEmail(), savedUser.getRole(),savedUser.getNickname());
+		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(savedUser.getId(), savedUser.getEmail(),
+			savedUser.getRole(), savedUser.getNickname());
 		return SignupResponse.of(savedUser.getId(), savedUser.getEmail(), tokenResponse);
 
 	}
@@ -59,7 +63,32 @@ public class AuthService {
 
 		validatePassword(password, user.getPassword());
 
-		return tokenWriter.createSigninTokenPair(user.getId(), user.getEmail(), user.getRole(),user.getNickname());
+		return tokenWriter.createSigninTokenPair(user.getId(), user.getEmail(), user.getRole(), user.getNickname());
+	}
+
+	@Transactional
+	public SignupResponse signupOwner(@Valid SignupOwnerRequest request) {
+
+		if (userReader.existByEmailAndRole(request.getEmail(), UserRole.ROLE_OWNER)) {
+			throw new ParkingEasyException(AuthErrorCode.DUPLICATED_EMAIL);
+		}
+
+		String encodedPassword = bCryptPasswordEncoder.encode(request.getPassword());
+
+		User user = User.createOwner(
+			request.getEmail(),
+			encodedPassword,
+			request.getNickname(),
+			request.getPhone(),
+			BusinessAccountInfo.create(request.getBusinessNumber(), request.getDepositorName(), request.getBankName(),
+				request.getBankAccount()),
+			defaultProfileImageUrl
+		);
+
+		User savedUser = userWriter.create(user);
+		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(savedUser.getId(), savedUser.getEmail(),
+			savedUser.getRole(), savedUser.getNickname());
+		return SignupResponse.of(savedUser.getId(), savedUser.getEmail(), tokenResponse);
 	}
 
 	private void validatePassword(String password, String encodedPassword) {

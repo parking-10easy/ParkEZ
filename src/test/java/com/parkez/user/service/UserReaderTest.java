@@ -36,9 +36,9 @@ class UserReaderTest {
 		public void 이메일_존재_시_true_반환() {
 			//given
 			String email = "test@example.com";
-			given(userRepository.existsByEmail(anyString())).willReturn(true);
+			given(userRepository.existsByEmailAndRole(anyString(), any(UserRole.class))).willReturn(true);
 			//when
-			boolean result = userReader.exist(email);
+			boolean result = userReader.existByEmailAndRole(email, UserRole.ROLE_OWNER);
 			//then
 			assertThat(result).isTrue();
 		}
@@ -47,9 +47,9 @@ class UserReaderTest {
 		public void 이메일_존재하지_않을_시_false_반환() {
 			//given
 			String email = "test@example.com";
-			given(userRepository.existsByEmail(anyString())).willReturn(false);
+			given(userRepository.existsByEmailAndRole(anyString(), any(UserRole.class))).willReturn(false);
 			//when
-			boolean result = userReader.exist(email);
+			boolean result = userReader.existByEmailAndRole(email, UserRole.ROLE_OWNER);
 			//then
 			assertThat(result).isFalse();
 		}
