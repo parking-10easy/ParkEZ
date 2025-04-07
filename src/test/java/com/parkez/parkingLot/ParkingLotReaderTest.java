@@ -5,6 +5,7 @@ import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.SourceType;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
+import com.parkez.parkinglot.dto.response.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkinglot.service.ParkingLotReader;
@@ -84,14 +85,15 @@ public class ParkingLotReaderTest {
     }
 
     @Test
-    void 필터_조건이_없을_때_주차장을_전체_조회한다() {
+    void 검색_조건이_없을_때_주차장을_전체_조회한다() {
         Pageable pageable = PageRequest.of(0, 10);
         List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1, parkingLot2);
         Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+        ParkingLotSearchRequest searchRequest = new ParkingLotSearchRequest();
 
-        when(parkingLotRepository.searchParkingLots(null, null, pageable)).thenReturn(page);
+        when(parkingLotRepository.searchParkingLots(searchRequest, pageable)).thenReturn(page);
 
-        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots(null, null, pageable);
+        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots(searchRequest, pageable);
 
         assertNotNull(result);
         assertEquals(2, result.getTotalElements());
@@ -105,9 +107,13 @@ public class ParkingLotReaderTest {
         List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1);
         Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
 
-        when(parkingLotRepository.searchParkingLots("참쉬운", null, pageable)).thenReturn(page);
+        ParkingLotSearchRequest searchRequest = new ParkingLotSearchRequest();
+        searchRequest.setName("참쉬운");
+        searchRequest.setAddress(null);
 
-        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots("참쉬운", null, pageable);
+        when(parkingLotRepository.searchParkingLots(searchRequest, pageable)).thenReturn(page);
+
+        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots(searchRequest, pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
@@ -117,13 +123,16 @@ public class ParkingLotReaderTest {
     @Test
     void 주소로_주차장을_조회한다() {
         Pageable pageable = PageRequest.of(0, 10);
-        // 주소에 "테헤란로 111"이 포함된 경우 parkingLot2만 반환
         List<ParkingLot> parkingLotList = Arrays.asList(parkingLot2);
         Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
 
-        when(parkingLotRepository.searchParkingLots(null, "테헤란로 111", pageable)).thenReturn(page);
+        ParkingLotSearchRequest searchRequest = new ParkingLotSearchRequest();
+        searchRequest.setName(null);
+        searchRequest.setAddress("테헤란로 111");
 
-        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots(null, "테헤란로 111", pageable);
+        when(parkingLotRepository.searchParkingLots(searchRequest, pageable)).thenReturn(page);
+
+        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots(searchRequest, pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
@@ -131,7 +140,26 @@ public class ParkingLotReaderTest {
     }
 
     @Test
-    void 아이디로_주차장_단건_조회한다(){
+    void 이름과_주소로_주차장을_조회한다(){
+        Pageable pageable = PageRequest.of(0, 10);
+        List<ParkingLot> parkingLotList = Arrays.asList(parkingLot2);
+        Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+
+        ParkingLotSearchRequest searchRequest = new ParkingLotSearchRequest();
+        searchRequest.setName("어려운");
+        searchRequest.setAddress("테헤란로 111");
+
+        when(parkingLotRepository.searchParkingLots(searchRequest, pageable)).thenReturn(page);
+
+        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots(searchRequest, pageable);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals("어려운주차장", result.getContent().get(0).getName());
+    }
+
+    @Test
+    void 아이디로_주차장_단건_조회한다() {
         Long parkingLotId = 1L;
         when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(parkingLot1);
 
@@ -141,8 +169,8 @@ public class ParkingLotReaderTest {
     }
 
     @Test
-    void 아이디로_주차장_단건_조회_실패(){
-        Long parkingLotId = 999L;
+    void 아이디가_없을_때_주차장_단건_조회_실패() {
+        Long parkingLotId = -1L;
         when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(null);
 
         ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
