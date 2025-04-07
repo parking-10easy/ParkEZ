@@ -1,7 +1,10 @@
 package com.parkez.reservation.service;
 
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.repository.ReservationRepository;
+import com.parkez.reservation.exception.ReservationErrorCode;
+import com.parkez.user.domain.entity.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -10,8 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -62,4 +67,50 @@ class ReservationReaderTest {
         assertTrue(result.getContent().isEmpty());
     }
 
+    @Test
+    void 예약_단건_조회_테스트() {
+        // given
+        Long userId = 1L;
+        Long reservationId = 1L;
+
+        User user = User.builder().build();
+        ReflectionTestUtils.setField(user, "id", userId);
+
+        Reservation reservation = Reservation.builder()
+                .user(user)
+                .build();
+
+        given(reservationRepository.findById(anyLong())).willReturn(Optional.of(reservation));
+
+        // when
+        Reservation result = reservationReader.findReservation(userId, reservationId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(reservation, result);
+    }
+
+    @Test
+    void 예약_단건_조회_시_본인이_한_예약이_아닐_경우_예외() {
+        // given
+        Long userId = 1L;
+        Long differentUserId = 2L;
+        Long reservationId = 1L;
+
+        User user = User.builder().build();
+        ReflectionTestUtils.setField(user, "id", userId);
+        User differentUser = User.builder().build();
+        ReflectionTestUtils.setField(differentUser, "id", differentUserId);
+
+        Reservation reservation = Reservation.builder()
+                .user(differentUser)
+                .build();
+
+        given(reservationRepository.findById(anyLong())).willReturn(Optional.of(reservation));
+
+        // when & then
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                () -> reservationReader.findReservation(userId, reservationId));
+        assertEquals(ReservationErrorCode.NOT_MY_RESERVATION, exception.getErrorCode());
+    }
 }

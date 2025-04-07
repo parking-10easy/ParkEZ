@@ -199,6 +199,37 @@ class ReservationFacadeServiceTest {
         assertEquals(2L, result.getContent().get(1).getReservationId());
         assertTrue(result.getContent().get(1).isReviewWritten());
         assertEquals(2, result.getTotalElements());
+    }
 
+    @Test
+    void 내_예약_단건_조회_테스트() {
+        // given
+        Long userId = 1L;
+        Long reservationId = 1L;
+
+        User user = User.builder().build();
+        ReflectionTestUtils.setField(user, "id", userId);
+
+        ParkingZone parkingZone = ParkingZone.builder()
+                .build();
+        ReflectionTestUtils.setField(parkingZone, "id", 1L);
+
+        Reservation reservation = Reservation.builder()
+                .user(user)
+                .parkingZone(parkingZone)
+                .build();
+        ReflectionTestUtils.setField(reservation, "id", reservationId);
+
+        boolean isReviewWritten = false;
+
+        given(reservationReader.findReservation(userId, reservationId)).willReturn(reservation);
+        given(reviewQueryService.isReviewWritten(anyLong())).willReturn(isReviewWritten);
+
+        // when
+        MyReservationResponse result = reservationFacadeService.getMyReservation(reservationId, userId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(reservationId, result.getReservationId());
     }
 }
