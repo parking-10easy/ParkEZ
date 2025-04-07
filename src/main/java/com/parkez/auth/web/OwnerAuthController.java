@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.parkez.auth.dto.request.SigninRequest;
 import com.parkez.auth.dto.request.SignupOwnerRequest;
-import com.parkez.auth.dto.request.SignupUserRequest;
 import com.parkez.auth.dto.response.SignupResponse;
 import com.parkez.auth.dto.response.TokenResponse;
 import com.parkez.auth.service.AuthService;

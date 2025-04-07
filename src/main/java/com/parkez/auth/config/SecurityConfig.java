@@ -2,7 +2,6 @@ package com.parkez.auth.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -18,7 +17,6 @@ import com.parkez.auth.authentication.filter.ExceptionHandlerFilter;
 import com.parkez.auth.authentication.filter.JwtAuthenticationFilter;
 import com.parkez.auth.authentication.handler.CustomAuthenticationEntryPoint;
 
-import io.swagger.v3.oas.models.PathItem;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
