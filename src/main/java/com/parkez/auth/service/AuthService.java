@@ -51,7 +51,7 @@ public class AuthService {
 		);
 		User savedUser = userWriter.create(user);
 		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(savedUser.getId(), savedUser.getEmail(),
-			savedUser.getRole(), savedUser.getNickname());
+			savedUser.getRoleName(), savedUser.getNickname());
 		return SignupResponse.of(savedUser.getId(), savedUser.getEmail(), tokenResponse);
 
 	}
@@ -62,7 +62,7 @@ public class AuthService {
 
 		validatePassword(password, user.getPassword());
 
-		return tokenWriter.createSigninTokenPair(user.getId(), user.getEmail(), user.getRole(), user.getNickname());
+		return tokenWriter.createSigninTokenPair(user.getId(), user.getEmail(), user.getRoleName(), user.getNickname());
 	}
 
 	@Transactional
@@ -86,7 +86,7 @@ public class AuthService {
 
 		User savedUser = userWriter.create(user);
 		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(savedUser.getId(), savedUser.getEmail(),
-			savedUser.getRole(), savedUser.getNickname());
+			savedUser.getRoleName(), savedUser.getNickname());
 		return SignupResponse.of(savedUser.getId(), savedUser.getEmail(), tokenResponse);
 	}
 
@@ -97,7 +97,7 @@ public class AuthService {
 
 		validatePassword(password, user.getPassword());
 
-		return tokenWriter.createSigninTokenPair(user.getId(), user.getEmail(), user.getRole(), user.getNickname());
+		return tokenWriter.createSigninTokenPair(user.getId(), user.getEmail(), user.getRoleName(), user.getNickname());
 
 	}
 

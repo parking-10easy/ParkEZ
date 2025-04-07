@@ -104,4 +104,8 @@ public class User extends BaseDeleteEntity {
 		this.nickname = withdrawalNickname;
 		this.deletedAt = now;
 	}
+
+	public String getRoleName() {
+		return this.role.name();
+	}
 }

@@ -84,7 +84,7 @@ class AuthServiceTest {
 			given(tokenWriter.createSignupTokenPair(
 				anyLong(),
 				anyString(),
-				any(UserRole.class),
+				anyString(),
 				anyString()
 			)).willReturn(tokenResponse);
 			//when
@@ -124,7 +124,7 @@ class AuthServiceTest {
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessage(AuthErrorCode.INVALID_PASSWORD.getDefaultMessage());
 			verify(userWriter, never()).create(any(User.class));
-			verify(tokenWriter, never()).createSignupTokenPair(anyLong(), anyString(), any(UserRole.class),
+			verify(tokenWriter, never()).createSignupTokenPair(anyLong(), anyString(), anyString(),
 				anyString());
 		}
 
@@ -142,7 +142,7 @@ class AuthServiceTest {
 				.hasMessage(UserErrorCode.EMAIL_NOT_FOUND.getDefaultMessage());
 			verify(bCryptPasswordEncoder, never()).matches(anyString(), anyString());
 			verify(userWriter, never()).create(any(User.class));
-			verify(tokenWriter, never()).createSignupTokenPair(anyLong(), anyString(), any(UserRole.class),
+			verify(tokenWriter, never()).createSignupTokenPair(anyLong(), anyString(), anyString(),
 				anyString());
 		}
 
@@ -162,7 +162,7 @@ class AuthServiceTest {
 			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(user);
 			given(bCryptPasswordEncoder.matches(anyString(), anyString())).willReturn(true);
 			given(
-				tokenWriter.createSigninTokenPair(anyLong(), anyString(), any(UserRole.class), anyString())).willReturn(
+				tokenWriter.createSigninTokenPair(anyLong(), anyString(), anyString(), anyString())).willReturn(
 				tokenResponse);
 			//when
 			TokenResponse result = authService.signinUser(email, password);
@@ -232,7 +232,7 @@ class AuthServiceTest {
 			given(tokenWriter.createSignupTokenPair(
 				anyLong(),
 				anyString(),
-				any(UserRole.class),
+				anyString(),
 				anyString()
 			)).willReturn(tokenResponse);
 			//when
@@ -278,7 +278,7 @@ class AuthServiceTest {
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessage(AuthErrorCode.INVALID_PASSWORD.getDefaultMessage());
 			verify(userWriter, never()).create(any(User.class));
-			verify(tokenWriter, never()).createSignupTokenPair(anyLong(), anyString(), any(UserRole.class),
+			verify(tokenWriter, never()).createSignupTokenPair(anyLong(), anyString(), anyString(),
 				anyString());
 		}
 
@@ -296,7 +296,7 @@ class AuthServiceTest {
 				.hasMessage(UserErrorCode.EMAIL_NOT_FOUND.getDefaultMessage());
 			verify(bCryptPasswordEncoder, never()).matches(anyString(), anyString());
 			verify(userWriter, never()).create(any(User.class));
-			verify(tokenWriter, never()).createSignupTokenPair(anyLong(), anyString(), any(UserRole.class),
+			verify(tokenWriter, never()).createSignupTokenPair(anyLong(), anyString(), anyString(),
 				anyString());
 		}
 
@@ -316,7 +316,7 @@ class AuthServiceTest {
 			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(user);
 			given(bCryptPasswordEncoder.matches(anyString(), anyString())).willReturn(true);
 			given(
-				tokenWriter.createSigninTokenPair(anyLong(), anyString(), any(UserRole.class), anyString())).willReturn(
+				tokenWriter.createSigninTokenPair(anyLong(), anyString(), anyString(), anyString())).willReturn(
 				tokenResponse);
 			//when
 			TokenResponse result = authService.signinUser(email, password);

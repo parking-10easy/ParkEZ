@@ -32,12 +32,12 @@ class TokenWriterTest {
 		//given
 		String accessToken = "mockAccess";
 		String refreshToken = "mockRefresh";
-		given(jwtProvider.createAccessToken(anyLong(), anyString(), any(String.class), anyString())).willReturn(
+		given(jwtProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString())).willReturn(
 			accessToken);
 		given(jwtProvider.createRefreshToken(anyLong())).willReturn(refreshToken);
 
 		//when
-		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(1L, "user@example.com", UserRole.ROLE_USER, "테스트");
+		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(1L, "user@example.com", UserRole.ROLE_USER.name(), "테스트");
 		//then
 		Assertions.assertThat(tokenResponse)
 			.extracting(
