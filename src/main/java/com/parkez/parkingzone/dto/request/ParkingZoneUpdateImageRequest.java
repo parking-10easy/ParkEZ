@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-@Schema(description = "주차공간 생성 요청")
+@Schema(description = "주차공간 이미지 수정 요청")
 public class ParkingZoneUpdateImageRequest {
 
     @NotBlank(message = "이미지 값 입력은 필수입니다")
