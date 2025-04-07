@@ -41,4 +41,9 @@ public class ParkingLotService {
     public void updateParkingLotStatus(User user, Long parkingLotId, ParkingLotStatusRequest request) {
         parkingLotWriter.updateParkingLotStatus(user, parkingLotId, request);
     }
+
+    // 주차장 삭제
+    public void deleteParkingLot(User user, Long parkingLotId){
+        parkingLotWriter.deleteParkingLot(user,parkingLotId);
+    }
 }

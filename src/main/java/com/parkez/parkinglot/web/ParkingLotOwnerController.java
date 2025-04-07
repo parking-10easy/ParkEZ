@@ -54,5 +54,15 @@ public class ParkingLotOwnerController {
         return Response.empty();
     }
 
+    // 주차장 삭제
+    @DeleteMapping("/v1/parking-lots/{parkingLotId}")
+    @Operation(summary = "주차장 삭제")
+    public Response<Void> deleteParkingLot(
+            @Parameter(hidden = true) User user,
+            @PathVariable Long parkingLotId
+    ) {
+        parkingLotService.deleteParkingLot(user, parkingLotId);
+        return Response.empty();
+    }
 
 }

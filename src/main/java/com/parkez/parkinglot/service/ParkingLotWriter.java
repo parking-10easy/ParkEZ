@@ -55,4 +55,11 @@ public class ParkingLotWriter {
         validateOwner(user, parkingLot);
         parkingLot.updateStatus(request);
     }
+
+    // 주차장 삭제
+    public void deleteParkingLot(User user, Long parkingLotId) {
+        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
+        validateOwner(user, parkingLot);
+        parkingLot.softDelete();
+    }
 }

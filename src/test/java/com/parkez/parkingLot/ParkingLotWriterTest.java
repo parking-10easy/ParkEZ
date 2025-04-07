@@ -3,9 +3,12 @@ package com.parkez.parkingLot;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
+import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
+import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.parkinglot.service.ParkingLotWriter;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
@@ -21,6 +24,7 @@ import java.time.LocalTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,6 +32,9 @@ public class ParkingLotWriterTest {
 
     @InjectMocks
     private ParkingLotWriter parkingLotWriter;
+
+    @Mock
+    private ParkingLotReader parkingLotReader;
 
     @Mock
     private ParkingLotRepository parkingLotrepository;
@@ -78,7 +85,7 @@ public class ParkingLotWriterTest {
     @Test
     void 주차장을_정상적으로_등록한다() {
         when(parkingLotrepository.save(any(ParkingLot.class))).thenReturn(parkingLot);
-        ParkingLot result = parkingLotWriter.createParkingLot(owner,request);
+        ParkingLot result = parkingLotWriter.createParkingLot(owner, request);
 
         //then
         assertNotNull(result);
@@ -93,8 +100,75 @@ public class ParkingLotWriterTest {
     }
 
     @Test
-    void 사용자는_주차장을_등록_할_수없다(){
-        ParkingEasyException exception = assertThrows(ParkingEasyException.class, ()-> parkingLotWriter.createParkingLot(user,request));
+    void 사용자는_주차장을_등록_할_수없다() {
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> parkingLotWriter.createParkingLot(user, request));
         assertEquals(ParkingLotErrorCode.NOT_OWNER, exception.getErrorCode());
     }
+
+    @Test
+    void 주차장을_수정한다() {
+        Long parkingLotId = 1L;
+        when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(parkingLot);
+        ParkingLotRequest updatedRequest = ParkingLotRequest.builder()
+                .name("수정된 주차장")
+                .address("수정된 주소")
+                .openedAt(LocalTime.of(7, 0))
+                .closedAt(LocalTime.of(21, 0))
+                .pricePerHour(new BigDecimal("6.00"))
+                .description("수정된 설명")
+                .quantity(80)
+                .build();
+        parkingLotWriter.updateParkingLot(owner, parkingLotId, updatedRequest);
+
+        assertEquals("수정된 주차장", parkingLot.getName());
+        assertEquals("수정된 주소", parkingLot.getAddress());
+        assertEquals(LocalTime.of(7, 0), parkingLot.getOpenedAt());
+        assertEquals(LocalTime.of(21, 0), parkingLot.getClosedAt());
+        assertEquals(new BigDecimal("6.00"), parkingLot.getPricePerHour());
+        assertEquals("수정된 설명", parkingLot.getDescription());
+        assertEquals(80, parkingLot.getQuantity());
+    }
+
+    @Test
+    void 주차장_수정_실패한다_소유자_권한_없음(){
+        Long parkingLotId = 1L;
+        when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(parkingLot);
+        ParkingLotRequest updateRequest = ParkingLotRequest.builder()
+                .name("수정된 주차장")
+                .address("수정된 주소")
+                .openedAt(LocalTime.of(7, 0))
+                .closedAt(LocalTime.of(21, 0))
+                .pricePerHour(new BigDecimal("6.00"))
+                .description("수정된 설명")
+                .quantity(80)
+                .build();
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                parkingLotWriter.updateParkingLot(user, parkingLotId, updateRequest));
+        assertEquals(ParkingLotErrorCode.NOT_OWNER, exception.getErrorCode());
+    }
+
+    @Test
+    void 주차장_상태를_변경한다(){
+        Long parkingLotId = 1L;
+        when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot); // 모킹 추가
+        ParkingLotStatusRequest statusRequest = ParkingLotStatusRequest.builder()
+                .status(ParkingLotStatus.CLOSED)
+                .build();
+        parkingLotWriter.updateParkingLotStatus(owner, parkingLotId, statusRequest);
+        assertEquals(ParkingLotStatus.CLOSED, parkingLot.getStatus());
+    }
+
+    @Test
+    void 주차장_상태_변경을_실패한다(){
+        Long parkingLotId = 1L;
+        when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot);
+        ParkingLotStatusRequest statusRequest = ParkingLotStatusRequest.builder()
+                .status(ParkingLotStatus.CLOSED)
+                .build();
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                parkingLotWriter.updateParkingLotStatus(user, parkingLotId, statusRequest)
+        );
+        assertEquals(ParkingLotErrorCode.NOT_OWNER, exception.getErrorCode());
+    }
+
 }
