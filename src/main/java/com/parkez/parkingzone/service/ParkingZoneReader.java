@@ -34,7 +34,7 @@ public class ParkingZoneReader {
 }
 
     public ParkingZone getParkingZone(Long parkingZoneId) {
-        return parkingZoneRepository.findById(parkingZoneId).orElseThrow(
+        return parkingZoneRepository.findByIdAndDeletedAtIsNull(parkingZoneId).orElseThrow(
                 () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
         );
     }

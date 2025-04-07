@@ -13,8 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -32,7 +30,7 @@ public class ParkingZoneWriter {
     }
 
     public ParkingZone updateParkingZone(Long parkingZoneId, ParkingZoneUpdateRequest request) {
-        ParkingZone parkingZone = parkingZoneRepository.findById(parkingZoneId).orElseThrow(
+        ParkingZone parkingZone = parkingZoneRepository.findByIdAndDeletedAtIsNull(parkingZoneId).orElseThrow(
                 () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
         );
 
@@ -46,7 +44,7 @@ public class ParkingZoneWriter {
     }
 
     public ParkingZone updateParkingZoneStatus(Long parkingZoneId, ParkingZoneUpdateStatusRequest request) {
-        ParkingZone parkingZone = parkingZoneRepository.findById(parkingZoneId).orElseThrow(
+        ParkingZone parkingZone = parkingZoneRepository.findByIdAndDeletedAtIsNull(parkingZoneId).orElseThrow(
                 () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
         );
 
@@ -60,7 +58,7 @@ public class ParkingZoneWriter {
     }
 
     public ParkingZone updateParkingZoneImage(Long parkingZoneId, ParkingZoneUpdateImageRequest request) {
-        ParkingZone parkingZone = parkingZoneRepository.findById(parkingZoneId).orElseThrow(
+        ParkingZone parkingZone = parkingZoneRepository.findByIdAndDeletedAtIsNull(parkingZoneId).orElseThrow(
                 () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
         );
 
@@ -74,7 +72,7 @@ public class ParkingZoneWriter {
     }
 
     public void deleteParkingZone(Long parkingZoneId) {
-        ParkingZone parkingZone = parkingZoneRepository.findById(parkingZoneId).orElseThrow(
+        ParkingZone parkingZone = parkingZoneRepository.findByIdAndDeletedAtIsNull(parkingZoneId).orElseThrow(
                 () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
         );
 

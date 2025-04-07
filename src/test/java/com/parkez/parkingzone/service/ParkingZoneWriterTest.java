@@ -99,7 +99,7 @@ class ParkingZoneWriterTest {
 
         ReflectionTestUtils.setField(savedParkingZone, "id", 1L);
 
-        when(parkingZoneRepository.findById(1L)).thenReturn(Optional.of(savedParkingZone));
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(savedParkingZone));
 
         // when
         ParkingZone result = parkingZoneWriter.updateParkingZone(1L, updateRequest);
@@ -114,7 +114,7 @@ class ParkingZoneWriterTest {
     @Test
     void 존재하지_않는_주차공간을_수정하면_예외가_발생한다() {
         // given
-        when(parkingZoneRepository.findById(99L)).thenReturn(Optional.empty());
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(99L)).thenReturn(Optional.empty());
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
@@ -134,7 +134,7 @@ class ParkingZoneWriterTest {
 
         ReflectionTestUtils.setField(savedParkingZone, "id", 1L);
 
-        when(parkingZoneRepository.findById(1L)).thenReturn(Optional.of(savedParkingZone));
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(savedParkingZone));
 
         // when
         ParkingZone result = parkingZoneWriter.updateParkingZoneStatus(1L, updateStatusRequest);
@@ -149,7 +149,7 @@ class ParkingZoneWriterTest {
     @Test
     void 존재하지_않는_주차공간의_상태를_변경하면_예외가_발생한다() {
         // given
-        when(parkingZoneRepository.findById(99L)).thenReturn(Optional.empty());
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(99L)).thenReturn(Optional.empty());
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
@@ -169,7 +169,7 @@ class ParkingZoneWriterTest {
 
         ReflectionTestUtils.setField(savedParkingZone, "id", 1L);
 
-        when(parkingZoneRepository.findById(1L)).thenReturn(Optional.of(savedParkingZone));
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(savedParkingZone));
 
         // when
         ParkingZone result = parkingZoneWriter.updateParkingZoneImage(1L, updateImageRequest);
@@ -184,7 +184,7 @@ class ParkingZoneWriterTest {
     @Test
     void 존재하지_않는_주차공간의_이미지를_수정하면_예외가_발생한다() {
         // given
-        when(parkingZoneRepository.findById(99L)).thenReturn(Optional.empty());
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(99L)).thenReturn(Optional.empty());
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
@@ -204,7 +204,7 @@ class ParkingZoneWriterTest {
 
         ReflectionTestUtils.setField(savedParkingZone, "id", 1L);
 
-        when(parkingZoneRepository.findById(1L)).thenReturn(Optional.of(savedParkingZone));
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(savedParkingZone));
         doAnswer(invocation -> {
             ReflectionTestUtils.setField(savedParkingZone, "deletedAt", LocalDateTime.now()); // deletedAt 설정
             return null;
@@ -221,7 +221,7 @@ class ParkingZoneWriterTest {
     @Test
     void 존재하지_않는_주차공간을_삭제하면_예외가_발생한다() {
         // given
-        when(parkingZoneRepository.findById(99L)).thenReturn(Optional.empty());
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(99L)).thenReturn(Optional.empty());
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,

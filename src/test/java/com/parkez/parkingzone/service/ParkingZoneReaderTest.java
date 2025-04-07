@@ -95,9 +95,11 @@ class ParkingZoneReaderTest {
 
         ReflectionTestUtils.setField(parkingZone1, "id", 1L);
         ReflectionTestUtils.setField(parkingZone2, "id", 2L);
+        ReflectionTestUtils.setField(parkingZone1, "deletedAt", null);
+        ReflectionTestUtils.setField(parkingZone2, "deletedAt", null);
 
-        when(parkingZoneRepository.findById(1L)).thenReturn(Optional.of(parkingZone1));
-        when(parkingZoneRepository.findById(2L)).thenReturn(Optional.of(parkingZone2));
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(parkingZone1));
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(2L)).thenReturn(Optional.of(parkingZone2));
 
         // when
         ParkingZone result1 = parkingZoneReader.getParkingZone(1L);
@@ -105,6 +107,7 @@ class ParkingZoneReaderTest {
 
         // then
         assertThat(result1).isNotNull();
+        assertThat(result2).isNotNull();
         assertThat(result1.getId()).isEqualTo(1L);
         assertThat(result2.getId()).isEqualTo(2L);
         assertThat(result1.getName()).isEqualTo("A구역");
@@ -114,7 +117,7 @@ class ParkingZoneReaderTest {
     @Test
     void 존재하지_않는_주차공간을_조회하면_예외가_발생한다() {
         // given
-        when(parkingZoneRepository.findById(99L)).thenReturn(Optional.empty());
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(99L)).thenReturn(Optional.empty());
 
         // when & then
         assertThrows(ParkingEasyException.class,

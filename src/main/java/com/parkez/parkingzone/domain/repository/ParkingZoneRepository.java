@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface ParkingZoneRepository extends JpaRepository<ParkingZone, Long> {
 
     @Query("SELECT pz FROM ParkingZone pz LEFT JOIN FETCH pz.parkingLot " +
@@ -15,6 +17,8 @@ public interface ParkingZoneRepository extends JpaRepository<ParkingZone, Long> 
             "AND pz.deletedAt IS NULL " +
             "ORDER BY pz.modifiedAt DESC")
     Page<ParkingZone> findAllOrderByModifiedAt(Pageable pageable, @Param("parkingLotId") Long parkingLotId);
+
+    Optional<ParkingZone> findByIdAndDeletedAtIsNull(Long parkingZoneId);
 
     @Modifying
     @Query("UPDATE ParkingZone pz SET pz.deletedAt = CURRENT_TIMESTAMP " +
