@@ -93,7 +93,7 @@ public class ParkingLotWriterTest {
     }
 
     @Test
-    void 사용자는_주차장을_등록_할_수없다(){
+    void 일반_사용자는_주차장을_등록_할_수없다(){
         ParkingEasyException exception = assertThrows(ParkingEasyException.class, ()-> parkingLotWriter.createParkingLot(user,request));
         assertEquals(ParkingLotErrorCode.NOT_OWNER, exception.getErrorCode());
     }
