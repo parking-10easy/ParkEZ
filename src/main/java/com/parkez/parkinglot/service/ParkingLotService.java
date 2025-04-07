@@ -2,6 +2,7 @@ package com.parkez.parkinglot.service;
 
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
+import com.parkez.parkinglot.dto.response.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +23,8 @@ public class ParkingLotService {
     }
 
     // 주차장 다건 조회 (이름, 주소)
-    public Page<ParkingLotSearchResponse> searchParkingLots(String name, String address, Pageable pageable) {
-        return parkingLotReader.searchParkingLots(name, address, pageable);
+    public Page<ParkingLotSearchResponse> searchParkingLots(ParkingLotSearchRequest request, Pageable pageable) {
+        return parkingLotReader.searchParkingLots(request, pageable);
     }
 
     // 주차장 단건 조회

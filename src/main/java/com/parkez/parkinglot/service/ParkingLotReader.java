@@ -3,6 +3,7 @@ package com.parkez.parkinglot.service;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
+import com.parkez.parkinglot.dto.response.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +20,8 @@ public class ParkingLotReader {
     private final ParkingLotRepository parkingLotRepository;
 
     // 주차장 전체 조회
-    public Page<ParkingLotSearchResponse> searchParkingLots(String name, String address, Pageable pageable) {
-        Page<ParkingLot> parkingLots = parkingLotRepository.searchParkingLots(name, address, pageable);
+    public Page<ParkingLotSearchResponse> searchParkingLots(ParkingLotSearchRequest request, Pageable pageable) {
+        Page<ParkingLot> parkingLots = parkingLotRepository.searchParkingLots(request, pageable);
         return parkingLots.map(ParkingLotSearchResponse::from);
     }
 

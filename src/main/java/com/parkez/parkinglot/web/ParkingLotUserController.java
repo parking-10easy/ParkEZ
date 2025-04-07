@@ -1,6 +1,7 @@
 package com.parkez.parkinglot.web;
 
 import com.parkez.common.response.Response;
+import com.parkez.parkinglot.dto.response.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.service.ParkingLotService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,11 +23,10 @@ public class ParkingLotUserController {
     @GetMapping("/v1/parking-lots")
     @Operation(summary = "주차장 다건 조회")
     public Response<ParkingLotSearchResponse> searchParkingLots(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String address,
+            @ModelAttribute ParkingLotSearchRequest request,
             @ParameterObject Pageable pageable
     ) {
-        return Response.fromPage(parkingLotService.searchParkingLots(name, address, pageable));
+        return Response.fromPage(parkingLotService.searchParkingLots(request, pageable));
     }
 
     // 주차장 단건 조회

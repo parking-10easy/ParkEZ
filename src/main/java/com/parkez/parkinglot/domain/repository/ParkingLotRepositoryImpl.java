@@ -1,6 +1,7 @@
 package com.parkez.parkinglot.domain.repository;
 
 import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.dto.response.ParkingLotSearchRequest;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -22,13 +23,13 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryRepository {
 
     // 다건 조회
     @Override
-    public Page<ParkingLot> searchParkingLots(String name, String address, Pageable pageable) {
+    public Page<ParkingLot> searchParkingLots(ParkingLotSearchRequest request, Pageable pageable) {
         BooleanBuilder builder = new BooleanBuilder();
-        if (StringUtils.hasText(name)) {
-            builder.and(parkingLot.name.contains(name));
+        if (StringUtils.hasText(request.getName())) {
+            builder.and(parkingLot.name.contains(request.getName()));
         }
-        if (StringUtils.hasText(address)) {
-            builder.and(parkingLot.address.contains(address));
+        if (StringUtils.hasText(request.getAddress())) {
+            builder.and(parkingLot.address.contains(request.getAddress()));
         }
         builder.and(parkingLot.deletedAt.isNull());
         List<ParkingLot> parkingLots = jqf
