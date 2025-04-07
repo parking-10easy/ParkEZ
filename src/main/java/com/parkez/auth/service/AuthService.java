@@ -19,6 +19,7 @@ import com.parkez.user.service.UserReader;
 import com.parkez.user.service.UserWriter;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -89,6 +90,17 @@ public class AuthService {
 		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(savedUser.getId(), savedUser.getEmail(),
 			savedUser.getRole(), savedUser.getNickname());
 		return SignupResponse.of(savedUser.getId(), savedUser.getEmail(), tokenResponse);
+	}
+
+	@Transactional
+	public TokenResponse signinOwner(String email, String password) {
+
+		User user = userReader.getActiveByEmailAndRole(email, UserRole.ROLE_OWNER);
+
+		validatePassword(password, user.getPassword());
+
+		return tokenWriter.createSigninTokenPair(user.getId(), user.getEmail(), user.getRole(), user.getNickname());
+
 	}
 
 	private void validatePassword(String password, String encodedPassword) {

@@ -32,4 +32,10 @@ public class OwnerAuthController {
 		return Response.of(authService.signupOwner(request));
 	}
 
+	@Operation(summary = "오너 로그인", description = "오너의 로그인을 처리합니다.")
+	@PostMapping("/v1/auth/signin/owner")
+	public Response<TokenResponse> signin(@Valid @RequestBody SigninRequest request) {
+		return Response.of(authService.signinOwner(request.getEmail(), request.getPassword()));
+	}
+
 }
