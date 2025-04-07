@@ -101,6 +101,12 @@ public class AuthService {
 
 	}
 
+	@Transactional
+	public TokenResponse reissueToken(String refreshToken) {
+
+		return tokenWriter.reissueToken(refreshToken);
+	}
+
 	private void validatePassword(String password, String encodedPassword) {
 		if (!bCryptPasswordEncoder.matches(password, encodedPassword)) {
 			throw new ParkingEasyException(AuthErrorCode.INVALID_PASSWORD);

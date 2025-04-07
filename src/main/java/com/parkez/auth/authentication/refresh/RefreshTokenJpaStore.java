@@ -1,5 +1,7 @@
 package com.parkez.auth.authentication.refresh;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,5 +32,9 @@ public class RefreshTokenJpaStore implements RefreshTokenStore{
 		refreshTokenRepository.save(token);
 	}
 
+	@Override
+	public Optional<RefreshToken> findByToken(String refreshToken) {
+		return refreshTokenRepository.findByToken(refreshToken);
+	}
 
 }

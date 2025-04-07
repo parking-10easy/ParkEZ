@@ -30,7 +30,13 @@ public class RefreshToken extends BaseEntity {
 		this.token = token;
 	}
 
+	public void updateToken(String newRefreshToken) {
+		this.token = newRefreshToken;
+	}
+
 	public static RefreshToken of(Long userId, String token) {
 		return new RefreshToken(userId, token);
 	}
+
+
 }
