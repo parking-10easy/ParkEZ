@@ -108,4 +108,30 @@ class ReservationWriterTest {
         assertNotNull(exception);
         assertEquals(ReservationErrorCode.ALREADY_RESERVED, exception.getErrorCode());
     }
+
+    @Test
+    void 예약_사용_완료_테스트() {
+        // given
+        Reservation reservation = Reservation.builder().build();
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
+
+        // when
+        reservationWriter.complete(reservation);
+
+        // then
+        assertEquals(ReservationStatus.COMPLETED, reservation.getStatus());
+    }
+
+    @Test
+    void 예약_취소_테스트() {
+        // given
+        Reservation reservation = Reservation.builder().build();
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
+
+        // when
+        reservationWriter.cancel(reservation);
+
+        // then
+        assertEquals(ReservationStatus.CANCELED, reservation.getStatus());
+    }
 }

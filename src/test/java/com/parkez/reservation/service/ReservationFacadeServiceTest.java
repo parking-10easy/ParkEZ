@@ -5,6 +5,7 @@ import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.service.ParkingZoneQueryService;
 import com.parkez.reservation.domain.entity.Reservation;
+import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.ReservationResponse;
@@ -319,5 +320,99 @@ class ReservationFacadeServiceTest {
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                 () -> reservationFacadeService.getOwnerReservations(userId, parkingZoneId, page, size));
         assertEquals(ReservationErrorCode.NOT_MY_PARKING_ZONE, exception.getErrorCode());
+    }
+
+    @Test
+    void 예약_사용_완료_테스트() {
+        // given
+        Long userId = 1L;
+        Long reservationId = 1L;
+
+        Reservation reservation = Reservation.builder().build();
+        ReflectionTestUtils.setField(reservation, "id", reservationId);
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
+
+        given(reservationReader.findReservation(userId, reservationId)).willReturn(reservation);
+        doNothing().when(reservationWriter).complete(reservation);
+
+        // when
+        reservationFacadeService.completeReservation(userId, reservationId);
+
+        // then
+        verify(reservationWriter, times(1)).complete(reservation);
+    }
+
+    @Test
+    void 예약_사용_완료_시_예약의_상태가_CONFIRMED가_아닐_경우_예외() {
+        // given
+        Long userId = 1L;
+        Long reservationId = 1L;
+
+        Reservation reservation = Reservation.builder().build();
+        ReflectionTestUtils.setField(reservation, "id", reservationId);
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.PENDING);
+
+        given(reservationReader.findReservation(userId, reservationId)).willReturn(reservation);
+
+        // when & then
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                () -> reservationFacadeService.completeReservation(userId, reservationId));
+        assertEquals(ReservationErrorCode.CANT_MODIFY_RESERVATION_STATUS, exception.getErrorCode());
+    }
+
+    @Test
+    void 예약_취소_테스트() {
+        // given
+        Long userId = 1L;
+        Long reservationId = 1L;
+        LocalDateTime startDateTime = LocalDateTime.now().plusHours(3);
+
+        Reservation reservation = Reservation.builder().build();
+        ReflectionTestUtils.setField(reservation, "id", reservationId);
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
+        ReflectionTestUtils.setField(reservation, "startDateTime", startDateTime);
+
+        given(reservationReader.findReservation(anyLong(), any(Long.class))).willReturn(reservation);
+        doNothing().when(reservationWriter).cancel(reservation);
+
+        // when
+        reservationFacadeService.cancelReservation(userId, reservationId);
+
+        // then
+        verify(reservationWriter, times(1)).cancel(reservation);
+    }
+
+    @Test
+    void 예약_취소_시_예약의_상태가_COMPLETED_일_경우_예외() {
+        // given
+        Long userId = 1L;
+        Long reservationId = 1L;
+
+        Reservation reservation = Reservation.builder().build();
+        ReflectionTestUtils.setField(reservation, "id", reservationId);
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.COMPLETED);
+
+        given(reservationReader.findReservation(anyLong(), any(Long.class))).willReturn(reservation);
+        // when & then
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                () -> reservationFacadeService.cancelReservation(userId, reservationId));
+        assertEquals(ReservationErrorCode.CANT_CANCEL_COMPLETED_RESERVATION, exception.getErrorCode());
+    }
+
+    @Test
+    void 예약_취소_시_예약의_상태가_CANCELED_일_경우_예외() {
+        // given
+        Long userId = 1L;
+        Long reservationId = 1L;
+
+        Reservation reservation = Reservation.builder().build();
+        ReflectionTestUtils.setField(reservation, "id", reservationId);
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CANCELED);
+
+        given(reservationReader.findReservation(anyLong(), any(Long.class))).willReturn(reservation);
+        // when & then
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                () -> reservationFacadeService.cancelReservation(userId, reservationId));
+        assertEquals(ReservationErrorCode.CANT_CANCEL_CANCELED_RESERVATION, exception.getErrorCode());
     }
 }
