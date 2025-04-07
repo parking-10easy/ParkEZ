@@ -21,7 +21,7 @@ public class ParkingZoneCreateRequest {
     private String imageUrl;
 
     @Builder
-    private ParkingZoneCreateRequest(Long parkingLotId, String name) {
+    private ParkingZoneCreateRequest(Long parkingLotId, String name, String imageUrl) {
         this.parkingLotId = parkingLotId;
         this.name = name;
         this.imageUrl = imageUrl;
