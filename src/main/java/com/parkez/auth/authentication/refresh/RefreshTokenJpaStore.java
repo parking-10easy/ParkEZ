@@ -21,14 +21,14 @@ public class RefreshTokenJpaStore implements RefreshTokenStore{
 			refreshTokenRepository.deleteByUserId(userId);
 		}
 
-		RefreshToken token = RefreshToken.of(userId, refreshTokenValue);
+		RefreshToken token = RefreshToken.create(userId, refreshTokenValue);
 		refreshTokenRepository.save(token);
 
 	}
 
 	@Override
 	public void save(Long userId, String refreshTokenValue) {
-		RefreshToken token = RefreshToken.of(userId, refreshTokenValue);
+		RefreshToken token = RefreshToken.create(userId, refreshTokenValue);
 		refreshTokenRepository.save(token);
 	}
 

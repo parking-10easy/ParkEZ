@@ -9,8 +9,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "refresh_token")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -34,7 +36,7 @@ public class RefreshToken extends BaseEntity {
 		this.token = newRefreshToken;
 	}
 
-	public static RefreshToken of(Long userId, String token) {
+	public static RefreshToken create(Long userId, String token) {
 		return new RefreshToken(userId, token);
 	}
 
