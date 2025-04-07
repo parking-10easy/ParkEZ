@@ -42,12 +42,12 @@ public class ParkingLotReaderTest {
 
     private ParkingLot parkingLot1;
     private ParkingLot parkingLot2;
-    private User dummyUser;
+    private User owner;
 
     @BeforeEach
     void setUp() {
         // Dummy User 생성 (필요한 최소 정보만 설정)
-        dummyUser = User.builder()
+        owner = User.builder()
                 .email("owner@example.com")
                 .nickname("Owner")
                 .phone("010-1234-5678")
@@ -56,7 +56,7 @@ public class ParkingLotReaderTest {
 
         // parkingLot1 생성
         parkingLot1 = ParkingLot.builder()
-                .owner(dummyUser)
+                .owner(owner)
                 .name("참쉬운주차장")
                 .address("서울시 강남구 테헤란로 123")
                 .openedAt(LocalTime.of(9, 0))
@@ -70,7 +70,7 @@ public class ParkingLotReaderTest {
 
         // parkingLot2 생성
         parkingLot2 = ParkingLot.builder()
-                .owner(dummyUser)
+                .owner(owner)
                 .name("어려운주차장")
                 .address("서울시 강남구 테헤란로 111")
                 .openedAt(LocalTime.of(9, 0))
@@ -151,4 +151,28 @@ public class ParkingLotReaderTest {
         assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
     }
 
+    @Test
+    void 삭제된_주차장은_조회되지_않는다(){
+        Long parkingLotId = 1L;
+        ParkingLot deletedParkingLot = ParkingLot.builder()
+                .owner(owner)
+                .name("삭제된 주차장")
+                .address("삭제된 주소")
+                .openedAt(LocalTime.of(8, 0))
+                .closedAt(LocalTime.of(22, 0))
+                .pricePerHour(new BigDecimal("5.00"))
+                .description("삭제된 주차장입니다.")
+                .quantity(100)
+                .chargeType(ChargeType.PAID)
+                .sourceType(SourceType.OWNER_REGISTERED)
+                .build();
+        deletedParkingLot.softDelete();
+        when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(null);
+
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                parkingLotReader.getParkingLot(parkingLotId)
+        );
+        assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
+
+    }
 }

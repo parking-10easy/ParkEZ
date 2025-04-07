@@ -23,8 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalTime;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -130,7 +129,7 @@ public class ParkingLotWriterTest {
     }
 
     @Test
-    void 주차장_수정_실패한다_소유자_권한_없음(){
+    void 주차장_수정_실패한다_소유자_권한_없음() {
         Long parkingLotId = 1L;
         when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(parkingLot);
         ParkingLotRequest updateRequest = ParkingLotRequest.builder()
@@ -148,7 +147,7 @@ public class ParkingLotWriterTest {
     }
 
     @Test
-    void 주차장_상태를_변경한다(){
+    void 주차장_상태를_변경한다() {
         Long parkingLotId = 1L;
         when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot); // 모킹 추가
         ParkingLotStatusRequest statusRequest = ParkingLotStatusRequest.builder()
@@ -159,7 +158,7 @@ public class ParkingLotWriterTest {
     }
 
     @Test
-    void 주차장_상태_변경을_실패한다(){
+    void 주차장_상태_변경을_실패한다() {
         Long parkingLotId = 1L;
         when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot);
         ParkingLotStatusRequest statusRequest = ParkingLotStatusRequest.builder()
@@ -171,4 +170,21 @@ public class ParkingLotWriterTest {
         assertEquals(ParkingLotErrorCode.NOT_OWNER, exception.getErrorCode());
     }
 
+    @Test
+    void 주차장을_삭제한다() {
+        Long parkingLotId = 1L;
+        when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot);
+        parkingLotWriter.deleteParkingLot(owner, parkingLotId);
+        assertNotNull(parkingLot.getDeletedAt());
+    }
+
+    @Test
+    void 주차장_삭제를_실패한다() {
+        Long parkingLotId = 1L;
+        when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot);
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                parkingLotWriter.deleteParkingLot(user, parkingLotId)
+        );
+        assertEquals(ParkingLotErrorCode.NOT_OWNER, exception.getErrorCode());
+    }
 }
