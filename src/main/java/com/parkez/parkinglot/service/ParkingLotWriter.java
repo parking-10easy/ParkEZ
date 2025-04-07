@@ -4,6 +4,7 @@ import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
+import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
@@ -17,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ParkingLotWriter {
 
     private final ParkingLotRepository parkingLotRepository;
-
+    private final ParkingLotReader parkingLotReader;
 
     // 주차장 생성
     public ParkingLot createParkingLot(User user, ParkingLotRequest request) {
@@ -30,7 +31,7 @@ public class ParkingLotWriter {
     // 주차장 수정
     public void updateParkingLot(User user, Long parkingLotId, ParkingLotRequest request) {
         ParkingLot parkingLot = parkingLotRepository.findParkingLotById(parkingLotId);
-        validateOwner(user,parkingLot);
+        validateOwner(user, parkingLot);
         parkingLot.update(request);
     }
 
@@ -48,4 +49,10 @@ public class ParkingLotWriter {
         }
     }
 
+    // 주차장 상태 변경
+    public void updateParkingLotStatus(User user, Long parkingLotId, ParkingLotStatusRequest request) {
+        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
+        validateOwner(user, parkingLot);
+        parkingLot.updateStatus(request);
+    }
 }

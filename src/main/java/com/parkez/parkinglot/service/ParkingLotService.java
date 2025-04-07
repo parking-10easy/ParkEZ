@@ -1,6 +1,7 @@
 package com.parkez.parkinglot.service;
 
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
+import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.user.domain.entity.User;
@@ -34,5 +35,10 @@ public class ParkingLotService {
     // 주차장 수정
     public void updateParkingLot(User user, Long parkingLotId, ParkingLotRequest request) {
         parkingLotWriter.updateParkingLot(user, parkingLotId, request);
+    }
+
+    // 주차장 상태 변경
+    public void updateParkingLotStatus(User user, Long parkingLotId, ParkingLotStatusRequest request) {
+        parkingLotWriter.updateParkingLotStatus(user, parkingLotId, request);
     }
 }

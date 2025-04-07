@@ -2,6 +2,7 @@ package com.parkez.parkinglot.web;
 
 import com.parkez.common.response.Response;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
+import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.service.ParkingLotService;
 import com.parkez.user.domain.entity.User;
@@ -30,15 +31,28 @@ public class ParkingLotOwnerController {
     }
 
     // 주차장 수정
-    @PutMapping ("/v1/parking-lots/{parkingLotId}")
+    @PutMapping("/v1/parking-lots/{parkingLotId}")
     @Operation(summary = "주차장 수정")
     public Response<Void> updateParkingLot(
             @Parameter(hidden = true) User user,
             @PathVariable Long parkingLotId,
             @RequestBody ParkingLotRequest request
-    ){
-        parkingLotService.updateParkingLot(user,parkingLotId,request);
+    ) {
+        parkingLotService.updateParkingLot(user, parkingLotId, request);
         return Response.empty();
     }
+
+    // 주차장 상태 변경
+    @PutMapping("/v1/parking-lots/{parkingLotId}/status")
+    @Operation(summary = "주차장 상태 수정")
+    public Response<Void> updatedParkingLotStatus(
+            @Parameter(hidden = true) User user,
+            @PathVariable Long parkingLotId,
+            @Valid @RequestBody ParkingLotStatusRequest statusRequest
+    ) {
+        parkingLotService.updateParkingLotStatus(user, parkingLotId, statusRequest);
+        return Response.empty();
+    }
+
 
 }
