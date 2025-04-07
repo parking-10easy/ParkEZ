@@ -9,7 +9,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.parkez.auth.authentication.principal.AuthUser;
+import com.parkez.common.principal.AuthUser;
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.entity.BusinessAccountInfo;
@@ -22,7 +22,6 @@ import com.parkez.user.dto.response.MyProfileResponse;
 import com.parkez.user.dto.response.UserResponse;
 import com.parkez.user.exception.UserErrorCode;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Service

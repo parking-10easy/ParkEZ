@@ -10,7 +10,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.parkez.auth.authentication.jwt.JwtAuthenticationToken;
 import com.parkez.auth.authentication.jwt.JwtProvider;
-import com.parkez.auth.authentication.principal.AuthUser;
+import com.parkez.common.principal.AuthUser;
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.enums.UserRole;

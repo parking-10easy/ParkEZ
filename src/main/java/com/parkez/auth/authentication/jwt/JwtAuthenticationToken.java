@@ -2,7 +2,7 @@ package com.parkez.auth.authentication.jwt;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 
-import com.parkez.auth.authentication.principal.AuthUser;
+import com.parkez.common.principal.AuthUser;
 
 public class JwtAuthenticationToken extends AbstractAuthenticationToken {
 

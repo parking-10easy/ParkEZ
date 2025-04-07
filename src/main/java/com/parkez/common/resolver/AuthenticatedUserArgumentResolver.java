@@ -8,7 +8,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import com.parkez.auth.authentication.principal.AuthUser;
+import com.parkez.common.principal.AuthUser;
 
 public class AuthenticatedUserArgumentResolver implements HandlerMethodArgumentResolver {
 	@Override

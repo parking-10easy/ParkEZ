@@ -1,4 +1,4 @@
-package com.parkez.auth.authentication.principal;
+package com.parkez.common.principal;
 
 import java.util.Collection;
 import java.util.List;
