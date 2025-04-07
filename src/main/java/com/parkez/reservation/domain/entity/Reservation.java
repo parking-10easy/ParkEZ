@@ -1,6 +1,6 @@
 package com.parkez.reservation.domain.entity;
 
-import com.parkez.common.entity.BaseDeleteEntity;
+import com.parkez.common.entity.BaseEntity;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.user.domain.entity.User;
@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "reservation")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Reservation extends BaseDeleteEntity {
+public class Reservation extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -50,6 +50,10 @@ public class Reservation extends BaseDeleteEntity {
         this.endDateTime = endDateTime;
         this.price = price;
         this.status = ReservationStatus.PENDING;
+    }
+
+    public void complete() {
+        this.status = ReservationStatus.COMPLETED;
     }
 
     public void cancel() {

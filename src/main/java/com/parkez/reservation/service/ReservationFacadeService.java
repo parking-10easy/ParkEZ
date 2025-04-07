@@ -88,6 +88,18 @@ public class ReservationFacadeService {
         return pageReservations.map(ReservationResponse::from);
     }
 
+    public void completeReservation(Long userId, Long reservationId) {
+
+        Reservation reservation = reservationReader.findReservation(userId, reservationId);
+
+        // 예약 완료 됨 상태의 예약만 사용 완료 됨으로 변경 가능 예외
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+            throw new ParkingEasyException(ReservationErrorCode.CANT_MODIFY_RESERVATION_STATUS);
+        }
+
+        reservationWriter.complete(reservation);
+    }
+
     public void cancelReservation(Long userId, Long reservationId) {
 
         Reservation reservation = reservationReader.findReservation(userId, reservationId);
