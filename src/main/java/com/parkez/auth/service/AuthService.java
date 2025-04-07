@@ -18,8 +18,6 @@ import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
 import com.parkez.user.service.UserWriter;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -68,7 +66,7 @@ public class AuthService {
 	}
 
 	@Transactional
-	public SignupResponse signupOwner(@Valid SignupOwnerRequest request) {
+	public SignupResponse signupOwner(SignupOwnerRequest request) {
 
 		if (userReader.existByEmailAndRole(request.getEmail(), UserRole.ROLE_OWNER)) {
 			throw new ParkingEasyException(AuthErrorCode.DUPLICATED_EMAIL);
