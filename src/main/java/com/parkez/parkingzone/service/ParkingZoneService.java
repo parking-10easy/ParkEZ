@@ -2,13 +2,9 @@ package com.parkez.parkingzone.service;
 
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.service.ParkingLotReader;
-import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
-import com.parkez.parkingzone.dto.request.ParkingZoneUpdateImageRequest;
-import com.parkez.parkingzone.dto.request.ParkingZoneUpdateRequest;
-import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
+import com.parkez.parkingzone.dto.request.*;
 import com.parkez.parkingzone.dto.response.ParkingZoneCreateResponse;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -26,8 +22,8 @@ public class ParkingZoneService {
         return ParkingZoneCreateResponse.from(parkingZoneWriter.createParkingZone(request, parkingLot));
     }
 
-    public Page<ParkingZoneResponse> getParkingZones(int page, int size, Long parkingLotId) {
-        return parkingZoneReader.getParkingZones(page, size, parkingLotId);
+    public Page<ParkingZoneResponse> getParkingZones(PageRequest pageRequest, Long parkingLotId) {
+        return parkingZoneReader.getParkingZones(pageRequest.getPage(), pageRequest.getSize(), parkingLotId);
     }
 
     public ParkingZoneResponse getParkingZone(Long parkingZoneId) {

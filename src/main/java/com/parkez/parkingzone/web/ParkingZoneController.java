@@ -1,17 +1,16 @@
 package com.parkez.parkingzone.web;
 
 import com.parkez.common.response.Response;
-import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
-import com.parkez.parkingzone.dto.request.ParkingZoneUpdateImageRequest;
-import com.parkez.parkingzone.dto.request.ParkingZoneUpdateRequest;
-import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
+import com.parkez.parkingzone.dto.request.*;
 import com.parkez.parkingzone.dto.response.ParkingZoneCreateResponse;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import com.parkez.parkingzone.service.ParkingZoneService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -32,10 +31,9 @@ public class ParkingZoneController {
     @GetMapping("/v1/parking-zones")
     @Operation(summary = "주차공간 다건 조회", description = "주차공간 다건 조회 기능입니다.")
     public Response<ParkingZoneResponse> getParkingZones(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) Long parkingLotId) {
-        return Response.fromPage(parkingZoneService.getParkingZones(page, size, parkingLotId));
+            @ParameterObject PageRequest pageRequest,
+            @Parameter(description = "주차장 ID (필수 아님)", example = "1") @RequestParam(required = false) Long parkingLotId) {
+        return Response.fromPage(parkingZoneService.getParkingZones(pageRequest, parkingLotId));
     }
 
     @GetMapping("/v1/parking-zones/{parkingZoneId}")
