@@ -1,5 +1,6 @@
 package com.parkez.parkinglot.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
@@ -51,10 +52,12 @@ public class ParkingLotResponse {
     @Schema(description = "데이터 출처", example = "OWNER_REGISTERED")
     private SourceType sourceType;
 
-    @Schema(description = "생성 일시", example = "2025-04-04T08:00:00")
+    @Schema(description = "생성 일시", example = "2025-04-04 08:00:00")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
-    @Schema(description = "수정 일시", example = "2025-04-04T08:30:00")
+    @Schema(description = "수정 일시", example = "2025-04-04 08:30:00")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime modifiedAt;
 
     @Builder
@@ -64,7 +67,7 @@ public class ParkingLotResponse {
                                ParkingLotStatus status, Integer quantity,
                                String description, BigDecimal pricePerHour,
                                LocalTime openedAt, LocalTime closedAt
-                               ) {
+    ) {
         this.id = id;
         this.name = name;
         this.createdAt = createdAt;
@@ -80,7 +83,7 @@ public class ParkingLotResponse {
         this.address = address;
     }
 
-    public static ParkingLotResponse from (ParkingLot parkingLot){
+    public static ParkingLotResponse from(ParkingLot parkingLot) {
         return ParkingLotResponse.builder()
                 .id(parkingLot.getId())
                 .name(parkingLot.getName())
@@ -97,6 +100,5 @@ public class ParkingLotResponse {
                 .address(parkingLot.getAddress())
                 .build();
     }
-
 
 }

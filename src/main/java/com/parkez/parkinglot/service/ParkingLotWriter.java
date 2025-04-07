@@ -22,9 +22,8 @@ public class ParkingLotWriter {
     // 주차장 생성
     public ParkingLot createParkingLot(User user, ParkingLotRequest request) {
         validateOwner(user);
-        ParkingLot parkingLot = ParkingLotRequest.toEntity(user, request);
+        ParkingLot parkingLot = request.toEntity(user);
         return parkingLotRepository.save(parkingLot);
-
     }
 
     // Owner 검증
