@@ -1,6 +1,7 @@
 package com.parkez.parkinglot.web;
 
 import com.parkez.common.response.Response;
+import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
@@ -62,6 +63,19 @@ public class ParkingLotOwnerController {
             @PathVariable Long parkingLotId
     ) {
         parkingLotService.deleteParkingLot(user, parkingLotId);
+        return Response.empty();
+    }
+
+    // 주차장 이미지 수정
+
+    @PutMapping("/v1/parking-lots/{parkingLotId}/images")
+    @Operation(summary = "주차장 이미지 수정")
+    public Response<Void> updateParkingLotImages(
+            @Parameter(hidden = true) User user,
+            @PathVariable Long parkingLotId,
+            @RequestBody ParkingLotImagesRequest request
+    ) { // 요청 Body로 이미지 URL 리스트를 받음
+        parkingLotService.updateParkingLotImages(user, parkingLotId, request);
         return Response.empty();
     }
 

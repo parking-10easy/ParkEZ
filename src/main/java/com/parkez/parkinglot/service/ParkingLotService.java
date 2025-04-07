@@ -1,5 +1,6 @@
 package com.parkez.parkinglot.service;
 
+import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
@@ -43,7 +44,12 @@ public class ParkingLotService {
     }
 
     // 주차장 삭제
-    public void deleteParkingLot(User user, Long parkingLotId){
-        parkingLotWriter.deleteParkingLot(user,parkingLotId);
+    public void deleteParkingLot(User user, Long parkingLotId) {
+        parkingLotWriter.deleteParkingLot(user, parkingLotId);
+    }
+
+    // 주차장 이미지 수정
+    public void updateParkingLotImages(User user, Long parkingLotId, ParkingLotImagesRequest request) {
+        parkingLotWriter.updateParkingLotImages(user, parkingLotId, request);
     }
 }

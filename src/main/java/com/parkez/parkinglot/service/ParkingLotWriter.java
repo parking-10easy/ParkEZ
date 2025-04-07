@@ -1,8 +1,10 @@
 package com.parkez.parkinglot.service;
 
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.parkinglot.domain.entity.FakeImage;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
+import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
@@ -11,6 +13,8 @@ import com.parkez.user.domain.enums.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @Transactional
@@ -61,5 +65,15 @@ public class ParkingLotWriter {
         ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
         validateOwner(user, parkingLot);
         parkingLot.softDelete();
+    }
+
+    // 주차장 이미지 수정
+    public void updateParkingLotImages(User user, Long parkingLotId, ParkingLotImagesRequest request) {
+        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
+        validateOwner(user, parkingLot);
+        List<FakeImage> newImages = request.getImageUrls().stream()
+                .map(url -> FakeImage.builder().imageUrl(url).parkingLot(parkingLot).build())
+                .toList();
+        parkingLot.updateImages(newImages);
     }
 }

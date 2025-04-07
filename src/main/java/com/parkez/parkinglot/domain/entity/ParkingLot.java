@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -63,6 +65,9 @@ public class ParkingLot extends BaseDeleteEntity {
     @Enumerated(EnumType.STRING)
     private ParkingLotStatus status;
 
+    @OneToMany(mappedBy = "parkingLot", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FakeImage> images = new ArrayList<>();
+
     @Builder
     private ParkingLot(User owner, String name, String address,
                       Double latitude, Double longitude,
@@ -98,5 +103,15 @@ public class ParkingLot extends BaseDeleteEntity {
 
     public void updateStatus(ParkingLotStatusRequest request){
         this.status = request.getStatus();
+    }
+
+    public void updateImages(List<FakeImage> newImages) {
+        this.images.clear();
+        if (newImages != null) {
+            newImages.forEach(image -> {
+                image.updateParkingLot(this);
+                this.images.add(image);
+            });
+        }
     }
 }
