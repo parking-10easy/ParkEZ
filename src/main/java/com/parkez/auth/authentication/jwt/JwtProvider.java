@@ -11,7 +11,6 @@ import org.springframework.util.StringUtils;
 
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.user.domain.enums.UserRole;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -35,13 +34,13 @@ public class JwtProvider {
 		this.signingKey = Keys.hmacShaKeyFor(bytes);
 	}
 
-	public String createAccessToken(Long userId, String email, UserRole userRole, String nickname) {
+	public String createAccessToken(Long userId, String email, String roleName, String nickname) {
 		Date date = new Date();
 		return BEARER_PREFIX +
 			Jwts.builder()
 				.subject(String.valueOf(userId))
 				.claim("email", email)
-				.claim("userRole", userRole)
+				.claim("userRole", roleName)
 				.claim("nickname", nickname)
 				.expiration(createExpiration(ACCESS_TOKEN_TIME))
 				.issuedAt(date)

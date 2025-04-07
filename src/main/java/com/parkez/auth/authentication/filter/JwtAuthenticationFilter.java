@@ -13,7 +13,6 @@ import com.parkez.auth.authentication.jwt.JwtProvider;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.user.domain.enums.UserRole;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -68,13 +67,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	private void setAuthentication(Claims claims) {
 		Long userId = Long.valueOf(claims.getSubject());
 		String email = claims.get("email", String.class);
-		UserRole userRole = UserRole.of(claims.get("userRole", String.class));
+		String roleName = claims.get("userRole", String.class);
 		String nickname = claims.get("nickname", String.class);
 
 		AuthUser authUser = AuthUser.builder()
 			.id(userId)
 			.email(email)
-			.roleName(userRole.name())
+			.roleName(roleName)
 			.nickname(nickname)
 			.build();
 		JwtAuthenticationToken authenticationToken = new JwtAuthenticationToken(authUser);

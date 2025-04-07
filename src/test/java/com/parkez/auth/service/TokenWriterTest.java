@@ -32,7 +32,7 @@ class TokenWriterTest {
 		//given
 		String accessToken = "mockAccess";
 		String refreshToken = "mockRefresh";
-		given(jwtProvider.createAccessToken(anyLong(), anyString(), any(UserRole.class), anyString())).willReturn(
+		given(jwtProvider.createAccessToken(anyLong(), anyString(), any(String.class), anyString())).willReturn(
 			accessToken);
 		given(jwtProvider.createRefreshToken(anyLong())).willReturn(refreshToken);
 
