@@ -2,6 +2,7 @@ package com.parkez.reservation.web;
 
 import com.parkez.common.response.Response;
 import com.parkez.reservation.dto.request.ReservationRequest;
+import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.ReservationResponse;
 import com.parkez.reservation.service.ReservationFacadeService;
 import jakarta.validation.Valid;
@@ -17,7 +18,7 @@ public class ReservationController {
 
     // 예약 생성
     @PostMapping("/v1/reservations")
-    public Response<ReservationResponse> createReservation(
+    public Response<MyReservationResponse> createReservation(
             @Valid @RequestBody ReservationRequest request
     ) {
         Long userId = 1L;
@@ -26,7 +27,7 @@ public class ReservationController {
 
     // 나의 예약 내역 조회
     @GetMapping("/v1/users/me/reservations")
-    public Response<ReservationResponse> getMyReservations(
+    public Response<MyReservationResponse> getMyReservations(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
@@ -36,7 +37,7 @@ public class ReservationController {
 
     // 나의 예약 단건 조회
     @GetMapping("/v1/users/me/reservations/{reservationId}")
-    public Response<ReservationResponse> getMyReservation(
+    public Response<MyReservationResponse> getMyReservation(
             @PathVariable Long reservationId
     ) {
         Long userId = 1L;

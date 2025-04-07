@@ -6,8 +6,10 @@ import com.parkez.parkingzone.service.ParkingZoneQueryService;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.dto.request.ReservationRequest;
+import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.ReservationResponse;
 import com.parkez.reservation.exception.ReservationErrorCode;
+import com.parkez.review.service.ReviewQueryService;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +32,9 @@ public class ReservationFacadeService {
     private final ReservationWriter reservationWriter;
     private final UserQueryService userQueryService;
     private final ParkingZoneQueryService parkingZoneQueryService;
+    private final ReviewQueryService reviewQueryService;
 
-    public ReservationResponse createReservation(Long userId, ReservationRequest request) {
+    public MyReservationResponse createReservation(Long userId, ReservationRequest request) {
 
         User user = userQueryService.findById(userId);
         ParkingZone parkingZone = parkingZoneQueryService.findById(request.getParkingZoneId());
@@ -50,23 +55,34 @@ public class ReservationFacadeService {
                 price
         );
 
-        return ReservationResponse.from(reservation);
+        boolean isReviewWritten = false;
+
+        return MyReservationResponse.of(reservation, isReviewWritten);
     }
 
-    public Page<ReservationResponse> getMyReservations(Long userId, int page, int size) {
+    public Page<MyReservationResponse> getMyReservations(Long userId, int page, int size) {
 
         int adjustedPage = (page > 0) ? page - 1 : 0;
         PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by("createdAt").descending());
         Page<Reservation> pageMyReservations = reservationReader.findMyReservations(userId, pageable);
 
-        return pageMyReservations.map(ReservationResponse::from);
+        // 리뷰 작성 여부 조회
+        List<Long> reservationIds = pageMyReservations.getContent().stream().map(Reservation::getId).toList();
+        Set<Long> reviewedIds = reviewQueryService.findReviewedReservationIds(reservationIds);
+
+        return pageMyReservations.map(reservation ->
+                MyReservationResponse.of(reservation, reviewedIds.contains(reservation.getId()))
+        );
     }
 
-    public ReservationResponse getMyReservation(Long userId, Long reservationId) {
+    public MyReservationResponse getMyReservation(Long userId, Long reservationId) {
 
         Reservation myReservation = reservationReader.findReservation(userId, reservationId);
 
-        return ReservationResponse.from(myReservation);
+        // 리뷰 작성 여부 조회
+        boolean isReviewWritten = reviewQueryService.isReviewWritten(myReservation.getId());
+
+        return MyReservationResponse.of(myReservation, isReviewWritten);
     }
 
     public Page<ReservationResponse> getOwnerReservations(Long userId, Long parkingZoneId, int page, int size) {

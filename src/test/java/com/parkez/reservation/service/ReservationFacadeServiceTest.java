@@ -6,6 +6,7 @@ import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.service.ParkingZoneQueryService;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.dto.request.ReservationRequest;
+import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.ReservationResponse;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
@@ -89,7 +90,7 @@ class ReservationFacadeServiceTest {
                 .willReturn(reservation);
 
         // when
-        ReservationResponse result = reservationFacadeService.createReservation(userId, request);
+        MyReservationResponse result = reservationFacadeService.createReservation(userId, request);
 
         // then
         assertNotNull(result);
@@ -97,6 +98,7 @@ class ReservationFacadeServiceTest {
         assertEquals(userId, result.getUserId());
         assertEquals(parkingZoneId, result.getParkingZoneId());
         assertEquals(BigDecimal.valueOf(2000), result.getPrice());
+        assertFalse(result.isReviewWritten());
     }
 
     @Test
