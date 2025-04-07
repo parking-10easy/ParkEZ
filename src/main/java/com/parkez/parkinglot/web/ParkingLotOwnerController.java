@@ -29,4 +29,16 @@ public class ParkingLotOwnerController {
         return Response.of(parkingLotService.createParkingLot(user, request));
     }
 
+    // 주차장 수정
+    @PutMapping ("/v1/parking-lots/{parkingLotId}")
+    @Operation(summary = "주차장 수정")
+    public Response<Void> updateParkingLot(
+            @Parameter(hidden = true) User user,
+            @PathVariable Long parkingLotId,
+            @RequestBody ParkingLotRequest request
+    ){
+        parkingLotService.updateParkingLot(user,parkingLotId,request);
+        return Response.empty();
+    }
+
 }

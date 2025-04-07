@@ -27,6 +27,20 @@ public class ParkingLotWriter {
 
     }
 
+    // 주차장 수정
+    public void updateParkingLot(User user, Long parkingLotId, ParkingLotRequest request) {
+        ParkingLot parkingLot = parkingLotRepository.findParkingLotById(parkingLotId);
+        validateOwner(user,parkingLot);
+        parkingLot.update(request);
+    }
+
+    // 주차장의 Owner인지 검증
+    private void validateOwner(User user, ParkingLot parkingLot) {
+        if (!user.equals(parkingLot.getOwner())) {
+            throw new ParkingEasyException(ParkingLotErrorCode.NOT_OWNER);
+        }
+    }
+
     // Owner 검증
     private void validateOwner(User user) {
         if (!UserRole.ROLE_OWNER.equals(user.getRole())) {

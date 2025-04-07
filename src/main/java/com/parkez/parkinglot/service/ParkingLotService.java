@@ -30,4 +30,9 @@ public class ParkingLotService {
     public ParkingLotSearchResponse getParkingLot(Long parkingLotId) {
         return ParkingLotSearchResponse.from(parkingLotReader.getParkingLot(parkingLotId));
     }
+
+    // 주차장 수정
+    public void updateParkingLot(User user, Long parkingLotId, ParkingLotRequest request) {
+        parkingLotWriter.updateParkingLot(user, parkingLotId, request);
+    }
 }

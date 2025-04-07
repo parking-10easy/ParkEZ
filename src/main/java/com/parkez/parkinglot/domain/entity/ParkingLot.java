@@ -4,6 +4,7 @@ import com.parkez.common.entity.BaseDeleteEntity;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
 import com.parkez.parkinglot.domain.enums.SourceType;
+import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.user.domain.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -82,5 +83,15 @@ public class ParkingLot extends BaseDeleteEntity {
         this.chargeType = chargeType;
         this.sourceType = sourceType;
         this.status = ParkingLotStatus.OPEN;
+    }
+
+    public void update(ParkingLotRequest request){
+        this.name = request.getName();
+        this.address = request.getAddress();
+        this.openedAt = request.getOpenedAt();
+        this.closedAt = request.getClosedAt();
+        this.pricePerHour = request.getPricePerHour();
+        this.description = request.getDescription();
+        this.quantity = request.getQuantity();
     }
 }
