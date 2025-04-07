@@ -25,8 +25,9 @@ public class ParkingLotOwnerController {
     @PostMapping("/v1/parking-lots")
     @Operation(summary = "주차장 생성")
     public Response<ParkingLotResponse> createParkingLot(
-            @Parameter(hidden = true) User user,
-            @Valid @RequestBody ParkingLotRequest request) {
+             @Parameter User user,
+            @Valid @RequestBody ParkingLotRequest request
+    ) {
         return Response.of(parkingLotService.createParkingLot(user, request));
     }
 
