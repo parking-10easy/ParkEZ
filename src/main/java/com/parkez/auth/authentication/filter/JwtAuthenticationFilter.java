@@ -74,7 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		AuthUser authUser = AuthUser.builder()
 			.id(userId)
 			.email(email)
-			.userRole(userRole)
+			.roleName(userRole.name())
 			.nickname(nickname)
 			.build();
 		JwtAuthenticationToken authenticationToken = new JwtAuthenticationToken(authUser);

@@ -55,7 +55,7 @@ class UserServiceTest {
 			AuthUser authUser = AuthUser.builder()
 				.id(userId)
 				.email(email)
-				.userRole(userRole)
+				.roleName(userRole.name())
 				.nickname(nickname)
 				.build();
 			User user = User.builder()
@@ -136,7 +136,7 @@ class UserServiceTest {
 			UserRole userRole = UserRole.ROLE_OWNER;
 			AuthUser authUser = AuthUser.builder()
 				.id(userId)
-				.userRole(userRole)
+				.roleName(userRole.name())
 				.build();
 
 			String updateNickname = "홍길동";
@@ -159,7 +159,7 @@ class UserServiceTest {
 			UserRole userRole = UserRole.ROLE_OWNER;
 			AuthUser authUser = AuthUser.builder()
 				.id(userId)
-				.userRole(userRole)
+				.roleName(userRole.name())
 				.build();
 			String updateNickname = "홍길동";
 			String updatePhone = "010-1234-5678";
@@ -210,7 +210,7 @@ class UserServiceTest {
 			UserRole userRole = UserRole.ROLE_USER;
 			AuthUser authUser = AuthUser.builder()
 				.id(userId)
-				.userRole(userRole)
+				.roleName(userRole.name())
 				.build();
 			String updateNickname = "홍길동";
 			String updatePhone = "010-1234-5678";

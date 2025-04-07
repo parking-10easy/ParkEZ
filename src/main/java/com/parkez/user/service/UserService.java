@@ -48,7 +48,7 @@ public class UserService {
 
 	@Transactional
 	public void updateProfile(AuthUser authUser, UserProfileUpdateRequest request) {
-		if (authUser.getFirstUserRole() == UserRole.ROLE_OWNER) {
+		if (UserRole.of(authUser.getFirstAuthority()) == UserRole.ROLE_OWNER) {
 			validateBusinessInfo(request);
 		}
 

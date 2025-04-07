@@ -18,8 +18,7 @@ public enum AuthErrorCode implements ErrorCode {
 	DUPLICATED_EMAIL(HttpStatus.CONFLICT, "AUTH_005", "이미 가입된 이메일입니다."),
 	INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "AUTH_006", "유효하지 않은 비밀번호 입니다."),
 	UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_007", "로그인이 필요합니다."),
-	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH_008", "접근 권한이 없습니다."),
-	AUTHORITY_NOT_FOUND(HttpStatus.NOT_FOUND,"AUTH_009" , "권한이 없는 사용자입니다.");
+	;
 	private final HttpStatus httpStatus;
 	private final String code;
 	private final String defaultMessage;
