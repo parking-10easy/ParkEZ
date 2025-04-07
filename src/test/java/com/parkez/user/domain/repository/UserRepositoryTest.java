@@ -8,12 +8,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.parkez.common.config.PersistenceConfig;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 
 @DataJpaTest
+@Import(PersistenceConfig.class)
 @ActiveProfiles("test")
 class UserRepositoryTest {
 
