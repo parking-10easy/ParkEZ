@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -161,7 +162,7 @@ public class ParkingLotReaderTest {
     @Test
     void 아이디로_주차장_단건_조회한다() {
         Long parkingLotId = 1L;
-        when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(parkingLot1);
+        when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(Optional.ofNullable(parkingLot1));
 
         ParkingLot found = parkingLotReader.getParkingLot(parkingLotId);
         assertEquals("참쉬운주차장", found.getName());
@@ -171,7 +172,7 @@ public class ParkingLotReaderTest {
     @Test
     void 아이디가_없을_때_주차장_단건_조회_실패() {
         Long parkingLotId = -1L;
-        when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(null);
+        when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(Optional.empty());
 
         ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
             parkingLotReader.getParkingLot(parkingLotId);
