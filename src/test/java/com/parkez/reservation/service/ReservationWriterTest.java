@@ -88,23 +88,12 @@ class ReservationWriterTest {
     @Test
     void 예약_생성_시_예약이_이미_존재할_경우_예외() {
         // given
-        User owner = User.builder().build();
-        ReflectionTestUtils.setField(owner, "id", 1L);
         User user = User.builder().build();
         ReflectionTestUtils.setField(user, "id", 2L);
 
         String parkingLotName = "test";
 
-        ParkingLot parkingLot = ParkingLot.builder()
-                .owner(owner)
-                .pricePerHour(BigDecimal.valueOf(2000))
-                .name(parkingLotName)
-                .build();
-        ReflectionTestUtils.setField(parkingLot, "id", 1L);
-
-        ParkingZone parkingZone = ParkingZone.builder()
-                .parkingLot(parkingLot)
-                .build();
+        ParkingZone parkingZone = ParkingZone.builder().build();
         ReflectionTestUtils.setField(parkingZone, "id", 1L);
 
         LocalDateTime startDateTime = LocalDateTime.now();
