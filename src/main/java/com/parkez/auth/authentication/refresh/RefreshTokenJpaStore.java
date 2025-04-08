@@ -33,8 +33,8 @@ public class RefreshTokenJpaStore implements RefreshTokenStore{
 	}
 
 	@Override
-	public Optional<RefreshToken> findByToken(String refreshToken) {
-		return refreshTokenRepository.findByToken(refreshToken);
+	public boolean existsByToken(String refreshToken) {
+		return refreshTokenRepository.existsByToken(refreshToken);
 	}
 
 }

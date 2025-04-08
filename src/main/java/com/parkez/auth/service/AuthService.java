@@ -1,11 +1,14 @@
 package com.parkez.auth.service;
 
+import java.util.function.BiConsumer;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.parkez.auth.authentication.jwt.TokenWriter;
+import com.parkez.auth.authentication.jwt.JwtProvider;
+import com.parkez.auth.authentication.refresh.RefreshTokenStore;
 import com.parkez.auth.dto.request.SignupOwnerRequest;
 import com.parkez.auth.dto.request.SignupUserRequest;
 import com.parkez.auth.dto.response.SignupResponse;
@@ -18,6 +21,7 @@ import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
 import com.parkez.user.service.UserWriter;
 
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -27,7 +31,8 @@ public class AuthService {
 
 	private final UserReader userReader;
 	private final UserWriter userWriter;
-	private final TokenWriter tokenWriter;
+	private final JwtProvider jwtProvider;
+	private final RefreshTokenStore refreshTokenStore;
 	private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
 	@Value("${user.default-profile-image-url}")
@@ -50,8 +55,7 @@ public class AuthService {
 			defaultProfileImageUrl
 		);
 		User savedUser = userWriter.create(user);
-		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(savedUser.getId(), savedUser.getEmail(),
-			savedUser.getRoleName(), savedUser.getNickname());
+		TokenResponse tokenResponse = issueTokenPair(savedUser, refreshTokenStore::save);
 		return SignupResponse.of(savedUser.getId(), savedUser.getEmail(), tokenResponse);
 
 	}
@@ -62,7 +66,7 @@ public class AuthService {
 
 		validatePassword(password, user.getPassword());
 
-		return tokenWriter.createSigninTokenPair(user.getId(), user.getEmail(), user.getRoleName(), user.getNickname());
+		return issueTokenPair(user, refreshTokenStore::replace);
 	}
 
 	@Transactional
@@ -85,8 +89,7 @@ public class AuthService {
 		);
 
 		User savedUser = userWriter.create(user);
-		TokenResponse tokenResponse = tokenWriter.createSignupTokenPair(savedUser.getId(), savedUser.getEmail(),
-			savedUser.getRoleName(), savedUser.getNickname());
+		TokenResponse tokenResponse = issueTokenPair(savedUser, refreshTokenStore::save);
 		return SignupResponse.of(savedUser.getId(), savedUser.getEmail(), tokenResponse);
 	}
 
@@ -97,20 +100,45 @@ public class AuthService {
 
 		validatePassword(password, user.getPassword());
 
-		return tokenWriter.createSigninTokenPair(user.getId(), user.getEmail(), user.getRoleName(), user.getNickname());
+		return issueTokenPair(user, refreshTokenStore::replace);
+
 
 	}
 
 	@Transactional
 	public TokenResponse reissueToken(String refreshToken) {
 
-		return tokenWriter.reissueToken(refreshToken);
+		if (!refreshTokenStore.existsByToken(refreshToken)) {
+			throw new ParkingEasyException(AuthErrorCode.TOKEN_NOT_FOUND);
+		}
+
+		if (jwtProvider.isTokenExpired(refreshToken)) {
+			throw new ParkingEasyException(AuthErrorCode.TOKEN_EXPIRED);
+		}
+
+		Long userId = jwtProvider.extractUserId(refreshToken);
+
+		User user = userReader.getActiveById(userId);
+
+		String newAccessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getRoleName(),
+			user.getNickname());
+
+		return TokenResponse.of(newAccessToken, refreshToken);
+
 	}
 
 	private void validatePassword(String password, String encodedPassword) {
 		if (!bCryptPasswordEncoder.matches(password, encodedPassword)) {
 			throw new ParkingEasyException(AuthErrorCode.INVALID_PASSWORD);
 		}
+	}
+
+	private TokenResponse issueTokenPair(User savedUser, BiConsumer<Long, String> refreshTokenHandler) {
+		String accessToken = jwtProvider.createAccessToken(savedUser.getId(), savedUser.getEmail(),
+			savedUser.getRoleName(), savedUser.getNickname());
+		String refreshToken = jwtProvider.createRefreshToken(savedUser.getId());
+		refreshTokenHandler.accept(savedUser.getId(), refreshToken);
+		return TokenResponse.of(accessToken, refreshToken);
 	}
 
 }
