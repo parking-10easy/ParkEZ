@@ -56,11 +56,8 @@ public class TokenWriter {
 		User user = userReader.getActiveById(userId);
 
 		String newAccessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getRoleName(), user.getNickname());
-		String newRefreshToken = jwtProvider.createRefreshToken(user.getId());
 
-		savedRefreshToken.updateToken(newRefreshToken);
-
-		return TokenResponse.of(newAccessToken, newRefreshToken);
+		return TokenResponse.of(newAccessToken, refreshToken);
 	}
 
 }
