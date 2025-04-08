@@ -13,5 +13,5 @@ public interface ParkingLotQueryRepository {
     Page<ParkingLot> searchParkingLots(ParkingLotSearchRequest request, Pageable pageable);
 
     // 주차장 단건 조회
-    Optional<ParkingLot> findParkingLotById(Long parkingLotId);
+    Optional<ParkingLot> searchParkingLot (Long parkingLotId);
 }

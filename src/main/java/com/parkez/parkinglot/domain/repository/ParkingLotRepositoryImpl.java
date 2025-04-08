@@ -47,7 +47,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryRepository {
 
     // 단건 조회
     @Override
-    public Optional<ParkingLot> findParkingLotById(Long parkingLotId) {
+    public Optional<ParkingLot> searchParkingLot(Long parkingLotId) {
         return Optional.ofNullable(
                 jqf.selectFrom(parkingLot)
                         .where(parkingLot.id.eq(parkingLotId)

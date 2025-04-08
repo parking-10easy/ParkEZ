@@ -34,8 +34,7 @@ public class ParkingLotWriter {
 
     // 주차장 수정
     public void updateParkingLot(User user, Long parkingLotId, ParkingLotRequest request) {
-        ParkingLot parkingLot = parkingLotRepository.findParkingLotById(parkingLotId).orElseThrow(
-                () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+        ParkingLot parkingLot = validateAndGetParkingLot(parkingLotId);
         validateOwner(user, parkingLot);
         parkingLot.update(request);
     }
@@ -56,28 +55,35 @@ public class ParkingLotWriter {
 
     // 주차장 상태 변경
     public void updateParkingLotStatus(User user, Long parkingLotId, ParkingLotStatusRequest request) {
-        ParkingLot parkingLot = parkingLotRepository.findParkingLotById(parkingLotId).orElseThrow(
-                () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+        ParkingLot parkingLot = validateAndGetParkingLot(parkingLotId);
         validateOwner(user, parkingLot);
         parkingLot.updateStatus(request);
     }
 
     // 주차장 삭제
     public void deleteParkingLot(User user, Long parkingLotId) {
-        ParkingLot parkingLot = parkingLotRepository.findParkingLotById(parkingLotId).orElseThrow(
-                () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+        ParkingLot parkingLot = validateAndGetParkingLot(parkingLotId);
         validateOwner(user, parkingLot);
         parkingLot.softDelete(LocalDateTime.now());
     }
 
     // 주차장 이미지 수정
     public void updateParkingLotImages(User user, Long parkingLotId, ParkingLotImagesRequest request) {
-        ParkingLot parkingLot = parkingLotRepository.findParkingLotById(parkingLotId).orElseThrow(
-                () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+        ParkingLot parkingLot = validateAndGetParkingLot(parkingLotId);
         validateOwner(user, parkingLot);
         List<FakeImage> newImages = request.getImageUrls().stream()
                 .map(url -> FakeImage.builder().imageUrl(url).parkingLot(parkingLot).build())
                 .toList();
         parkingLot.updateImages(newImages);
+    }
+
+    //  soft delete 조건 + null 처리 단건 조회
+    public ParkingLot validateAndGetParkingLot(Long parkingLotId) {
+        ParkingLot parkingLot = parkingLotRepository.findById(parkingLotId)
+                .orElseThrow(() -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+        if (parkingLot.getDeletedAt() != null) {
+            throw new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND);
+        }
+        return parkingLot;
     }
 }
