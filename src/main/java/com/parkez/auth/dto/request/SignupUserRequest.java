@@ -11,20 +11,22 @@ import lombok.Getter;
 @Schema(description = "사용자 회원가입 요청")
 public class SignupUserRequest {
 
-	@NotBlank
-	@Email
+	@NotBlank(message = "이메일은 필수 입력 항목입니다.")
+	@Email(message = "유효한 이메일 주소 형식이어야 합니다.")
 	@Schema(description = "사용자 이메일", example = "user@example.com")
 	private String email;
-	@NotBlank
+
+	@NotBlank(message = "비밀번호는 필수 입력 항목입니다.")
 	@Pattern(regexp = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[a-z])(?=.*[!@#$%^&]).{8,}$"
 		, message = "대문자, 숫자, 특수문자(!,@,#,$,%,^,&)를 최소 1개 이상 포함한 8자리 이상으로 입력해주세요.")
 	@Schema(description = "비밀번호", example = "1Q2w3e4r!")
 	private String password;
 
-	@NotBlank
+	@NotBlank(message = "닉네임은 필수 입력 항목입니다.")
 	@Schema(description = "사용자 닉네임", example = "user")
 	private String nickname;
-	@NotBlank
+
+	@NotBlank(message = "전화번호는 필수 입력 항목입니다.")
 	@Pattern(regexp = "^\\d{2,3}-\\d{3,4}-\\d{4}$", message = "전화번호 양식에 맞지 않습니다. ex) 010-1234-5678")
 	@Schema(description = "전화번호", example = "010-1234-5678")
 	private String phone;
