@@ -6,9 +6,11 @@ import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.SourceType;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
+import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkinglot.service.ParkingLotReader;
+import com.parkez.parkinglot.service.ParkingLotService;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +47,10 @@ public class ParkingLotReaderTest {
 
     private ParkingLot parkingLot1;
     private ParkingLot parkingLot2;
+    private ParkingLot deletedParkingLot;
     private User owner;
+    private Pageable pageable;
+
 
     @BeforeEach
     void setUp() {
@@ -84,11 +89,27 @@ public class ParkingLotReaderTest {
                 .chargeType(ChargeType.PAID)
                 .sourceType(SourceType.PUBLIC_DATA) // 공공 데이터
                 .build();
+
+        // 삭제된 parkingLot 생성
+        deletedParkingLot = ParkingLot.builder()
+                .owner(owner)
+                .name("삭제된 주차장")
+                .address("삭제된 주소")
+                .openedAt(LocalTime.of(8, 0))
+                .closedAt(LocalTime.of(22, 0))
+                .pricePerHour(new BigDecimal("5.00"))
+                .description("삭제된 주차장입니다.")
+                .quantity(100)
+                .chargeType(ChargeType.PAID)
+                .sourceType(SourceType.OWNER_REGISTERED)
+                .build();
+        deletedParkingLot.softDelete(LocalDateTime.now());
+
+        pageable = PageRequest.of(0, 10);
     }
 
     @Test
     void 검색_조건이_없을_때_주차장을_전체_조회한다() {
-        Pageable pageable = PageRequest.of(0, 10);
         List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1, parkingLot2);
         Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
         ParkingLotSearchRequest searchRequest = new ParkingLotSearchRequest();
@@ -105,7 +126,6 @@ public class ParkingLotReaderTest {
 
     @Test
     void 이름으로_주차장을_조회한다() {
-        Pageable pageable = PageRequest.of(0, 10);
         List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1);
         Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
 
@@ -124,7 +144,6 @@ public class ParkingLotReaderTest {
 
     @Test
     void 주소로_주차장을_조회한다() {
-        Pageable pageable = PageRequest.of(0, 10);
         List<ParkingLot> parkingLotList = Arrays.asList(parkingLot2);
         Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
 
@@ -143,7 +162,6 @@ public class ParkingLotReaderTest {
 
     @Test
     void 이름과_주소로_주차장을_조회한다(){
-        Pageable pageable = PageRequest.of(0, 10);
         List<ParkingLot> parkingLotList = Arrays.asList(parkingLot2);
         Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
 
@@ -178,30 +196,6 @@ public class ParkingLotReaderTest {
         ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
             parkingLotReader.searchParkingLot(parkingLotId);
         });
-        assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
-    }
-
-    @Test
-    void 삭제된_주차장은_조회되지_않는다(){
-        Long parkingLotId = 1L;
-        ParkingLot deletedParkingLot = ParkingLot.builder()
-                .owner(owner)
-                .name("삭제된 주차장")
-                .address("삭제된 주소")
-                .openedAt(LocalTime.of(8, 0))
-                .closedAt(LocalTime.of(22, 0))
-                .pricePerHour(new BigDecimal("5.00"))
-                .description("삭제된 주차장입니다.")
-                .quantity(100)
-                .chargeType(ChargeType.PAID)
-                .sourceType(SourceType.OWNER_REGISTERED)
-                .build();
-        deletedParkingLot.softDelete(LocalDateTime.now());
-        when(parkingLotRepository.findById(parkingLotId)).thenReturn(Optional.empty());
-
-        ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
-                parkingLotReader.searchParkingLot(parkingLotId)
-        );
         assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
     }
 }
