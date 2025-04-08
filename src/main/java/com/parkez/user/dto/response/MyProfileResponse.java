@@ -55,17 +55,16 @@ public class MyProfileResponse {
 	}
 
 	public static MyProfileResponse from(User user) {
-		BusinessAccountInfo businessAccountInfo = user.getBusinessAccountInfo();
 		return MyProfileResponse.builder()
 			.id(user.getId())
 			.email(user.getEmail())
 			.nickname(user.getNickname())
 			.phone(user.getPhone())
 			.profileImageUrl(user.getProfileImageUrl())
-			.businessNumber(businessAccountInfo != null ? businessAccountInfo.getBusinessNumber() : null)
-			.bankName(businessAccountInfo != null ? businessAccountInfo.getBankName() : null)
-			.bankAccount(businessAccountInfo != null ? businessAccountInfo.getBankAccount() : null)
-			.depositorName(businessAccountInfo != null ? businessAccountInfo.getDepositorName() : null)
+			.businessNumber(user.getBusinessNumber())
+			.bankName(user.getBankName())
+			.bankAccount(user.getBankAccount())
+			.depositorName(user.getDepositorName())
 			.build();
 	}
 }

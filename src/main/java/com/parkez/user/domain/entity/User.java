@@ -113,4 +113,20 @@ public class User extends BaseDeleteEntity {
 	public String getRoleName() {
 		return this.role.name();
 	}
+
+	public String getBusinessNumber() {
+		return businessAccountInfo != null ? businessAccountInfo.getBusinessNumber() : null;
+	}
+
+	public String getBankName() {
+		return businessAccountInfo != null ? businessAccountInfo.getBankName() : null;
+	}
+
+	public String getBankAccount() {
+		return businessAccountInfo != null ? businessAccountInfo.getBankAccount() : null;
+	}
+
+	public String getDepositorName() {
+		return businessAccountInfo != null ? businessAccountInfo.getDepositorName() : null;
+	}
 }
