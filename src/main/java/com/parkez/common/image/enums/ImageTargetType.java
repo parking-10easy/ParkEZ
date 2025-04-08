@@ -21,6 +21,6 @@ public enum ImageTargetType {
         return Arrays.stream(values())
                 .filter(e->e.description.equalsIgnoreCase(type))
                 .findFirst()
-                .orElseThrow(()->new ParkingEasyException(ImageErrorCode.INVALID_IMAGE_TYPE));
+                .orElseThrow(()->new ParkingEasyException(ImageErrorCode.INVALID_TARGET_TYPE));
     }
 }
