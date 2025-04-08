@@ -21,7 +21,7 @@ public class ParkingLotReader {
 
     // 주차장 전체 조회
     public Page<ParkingLotSearchResponse> searchParkingLots(ParkingLotSearchRequest request, Pageable pageable) {
-        Page<ParkingLot> parkingLots = parkingLotRepository.searchParkingLots(request, pageable);
+        Page<ParkingLot> parkingLots = parkingLotRepository.searchParkingLots(request.getName(), request.getAddress(), pageable);
         return parkingLots.map(ParkingLotSearchResponse::from);
     }
 

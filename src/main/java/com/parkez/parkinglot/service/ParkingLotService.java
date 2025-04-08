@@ -1,11 +1,15 @@
 package com.parkez.parkinglot.service;
 
+import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
 import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
+import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
-import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
+import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,21 +40,42 @@ public class ParkingLotService {
 
     // 주차장 수정
     public void updateParkingLot(User user, Long parkingLotId, ParkingLotRequest request) {
-        parkingLotWriter.updateParkingLot(user, parkingLotId, request);
+        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
+        validateUserIsOwnerOfParkingLot(user, parkingLot);
+        parkingLotWriter.updateParkingLot(parkingLot, request);
     }
 
     // 주차장 상태 변경
     public void updateParkingLotStatus(User user, Long parkingLotId, ParkingLotStatusRequest request) {
-        parkingLotWriter.updateParkingLotStatus(user, parkingLotId, request);
+        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
+        validateUserIsOwnerOfParkingLot(user, parkingLot);
+        ParkingLotStatus newStatus;
+        try {
+            newStatus = ParkingLotStatus.valueOf(request.getStatus().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ParkingEasyException(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS);
+        }
+        parkingLotWriter.updateParkingLotStatus(parkingLot, newStatus);
     }
 
     // 주차장 삭제
     public void deleteParkingLot(User user, Long parkingLotId) {
-        parkingLotWriter.deleteParkingLot(user, parkingLotId);
+        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
+        validateUserIsOwnerOfParkingLot(user, parkingLot);
+        parkingLotWriter.deleteParkingLot(parkingLot);
     }
 
     // 주차장 이미지 수정
     public void updateParkingLotImages(User user, Long parkingLotId, ParkingLotImagesRequest request) {
-        parkingLotWriter.updateParkingLotImages(user, parkingLotId, request);
+        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
+        validateUserIsOwnerOfParkingLot(user, parkingLot);
+        parkingLotWriter.updateParkingLotImages(parkingLot, request);
+    }
+
+    // 주차장의 소유자인지 확인
+    private void validateUserIsOwnerOfParkingLot(User user, ParkingLot parkingLot) {
+        if (!user.equals(parkingLot.getOwner())) {
+            throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
+        }
     }
 }

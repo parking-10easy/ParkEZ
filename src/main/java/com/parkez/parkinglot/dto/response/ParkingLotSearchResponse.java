@@ -63,12 +63,12 @@ public class ParkingLotSearchResponse {
     private final List<String> images; // 이미지 수정 필요
 
     @Builder
-    public ParkingLotSearchResponse(Long parkingLotId, String name, String address,
-                                    LocalTime openedAt, LocalTime closedAt, BigDecimal pricePerHour,
-                                    Integer totalQuantity, Integer availableQuantity,
-                                    ChargeType chargeType, SourceType sourceType,
-                                    ParkingLotStatus parkingLotStatus, Integer reviewCount,
-                                    Double averageRating, List<String> images) {
+    private ParkingLotSearchResponse(Long parkingLotId, String name, String address,
+                                     LocalTime openedAt, LocalTime closedAt, BigDecimal pricePerHour,
+                                     Integer totalQuantity, Integer availableQuantity,
+                                     ChargeType chargeType, SourceType sourceType,
+                                     ParkingLotStatus parkingLotStatus, Integer reviewCount,
+                                     Double averageRating, List<String> images) {
         this.parkingLotId = parkingLotId;
         this.name = name;
         this.address = address;

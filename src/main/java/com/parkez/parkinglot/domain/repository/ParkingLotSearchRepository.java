@@ -1,17 +1,16 @@
 package com.parkez.parkinglot.domain.repository;
 
 import com.parkez.parkinglot.domain.entity.ParkingLot;
-import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Optional;
 
-public interface ParkingLotQueryRepository {
+public interface ParkingLotSearchRepository {
 
     // 주차장 다건 조회
-    Page<ParkingLot> searchParkingLots(ParkingLotSearchRequest request, Pageable pageable);
+    Page<ParkingLot> searchParkingLots(String name, String address, Pageable pageable);
 
     // 주차장 단건 조회
-    Optional<ParkingLot> searchParkingLot (Long parkingLotId);
+    Optional<ParkingLot> searchParkingLot(Long parkingLotId);
 }

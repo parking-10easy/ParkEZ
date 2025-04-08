@@ -25,7 +25,7 @@ public abstract class BaseDeleteEntity {
 
     private LocalDateTime deletedAt;
 
-    public void softDelete(LocalDateTime deletedAt) {
+    public void updateDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
     }
 }

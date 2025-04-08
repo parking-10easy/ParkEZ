@@ -2,8 +2,6 @@
 package com.parkez.parkinglot.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.parkez.parkinglot.domain.entity.ParkingLot;
-import com.parkez.user.domain.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -15,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalTime;
 
 @Getter
+@Schema(description = "주차장 생성 및 수정 요청 DTO")
 public class ParkingLotRequest {
 
     @NotBlank(message = "이름은 필수 값입니다.")
@@ -64,18 +63,5 @@ public class ParkingLotRequest {
         this.openedAt = openedAt;
         this.pricePerHour = pricePerHour;
         this.description = description;
-    }
-
-    public ParkingLot toEntity(User owner) {
-        return ParkingLot.builder()
-                .owner(owner)
-                .name(this.getName())
-                .quantity(this.getQuantity())
-                .closedAt(this.getClosedAt())
-                .openedAt(this.getOpenedAt())
-                .pricePerHour(this.getPricePerHour())
-                .description(this.getDescription())
-                .address(this.getAddress())
-                .build();
     }
 }

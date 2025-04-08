@@ -3,8 +3,10 @@ package com.parkez.parkinglot.web;
 import com.parkez.common.response.Response;
 import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
+import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
+import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.service.ParkingLotService;
 import com.parkez.user.domain.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,12 +14,14 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@Tag(name = "Owner용 주차장 관리 API", description = "Owner가 사용하는 가게 관리 API입니다.")
+@Tag(name = "주차장 관리 API", description = "주차장 관리 및 조회 API입니다.")
 public class ParkingLotOwnerController {
 
     private final ParkingLotService parkingLotService;
@@ -30,6 +34,25 @@ public class ParkingLotOwnerController {
             @Valid @RequestBody ParkingLotRequest request
     ) {
         return Response.of(parkingLotService.createParkingLot(user, request));
+    }
+
+    // 주차장 다건 조회
+    @GetMapping("/v1/parking-lots")
+    @Operation(summary = "주차장 다건 조회")
+    public Response<ParkingLotSearchResponse> searchParkingLots(
+            @ModelAttribute ParkingLotSearchRequest request,
+            @ParameterObject Pageable pageable
+    ) {
+        return Response.fromPage(parkingLotService.searchParkingLots(request, pageable));
+    }
+
+    // 주차장 단건 조회
+    @GetMapping("/v1/parking-lots/{parkingLotId}")
+    @Operation(summary = "주차장 단건 조회")
+    public Response<ParkingLotSearchResponse> searchParkingLot(
+            @PathVariable Long parkingLotId
+    ){
+        return Response.of(parkingLotService.searchParkingLot(parkingLotId));
     }
 
     // 주차장 수정
@@ -45,7 +68,7 @@ public class ParkingLotOwnerController {
     }
 
     // 주차장 상태 변경
-    @PutMapping("/v1/parking-lots/{parkingLotId}/status")
+    @PatchMapping("/v1/parking-lots/{parkingLotId}/status")
     @Operation(summary = "주차장 상태 수정")
     public Response<Void> updatedParkingLotStatus(
             @Parameter(hidden = true) User user,
@@ -69,7 +92,7 @@ public class ParkingLotOwnerController {
 
     // 주차장 이미지 수정
 
-    @PutMapping("/v1/parking-lots/{parkingLotId}/images")
+    @PatchMapping("/v1/parking-lots/{parkingLotId}/images")
     @Operation(summary = "주차장 이미지 수정")
     public Response<Void> updateParkingLotImages(
             @Parameter(hidden = true) User user,

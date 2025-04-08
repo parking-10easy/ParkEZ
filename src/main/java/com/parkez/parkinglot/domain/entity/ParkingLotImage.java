@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Table(name = "parking_lot_image")
-public class FakeImage extends BaseEntity {
+public class ParkingLotImage extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,7 +28,7 @@ public class FakeImage extends BaseEntity {
     private String imageUrl;
 
     @Builder
-    public FakeImage(ParkingLot parkingLot, String name, String imageUrl) {
+    private ParkingLotImage(ParkingLot parkingLot, String name, String imageUrl) {
         this.parkingLot = parkingLot;
         this.name = name;
         this.imageUrl = imageUrl;
