@@ -163,7 +163,7 @@ public class ParkingLotReaderTest {
     @Test
     void 아이디로_주차장_단건_조회한다() {
         Long parkingLotId = 1L;
-        when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(Optional.ofNullable(parkingLot1));
+        when(parkingLotRepository.searchParkingLot(parkingLotId)).thenReturn(Optional.ofNullable(parkingLot1));
 
         ParkingLot found = parkingLotReader.getParkingLot(parkingLotId);
         assertEquals("참쉬운주차장", found.getName());
@@ -173,7 +173,7 @@ public class ParkingLotReaderTest {
     @Test
     void 아이디가_없을_때_주차장_단건_조회_실패() {
         Long parkingLotId = -1L;
-        when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(Optional.empty());
+        when(parkingLotRepository.searchParkingLot(parkingLotId)).thenReturn(Optional.empty());
 
         ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
             parkingLotReader.getParkingLot(parkingLotId);
@@ -197,7 +197,7 @@ public class ParkingLotReaderTest {
                 .sourceType(SourceType.OWNER_REGISTERED)
                 .build();
         deletedParkingLot.softDelete(LocalDateTime.now());
-        when(parkingLotRepository.findParkingLotById(parkingLotId)).thenReturn(Optional.empty());
+        when(parkingLotRepository.findById(parkingLotId)).thenReturn(Optional.empty());
 
         ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                 parkingLotReader.getParkingLot(parkingLotId)
