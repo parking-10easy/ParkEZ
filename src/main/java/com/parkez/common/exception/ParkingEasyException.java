@@ -12,6 +12,7 @@ public class ParkingEasyException extends RuntimeException {
     }
 
     public ParkingEasyException(ErrorCode errorCode) {
+        super(errorCode.getDefaultMessage());
         this.errorCode = errorCode;
     }
 }
