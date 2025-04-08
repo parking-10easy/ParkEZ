@@ -1,5 +1,7 @@
 package com.parkez.common.image;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
 import com.parkez.common.exception.ParkingEasyException;
@@ -10,6 +12,7 @@ import com.parkez.common.image.enums.AllowedExtension;
 import com.parkez.common.image.enums.ImageTargetType;
 import com.parkez.common.image.exception.ImageErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class S3ImageService implements ImageService {
 
     private final AmazonS3Client s3Client;
@@ -103,12 +107,10 @@ public class S3ImageService implements ImageService {
 
 
     private void uploadToS3(MultipartFile file, String fileName) {
-        try{
-            // 메타데이터 설정
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentType(file.getContentType());
-            metadata.setContentLength(file.getSize());
 
+        ObjectMetadata metadata = createMetadata(file);
+
+        try{
             // S3에 파일 업로드 요청 생성
             PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, fileName, file.getInputStream(), metadata);
 
@@ -116,9 +118,29 @@ public class S3ImageService implements ImageService {
             s3Client.putObject(putObjectRequest);
 
         } catch (IOException e) {
+            log.error("[IOException] 파일 스트림 처리 중 실패: {}", e.getMessage(), e);
             throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
+
+        } catch (AmazonServiceException e) {
+            log.error("[S3 Upload Error] AWS 응답 오류 - Status: {}, Code: {}, Message: {}", e.getStatusCode(), e.getErrorCode(), e.getMessage(), e);
+            throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
+
+        } catch (SdkClientException e) {
+            log.error("[S3 Upload Error] 클라이언트 설정 오류 - {}", e.getMessage(), e);
+            throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
+
         }
+
     }
+
+    private ObjectMetadata createMetadata(MultipartFile file) {
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(file.getContentType());
+        metadata.setContentLength(file.getSize());
+
+        return metadata;
+    }
+
 
     private String createS3Key(String targetType, Long targetId, MultipartFile file, long currentTime) {
 
