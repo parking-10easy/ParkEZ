@@ -37,7 +37,7 @@ public class S3ImageService implements ImageService {
         }
 
         List<String> imageUrls = new ArrayList<>();
-        ImageTargetType targetType = ImageTargetType.fromString(request.getTargetType());
+        ImageTargetType targetType = ImageTargetType.of(request.getTargetType());
 
         for(MultipartFile file : files) {
 
@@ -72,7 +72,7 @@ public class S3ImageService implements ImageService {
 
     @Override
     public void delete(ImageDeleteRequest request) {
-        ImageTargetType targetType = ImageTargetType.fromString(request.getTargetType());
+        ImageTargetType targetType = ImageTargetType.of(request.getTargetType());
 
         String folderPrefix = String.format("%s/%d/", targetType.name(), request.getTargetId());
 
