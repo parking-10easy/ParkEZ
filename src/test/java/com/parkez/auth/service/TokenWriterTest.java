@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.*;
 import java.util.Optional;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +19,8 @@ import com.parkez.auth.authentication.refresh.RefreshToken;
 import com.parkez.auth.dto.response.TokenResponse;
 import com.parkez.auth.authentication.jwt.JwtProvider;
 import com.parkez.auth.authentication.refresh.RefreshTokenStore;
+import com.parkez.auth.exception.AuthErrorCode;
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
@@ -63,39 +66,58 @@ class TokenWriterTest {
 
 	}
 
-	@Test
-	void 리프레시토큰_정상_재발급() {
-		// given
-		String oldRefreshToken = "old-refresh-token";
-		String newAccessToken = "new-access-token";
-		String newRefreshToken = "new-refresh-token";
-		Long userId = 1L;
+	@Nested
+	class ReissueToken {
 
-		User user = User.builder()
-			.email("test@example.com")
-			.role(UserRole.ROLE_USER)
-			.nickname("nickname")
-			.build();
-		ReflectionTestUtils.setField(user,"id", 1L);
-		RefreshToken savedRefreshToken = RefreshToken.create(userId,oldRefreshToken);
+		@Test
+		void 리프레시토큰_만료_예외() {
+			// given
+			String expiredRefreshToken = "expired-refresh-token";
 
-		Claims claims = Jwts.claims().subject(String.valueOf(userId)).build();
+			RefreshToken savedRefreshToken = RefreshToken.create(1L, expiredRefreshToken);
 
-		given(refreshTokenStore.findByToken(anyString())).willReturn(Optional.of(savedRefreshToken));
-		given(jwtProvider.isTokenExpired(anyString())).willReturn(false);
-		given(jwtProvider.extractClaims(anyString())).willReturn(claims);
-		given(userReader.getActiveById(anyLong())).willReturn(user);
-		given(jwtProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString())).willReturn(newAccessToken);
-		given(jwtProvider.createRefreshToken(anyLong())).willReturn(newRefreshToken);
+			given(refreshTokenStore.findByToken(anyString())).willReturn(Optional.of(savedRefreshToken));
+			given(jwtProvider.isTokenExpired(anyString())).willReturn(true); // 여기서 만료된 것으로 설정
 
-		// when
-		TokenResponse tokenResponse = tokenWriter.reissueToken(oldRefreshToken);
+			// when & then
+			assertThatThrownBy(() -> tokenWriter.reissueToken(expiredRefreshToken))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessageContaining(AuthErrorCode.TOKEN_EXPIRED.getDefaultMessage());
+		}
 
-		// then
-		assertThat(tokenResponse).isNotNull();
-		assertThat(tokenResponse.getAccessToken()).isEqualTo(newAccessToken);
-		assertThat(tokenResponse.getRefreshToken()).isEqualTo(newRefreshToken);
+		@Test
+		void 리프레시토큰_정상_재발급() {
+			// given
+			String refreshToken = "refresh-token";
+			String newAccessToken = "new-access-token";
+			Long userId = 1L;
 
-		assertThat(savedRefreshToken.getToken()).isEqualTo(newRefreshToken);
+			User user = User.builder()
+				.email("test@example.com")
+				.role(UserRole.ROLE_USER)
+				.nickname("nickname")
+				.build();
+			ReflectionTestUtils.setField(user,"id", 1L);
+			RefreshToken savedRefreshToken = RefreshToken.create(userId,refreshToken);
+
+			Claims claims = Jwts.claims().subject(String.valueOf(userId)).build();
+
+			given(refreshTokenStore.findByToken(anyString())).willReturn(Optional.of(savedRefreshToken));
+			given(jwtProvider.isTokenExpired(anyString())).willReturn(false);
+			given(jwtProvider.extractClaims(anyString())).willReturn(claims);
+			given(userReader.getActiveById(anyLong())).willReturn(user);
+			given(jwtProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString())).willReturn(newAccessToken);
+
+			// when
+			TokenResponse tokenResponse = tokenWriter.reissueToken(refreshToken);
+
+			// then
+			assertThat(tokenResponse).isNotNull();
+			assertThat(tokenResponse.getAccessToken()).isEqualTo(newAccessToken);
+			assertThat(tokenResponse.getRefreshToken()).isEqualTo(refreshToken);
+
+		}
+
 	}
+
 }
