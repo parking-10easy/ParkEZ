@@ -1,5 +1,7 @@
 package com.parkez.user.dto.request;
 
+import org.springframework.util.StringUtils;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -45,5 +47,12 @@ public class UserProfileUpdateRequest {
 		this.bankName = bankName;
 		this.bankAccount = bankAccount;
 		this.depositorName = depositorName;
+	}
+
+	public boolean hasAllBusinessInfo() {
+		return StringUtils.hasText(businessNumber)
+			&& StringUtils.hasText(bankName)
+			&& StringUtils.hasText(bankAccount)
+			&& StringUtils.hasText(depositorName);
 	}
 }

@@ -4,6 +4,7 @@ import com.parkez.common.entity.BaseDeleteEntity;
 import com.parkez.user.domain.enums.UserRole;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,7 +25,7 @@ import org.springframework.util.StringUtils;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseDeleteEntity {
 
-    @Id
+	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
@@ -63,7 +64,7 @@ public class User extends BaseDeleteEntity {
 	}
 
 	public static User createUser(String email, String encodedPassword, String nickname,
-		String phone,String profileImageUrl) {
+		String phone, String profileImageUrl) {
 		return User.builder()
 			.email(email)
 			.password(encodedPassword)
@@ -75,13 +76,15 @@ public class User extends BaseDeleteEntity {
 	}
 
 	public static User createOwner(String email, String encodedPassword, String nickname, String phone,
-		BusinessAccountInfo businessAccountInfo,String profileImageUrl) {
+		String businessNumber, String depositorName,
+		String bankName, String bankAccount
+		, String profileImageUrl) {
 		return User.builder()
 			.email(email)
 			.password(encodedPassword)
 			.nickname(nickname)
 			.phone(phone)
-			.businessAccountInfo(businessAccountInfo)
+			.businessAccountInfo(BusinessAccountInfo.create(businessNumber, depositorName, bankName, bankAccount))
 			.profileImageUrl(profileImageUrl)
 			.role(UserRole.ROLE_OWNER)
 			.build();
@@ -91,10 +94,11 @@ public class User extends BaseDeleteEntity {
 		return this.getDeletedAt() != null;
 	}
 
-	public void updateProfile(String nickname, String phone, BusinessAccountInfo businessAccountInfo) {
+	public void updateProfile(String nickname, String phone, String businessNumber, String depositorName,
+		String bankName, String bankAccount) {
 		this.nickname = nickname;
 		this.phone = phone;
-		this.businessAccountInfo = businessAccountInfo;
+		this.businessAccountInfo = BusinessAccountInfo.create(businessNumber, depositorName, bankName, bankAccount);
 	}
 
 	public void updateProfileImage(String profileImageUrl, String defaultProfileImageUrl) {

@@ -69,7 +69,6 @@ class AuthServiceTest {
 			SignupUserRequest request = createSignupUserRequest(email, password, nickname, phone);
 			given(userReader.existByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(true);
 
-
 			//when & then
 			assertThatThrownBy(() -> authService.signupUser(request)).isInstanceOf(ParkingEasyException.class)
 				.hasMessage(AuthErrorCode.DUPLICATED_EMAIL.getDefaultMessage());
@@ -101,7 +100,7 @@ class AuthServiceTest {
 			SignupResponse signupResponse = authService.signupUser(request);
 
 			//then
-			verify(refreshTokenStore,times(1)).save(anyLong(), anyString());
+			verify(refreshTokenStore, times(1)).save(anyLong(), anyString());
 			assertThat(signupResponse).extracting(
 				"id",
 				"email",
@@ -132,7 +131,6 @@ class AuthServiceTest {
 			ReflectionTestUtils.setField(user, "id", 1L);
 			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_USER))).willReturn(user);
 			given(bCryptPasswordEncoder.matches(anyString(), anyString())).willReturn(false);
-
 
 			//when & then
 			assertThatThrownBy(() -> authService.signinUser(email, password))
@@ -180,7 +178,7 @@ class AuthServiceTest {
 			TokenResponse result = authService.signinUser(email, password);
 
 			//then
-			verify(refreshTokenStore,times(1)).replace(anyLong(), anyString());
+			verify(refreshTokenStore, times(1)).replace(anyLong(), anyString());
 			assertThat(result)
 				.extracting(
 					"accessToken",
@@ -213,7 +211,6 @@ class AuthServiceTest {
 				bankName, depositorName);
 			given(userReader.existByEmailAndRole(anyString(), eq(UserRole.ROLE_OWNER))).willReturn(true);
 
-
 			//when & then
 			assertThatThrownBy(() -> authService.signupOwner(request)).isInstanceOf(ParkingEasyException.class)
 				.hasMessage(AuthErrorCode.DUPLICATED_EMAIL.getDefaultMessage());
@@ -235,9 +232,8 @@ class AuthServiceTest {
 			SignupOwnerRequest request = createSignupOwnerRequest(email, password, nickname, phone, bankAccount,
 				businessNumber,
 				bankName, depositorName);
-			BusinessAccountInfo businessAccountInfo = BusinessAccountInfo.create(businessNumber, depositorName,
-				bankName, bankAccount);
-			User user = User.createOwner(email, password, nickname, phone, businessAccountInfo, defaultProfileImageUrl);
+			User user = User.createOwner(email, password, nickname, phone, businessNumber, depositorName,
+				bankName, bankAccount, defaultProfileImageUrl);
 			Long userId = 1L;
 			ReflectionTestUtils.setField(user, "id", userId);
 			String accessToken = "mockAccess";
@@ -255,7 +251,7 @@ class AuthServiceTest {
 			SignupResponse signupResponse = authService.signupOwner(request);
 
 			//then
-			verify(refreshTokenStore,times(1)).save(anyLong(), anyString());
+			verify(refreshTokenStore, times(1)).save(anyLong(), anyString());
 			assertThat(signupResponse).extracting(
 				"id",
 				"email",
@@ -286,13 +282,11 @@ class AuthServiceTest {
 			String bankAccount = "123456-78-901234";
 			String depositorName = "홍길동";
 			String defaultProfileImageUrl = "default.jpg";
-			BusinessAccountInfo businessAccountInfo = BusinessAccountInfo.create(businessNumber, depositorName,
-				bankName, bankAccount);
-			User user = User.createOwner(email, password, nickname, phone, businessAccountInfo, defaultProfileImageUrl);
+			User user = User.createOwner(email, password, nickname, phone, businessNumber, depositorName,
+				bankName, bankAccount, defaultProfileImageUrl);
 			ReflectionTestUtils.setField(user, "id", 1L);
 			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_OWNER))).willReturn(user);
 			given(bCryptPasswordEncoder.matches(anyString(), anyString())).willReturn(false);
-
 
 			//when & then
 			assertThatThrownBy(() -> authService.signinOwner(email, password))
@@ -309,7 +303,6 @@ class AuthServiceTest {
 
 			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_OWNER))).willThrow(
 				new ParkingEasyException(UserErrorCode.EMAIL_NOT_FOUND));
-
 
 			//when & then
 			assertThatThrownBy(() -> authService.signinOwner(email, password))
@@ -335,9 +328,8 @@ class AuthServiceTest {
 			String bankAccount = "123456-78-901234";
 			String depositorName = "홍길동";
 			String defaultProfileImageUrl = "default.jpg";
-			BusinessAccountInfo businessAccountInfo = BusinessAccountInfo.create(businessNumber, depositorName,
-				bankName, bankAccount);
-			User owner = User.createOwner(email, password, nickname, phone, businessAccountInfo,defaultProfileImageUrl);
+			User owner = User.createOwner(email, password, nickname, phone, businessNumber, depositorName,
+				bankName, bankAccount, defaultProfileImageUrl);
 			ReflectionTestUtils.setField(owner, "id", 1L);
 			given(userReader.getActiveByEmailAndRole(anyString(), eq(UserRole.ROLE_OWNER))).willReturn(owner);
 			given(bCryptPasswordEncoder.matches(anyString(), anyString())).willReturn(true);
@@ -345,13 +337,11 @@ class AuthServiceTest {
 				accessToken);
 			given(jwtProvider.createRefreshToken(anyLong())).willReturn(refreshToken);
 
-
 			//when
 			TokenResponse result = authService.signinOwner(email, password);
 
-
 			//then
-			verify(refreshTokenStore,times(1)).replace(anyLong(), anyString());
+			verify(refreshTokenStore, times(1)).replace(anyLong(), anyString());
 			assertThat(result)
 				.extracting(
 					"accessToken",
@@ -376,15 +366,14 @@ class AuthServiceTest {
 				.role(UserRole.ROLE_USER)
 				.nickname("nickname")
 				.build();
-			ReflectionTestUtils.setField(user,"id", 1L);
+			ReflectionTestUtils.setField(user, "id", 1L);
 
 			given(refreshTokenStore.existsByToken(anyString())).willReturn(false);
 
 			// when & then
-			Assertions.assertThatThrownBy(()-> authService.reissueToken(refreshToken))
+			Assertions.assertThatThrownBy(() -> authService.reissueToken(refreshToken))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessage(AuthErrorCode.TOKEN_NOT_FOUND.getDefaultMessage());
-
 
 		}
 
@@ -409,7 +398,8 @@ class AuthServiceTest {
 
 			given(refreshTokenStore.existsByToken(anyString())).willReturn(true);
 			given(jwtProvider.isTokenExpired(anyString())).willReturn(false);
-			given(jwtProvider.extractUserId(anyString())).willThrow(new ParkingEasyException(AuthErrorCode.INVALID_JWT_SIGNATURE));
+			given(jwtProvider.extractUserId(anyString())).willThrow(
+				new ParkingEasyException(AuthErrorCode.INVALID_JWT_SIGNATURE));
 			// when & then
 			assertThatThrownBy(() -> authService.reissueToken(invalidRefreshToken))
 				.isInstanceOf(ParkingEasyException.class)
@@ -424,7 +414,8 @@ class AuthServiceTest {
 			given(refreshTokenStore.existsByToken(anyString())).willReturn(true);
 			given(jwtProvider.isTokenExpired(anyString())).willReturn(false);
 			given(jwtProvider.extractUserId(anyString())).willReturn(userId);
-			given(userReader.getActiveById(anyLong())).willThrow(new ParkingEasyException(UserErrorCode.USER_NOT_FOUND));
+			given(userReader.getActiveById(anyLong())).willThrow(
+				new ParkingEasyException(UserErrorCode.USER_NOT_FOUND));
 			// when & then
 			assertThatThrownBy(() -> authService.reissueToken(refreshToken))
 				.isInstanceOf(ParkingEasyException.class)
@@ -439,7 +430,8 @@ class AuthServiceTest {
 			given(refreshTokenStore.existsByToken(anyString())).willReturn(true);
 			given(jwtProvider.isTokenExpired(anyString())).willReturn(false);
 			given(jwtProvider.extractUserId(anyString())).willReturn(userId);
-			given(userReader.getActiveById(anyLong())).willThrow(new ParkingEasyException(UserErrorCode.USER_ALREADY_DELETED));
+			given(userReader.getActiveById(anyLong())).willThrow(
+				new ParkingEasyException(UserErrorCode.USER_ALREADY_DELETED));
 			// when & then
 			assertThatThrownBy(() -> authService.reissueToken(refreshToken))
 				.isInstanceOf(ParkingEasyException.class)
@@ -458,13 +450,14 @@ class AuthServiceTest {
 				.role(UserRole.ROLE_USER)
 				.nickname("nickname")
 				.build();
-			ReflectionTestUtils.setField(user,"id", 1L);
+			ReflectionTestUtils.setField(user, "id", 1L);
 
 			given(refreshTokenStore.existsByToken(anyString())).willReturn(true);
 			given(jwtProvider.isTokenExpired(anyString())).willReturn(false);
 			given(jwtProvider.extractUserId(anyString())).willReturn(userId);
 			given(userReader.getActiveById(anyLong())).willReturn(user);
-			given(jwtProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString())).willReturn(newAccessToken);
+			given(jwtProvider.createAccessToken(anyLong(), anyString(), anyString(), anyString())).willReturn(
+				newAccessToken);
 
 			// when
 			TokenResponse tokenResponse = authService.reissueToken(refreshToken);

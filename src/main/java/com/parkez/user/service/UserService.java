@@ -53,21 +53,19 @@ public class UserService {
 		}
 
 		User user = userReader.getActiveById(authUser.getId());
-		BusinessAccountInfo businessAccountInfo = BusinessAccountInfo.create(request.getBusinessNumber(),
-			request.getDepositorName(), request.getBankName(),
-			request.getBankAccount());
+
 		user.updateProfile(
 			request.getNickname(),
 			request.getPhone(),
-			businessAccountInfo
+			request.getBusinessNumber(),
+			request.getDepositorName(),
+			request.getBankName(),
+			request.getBankAccount()
 		);
 	}
 
 	private void validateBusinessInfo(UserProfileUpdateRequest request) {
-		if (request.getBusinessNumber() == null
-			|| request.getBankName() == null
-			|| request.getBankAccount() == null
-			|| request.getDepositorName() == null) {
+		if (!request.hasAllBusinessInfo()) {
 			throw new ParkingEasyException(UserErrorCode.BUSINESS_INFO_REQUIRED);
 		}
 	}

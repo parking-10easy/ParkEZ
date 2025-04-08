@@ -83,8 +83,10 @@ public class AuthService {
 			encodedPassword,
 			request.getNickname(),
 			request.getPhone(),
-			BusinessAccountInfo.create(request.getBusinessNumber(), request.getDepositorName(), request.getBankName(),
-				request.getBankAccount()),
+			request.getBusinessNumber(),
+			request.getDepositorName(),
+			request.getBankName(),
+			request.getBankAccount(),
 			defaultProfileImageUrl
 		);
 
@@ -101,7 +103,6 @@ public class AuthService {
 		validatePassword(password, user.getPassword());
 
 		return issueTokenPair(user, refreshTokenStore::replace);
-
 
 	}
 
