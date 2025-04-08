@@ -30,4 +30,10 @@ public class ParkingLotReader {
         return parkingLotRepository.searchParkingLot(parkingLotId).orElseThrow(
                 () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
     }
+
+    //  soft delete 제외 + null 처리하여 아이디로 단건 조회
+    public ParkingLot getParkingLot (Long parkingLotId){
+        return parkingLotRepository.findByIdAndDeletedAtIsNull(parkingLotId)
+                .orElseThrow(() -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+    }
 }
