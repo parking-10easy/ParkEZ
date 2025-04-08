@@ -41,7 +41,7 @@ public class S3ImageService implements ImageService {
 
         for(MultipartFile file : files) {
 
-            if(!isAllowedExtension(file.getOriginalFilename())) {
+            if(!isValidExtension(file.getOriginalFilename())) {
                 throw new ParkingEasyException(ImageErrorCode.INVALID_EXTENSION_TYPE);
             }
 
@@ -131,9 +131,9 @@ public class S3ImageService implements ImageService {
         return String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, s3Client.getRegionName(), key);
     }
 
-    private boolean isAllowedExtension(String fileName) {
+    private boolean isValidExtension(String fileName) {
         String extension = extractFileExtension(fileName);
-        return AllowedExtension.isAllowedExtension(extension);
+        return AllowedExtension.contains(extension);
     }
 
     private String extractFileExtension(String fileName){
