@@ -1,12 +1,12 @@
 package com.parkez.common.exception;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestControllerAdvice
@@ -27,10 +27,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ErrorResponse.of(e.getErrorCode()), e.getStatus());
     }
 
-    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
+        // log.info("AuthorizationDeniedException : {}", e.getMessage(), e);
+        CommonErrorCode accessDenied = CommonErrorCode.ACCESS_DENIED;
+        return new ResponseEntity<>(ErrorResponse.of(accessDenied),accessDenied.getHttpStatus());
+    }
+
     @ExceptionHandler(Exception.class)
-    public ErrorResponse handleGlobalException(Exception e) {
+    public ResponseEntity<ErrorResponse> handleGlobalException(Exception e) {
         log.error("Exception : {}", e.getMessage(), e);
-        return ErrorResponse.of("INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다.");
+        CommonErrorCode internalServerError = CommonErrorCode.INTERNAL_SERVER_ERROR;
+        return new ResponseEntity<>(ErrorResponse.of(internalServerError), internalServerError.getHttpStatus());
     }
 }
