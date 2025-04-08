@@ -2,14 +2,21 @@ package com.parkez.user.dto.response;
 
 import com.parkez.user.domain.entity.User;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
+@Schema(description = "유저 프로필 응답 DTO")
 public class UserResponse {
 
+	@Schema(description = "유저 ID", example = "1")
 	private final long id;
+
+	@Schema(description = "닉네임", example = "홍길동")
 	private final String nickname;
+
+	@Schema(description = "프로필 이미지 URL", example = "https://example.com/profile.jpg")
 	private final String profileImageUrl;
 
 	@Builder
