@@ -15,7 +15,12 @@ import org.springframework.util.StringUtils;
 
 @Entity
 @Getter
-@Table(name = "users")
+@Table(
+	name = "users",
+	uniqueConstraints = {
+		@UniqueConstraint(name = "uk_email_role", columnNames = {"email", "role"})
+	}
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseDeleteEntity {
 
@@ -26,11 +31,13 @@ public class User extends BaseDeleteEntity {
 	@Column(nullable = false)
 	private String email;
 
+	@Column(nullable = false)
 	private String password;
 
 	@Column(nullable = false)
 	private String nickname;
 
+	@Column(nullable = false)
 	private String phone;
 
 	@Embedded
@@ -40,8 +47,6 @@ public class User extends BaseDeleteEntity {
 
 	@Enumerated(EnumType.STRING)
 	private UserRole role;
-
-	private LocalDateTime deletedAt;
 
 	@Builder
 	private User(String email, String password, String nickname, String phone,
@@ -83,7 +88,7 @@ public class User extends BaseDeleteEntity {
 	}
 
 	public boolean isDeleted() {
-		return this.deletedAt != null;
+		return this.getDeletedAt() != null;
 	}
 
 	public void updateProfile(String nickname, String phone, BusinessAccountInfo businessAccountInfo) {
@@ -100,9 +105,9 @@ public class User extends BaseDeleteEntity {
 		this.password = encodedPassword;
 	}
 
-	public void softDelete(String withdrawalNickname, LocalDateTime now) {
+	public void softDelete(String withdrawalNickname, LocalDateTime deletedAt) {
 		this.nickname = withdrawalNickname;
-		this.deletedAt = now;
+		updateDeletedAt(deletedAt);
 	}
 
 	public String getRoleName() {
