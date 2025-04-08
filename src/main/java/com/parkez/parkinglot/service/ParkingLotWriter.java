@@ -12,25 +12,26 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class ParkingLotWriter {
 
     private final ParkingLotRepository parkingLotRepository;
-    private final ParkingLotReader parkingLotReader;
 
     // 주차장 생성
     public ParkingLot createParkingLot(User user, ParkingLotRequest request) {
         validateOwner(user);
-        ParkingLot parkingLot = ParkingLotRequest.toEntity(user, request);
+        ParkingLot parkingLot = request.toEntity(user);
         return parkingLotRepository.save(parkingLot);
-
     }
 
     // 주차장 수정
     public void updateParkingLot(User user, Long parkingLotId, ParkingLotRequest request) {
-        ParkingLot parkingLot = parkingLotRepository.findParkingLotById(parkingLotId);
+        ParkingLot parkingLot = parkingLotRepository.findParkingLotById(parkingLotId).orElseThrow(
+                () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
         validateOwner(user, parkingLot);
         parkingLot.update(request);
     }
@@ -51,15 +52,17 @@ public class ParkingLotWriter {
 
     // 주차장 상태 변경
     public void updateParkingLotStatus(User user, Long parkingLotId, ParkingLotStatusRequest request) {
-        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
+        ParkingLot parkingLot = parkingLotRepository.findParkingLotById(parkingLotId).orElseThrow(
+                () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
         validateOwner(user, parkingLot);
         parkingLot.updateStatus(request);
     }
 
     // 주차장 삭제
     public void deleteParkingLot(User user, Long parkingLotId) {
-        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
+        ParkingLot parkingLot = parkingLotRepository.findParkingLotById(parkingLotId).orElseThrow(
+                () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
         validateOwner(user, parkingLot);
-        parkingLot.softDelete();
+        parkingLot.softDelete(LocalDateTime.now());
     }
 }
