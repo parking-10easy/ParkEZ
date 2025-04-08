@@ -43,12 +43,12 @@ public class ReservationService {
         if (hours <= 0) {
             throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
         }
-        BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+        BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
         Reservation reservation = reservationWriter.createReservation(
                 user,
                 parkingZone,
-                parkingZone.getParkingLotName(),
+                parkingZone.extractParkingLotName(),
                 request.getStartDateTime(),
                 request.getEndDateTime(),
                 price

@@ -13,6 +13,6 @@ public class ReviewReader {
     private final ReviewRepository reviewRepository;
 
     public boolean isReviewWritten(Long reservationId) {
-        return reviewRepository.existsByReservationId(reservationId);
+        return reviewRepository.existsByReservation_Id(reservationId);
     }
 }

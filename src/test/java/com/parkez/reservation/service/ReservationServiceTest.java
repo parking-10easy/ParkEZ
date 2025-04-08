@@ -86,12 +86,12 @@ class ReservationServiceTest {
             ReflectionTestUtils.setField(parkingZone, "id", parkingZoneId);
 
             long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
-            BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+            BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
             Reservation reservation = Reservation.builder()
                     .user(user)
                     .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.getParkingLotName())
+                    .parkingLotName(parkingZone.extractParkingLotName())
                     .startDateTime(request.getStartDateTime())
                     .endDateTime(request.getEndDateTime())
                     .price(price)
@@ -183,14 +183,14 @@ class ReservationServiceTest {
             Reservation reservation = Reservation.builder()
                     .user(user)
                     .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.getParkingLotName())
+                    .parkingLotName(parkingZone.extractParkingLotName())
                     .build();
             ReflectionTestUtils.setField(reservation, "id", 1L);
 
             Reservation reviewedReservation = Reservation.builder()
                     .user(user)
                     .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.getParkingLotName())
+                    .parkingLotName(parkingZone.extractParkingLotName())
                     .build();
             ReflectionTestUtils.setField(reviewedReservation, "id", 2L); // 리뷰 작성된 예약
 
@@ -242,14 +242,14 @@ class ReservationServiceTest {
             Reservation reservation = Reservation.builder()
                     .user(user)
                     .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.getParkingLotName())
+                    .parkingLotName(parkingZone.extractParkingLotName())
                     .build();
             ReflectionTestUtils.setField(reservation, "id", 1L);
 
             Reservation reviewedReservation = Reservation.builder()
                     .user(user)
                     .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.getParkingLotName())
+                    .parkingLotName(parkingZone.extractParkingLotName())
                     .build();
             ReflectionTestUtils.setField(reviewedReservation, "id", 2L); // 리뷰 작성된 예약
 

@@ -62,7 +62,7 @@ class ReservationWriterTest {
             LocalDateTime endDateTime = LocalDateTime.now().plusHours(1);
 
             long hours = ChronoUnit.HOURS.between(startDateTime, endDateTime);
-            BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+            BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
             Reservation reservation = Reservation.builder()
                     .user(user)

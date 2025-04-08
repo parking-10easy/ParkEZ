@@ -49,8 +49,8 @@ public class MyReservationResponse {
     public static MyReservationResponse of(Reservation reservation, boolean reviewWritten) {
         return new MyReservationResponse(
                 reservation.getId(),
-                reservation.getUserId(),
-                reservation.getParkingZoneId(),
+                reservation.extractUserId(),
+                reservation.extractParkingZoneId(),
                 reservation.getParkingLotName(),
                 reviewWritten,
                 reservation.getStartDateTime(),

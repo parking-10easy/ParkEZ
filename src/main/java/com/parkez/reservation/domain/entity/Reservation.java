@@ -72,7 +72,7 @@ public class Reservation extends BaseEntity {
         this.status = ReservationStatus.CANCELED;
     }
 
-    public Long getUserId() {
+    public Long extractUserId() {
         return this.user.getId();
     }
 
@@ -80,7 +80,7 @@ public class Reservation extends BaseEntity {
         return this.user.getId().equals(userId);
     }
 
-    public Long getParkingZoneId() {
+    public Long extractParkingZoneId() {
         return this.parkingZone.getId();
     }
 }

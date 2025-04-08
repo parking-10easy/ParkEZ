@@ -48,19 +48,19 @@ public class ParkingZone extends BaseEntity {
         this.reviewCount = 0;
     }
 
-    public String getParkingLotName() {
+    public String extractParkingLotName() {
         return this.parkingLot.getName();
     }
 
-    public BigDecimal getParkingLotPricePerHour() {
+    public BigDecimal extractParkingLotPricePerHour() {
         return this.parkingLot.getPricePerHour();
     }
 
-    public Long getParkingLotOwnerId() {
+    public Long extractParkingLotOwnerId() {
         return this.parkingLot.getOwner().getId();
     }
 
     public boolean isOwnedBy(Long ownerId) {
-        return getParkingLotOwnerId().equals(ownerId);
+        return extractParkingLotOwnerId().equals(ownerId);
     }
 }
