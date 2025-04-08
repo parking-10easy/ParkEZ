@@ -19,7 +19,7 @@ public class ParkingLotService {
     private final ParkingLotWriter parkingLotWriter;
     private final ParkingLotReader parkingLotReader;
 
-
+    // 주차장 생성
     public ParkingLotResponse createParkingLot(User user, ParkingLotRequest request) {
         return ParkingLotResponse.from(parkingLotWriter.createParkingLot(user, request));
     }
