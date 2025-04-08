@@ -3,6 +3,7 @@ package com.parkez.reservation.service;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.repository.ReservationRepository;
+import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,14 +21,14 @@ public class ReservationReader {
 
     private final ReservationRepository reservationRepository;
 
-    public Page<Reservation> findMyReservations(Long userId, PageRequest pageable) {
+    public Page<ReservationWithReviewDto> findMyReservations(Long userId, PageRequest pageable) {
 
         // 예약 내역이 없을 경우 빈 페이지 전달
-        if (!reservationRepository.existsByUserId(userId)) {
+        if (!reservationRepository.existsByUser_Id(userId)) {
             return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
 
-        return reservationRepository.findByUserId(userId, pageable);
+        return reservationRepository.findAllWithReviewByUser_Id(userId, pageable);
     }
 
     public Reservation findReservation(Long userId, Long reservationId) {
@@ -37,7 +38,7 @@ public class ReservationReader {
         );
 
         // 본인이 한 예약이 아닐 경우 예외
-        if (!reservation.getUser().getId().equals(userId)) {
+        if (!reservation.isOwnedBy(userId)) {
             throw new ParkingEasyException(ReservationErrorCode.NOT_MY_RESERVATION);
         }
 
@@ -47,10 +48,10 @@ public class ReservationReader {
     public Page<Reservation> findOwnerReservations(Long parkingZoneId, PageRequest pageable) {
 
         // 예약 내역이 없을 경우 빈 페이지 전달
-        if (!reservationRepository.existsByParkingZoneId(parkingZoneId)) {
+        if (!reservationRepository.existsByParkingZone_Id(parkingZoneId)) {
             return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
 
-        return reservationRepository.findByParkingZoneId(parkingZoneId, pageable);
+        return reservationRepository.findAllByParkingZone_Id(parkingZoneId, pageable);
     }
 }

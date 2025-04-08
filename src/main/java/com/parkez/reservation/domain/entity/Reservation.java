@@ -22,11 +22,11 @@ public class Reservation extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "parking_zone_id", nullable = false)
     private ParkingZone parkingZone;
 
@@ -70,5 +70,17 @@ public class Reservation extends BaseEntity {
 
     public void cancel() {
         this.status = ReservationStatus.CANCELED;
+    }
+
+    public Long getUserId() {
+        return this.user.getId();
+    }
+
+    public boolean isOwnedBy(Long userId) {
+        return this.user.getId().equals(userId);
+    }
+
+    public Long getParkingZoneId() {
+        return this.parkingZone.getId();
     }
 }

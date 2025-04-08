@@ -8,5 +8,5 @@ import org.springframework.stereotype.Service;
 public class ParkingZoneService {
 
     private final ParkingZoneCommandService parkingZoneCommandService;
-    private final ParkingZoneQueryService parkingZoneQueryService;
+    private final ParkingZoneReader parkingZoneQueryService;
 }

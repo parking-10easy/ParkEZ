@@ -8,5 +8,5 @@ import org.springframework.stereotype.Service;
 public class ReviewService {
 
     private final ReviewCommandService reviewCommandService;
-    private final ReviewQueryService reviewQueryService;
+    private final ReviewReader reviewReader;
 }

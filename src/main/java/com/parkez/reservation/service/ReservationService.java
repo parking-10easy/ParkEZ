@@ -2,16 +2,17 @@ package com.parkez.reservation.service;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
-import com.parkez.parkingzone.service.ParkingZoneQueryService;
+import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.ReservationResponse;
+import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
-import com.parkez.review.service.ReviewQueryService;
+import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
-import com.parkez.user.service.UserQueryService;
+import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,57 +22,51 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class ReservationFacadeService {
+public class ReservationService {
 
     private final ReservationReader reservationReader;
     private final ReservationWriter reservationWriter;
-    private final UserQueryService userQueryService;
-    private final ParkingZoneQueryService parkingZoneQueryService;
-    private final ReviewQueryService reviewQueryService;
+    private final UserReader userReader;
+    private final ParkingZoneReader parkingZoneReader;
+    private final ReviewReader reviewReader;
 
     public MyReservationResponse createReservation(Long userId, ReservationRequest request) {
 
-        User user = userQueryService.findById(userId);
-        ParkingZone parkingZone = parkingZoneQueryService.findById(request.getParkingZoneId());
+        User user = userReader.findById(userId);
+        ParkingZone parkingZone = parkingZoneReader.findById(request.getParkingZoneId());
 
         // 요금 계산
         long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
         if (hours <= 0) {
             throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
         }
-        BigDecimal price = parkingZone.getParkingLot().getPricePerHour().multiply(BigDecimal.valueOf(hours));
+        BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
         Reservation reservation = reservationWriter.createReservation(
                 user,
                 parkingZone,
-                parkingZone.getParkingLot().getName(),
+                parkingZone.getParkingLotName(),
                 request.getStartDateTime(),
                 request.getEndDateTime(),
                 price
         );
 
-        boolean isReviewWritten = false;
+        boolean reviewWritten = false;
 
-        return MyReservationResponse.of(reservation, isReviewWritten);
+        return MyReservationResponse.of(reservation, reviewWritten);
     }
 
     public Page<MyReservationResponse> getMyReservations(Long userId, int page, int size) {
 
         int adjustedPage = (page > 0) ? page - 1 : 0;
         PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by("createdAt").descending());
-        Page<Reservation> pageMyReservations = reservationReader.findMyReservations(userId, pageable);
+        Page<ReservationWithReviewDto> pageDto = reservationReader.findMyReservations(userId, pageable);
 
-        // 리뷰 작성 여부 조회
-        List<Long> reservationIds = pageMyReservations.getContent().stream().map(Reservation::getId).toList();
-        Set<Long> reviewedIds = reviewQueryService.findReviewedReservationIds(reservationIds);
-
-        return pageMyReservations.map(reservation ->
-                MyReservationResponse.of(reservation, reviewedIds.contains(reservation.getId()))
+        return pageDto.map(dto ->
+                MyReservationResponse.of(dto.reservation(), dto.reviewWritten())
         );
     }
 
@@ -80,20 +75,21 @@ public class ReservationFacadeService {
         Reservation myReservation = reservationReader.findReservation(userId, reservationId);
 
         // 리뷰 작성 여부 조회
-        boolean isReviewWritten = reviewQueryService.isReviewWritten(myReservation.getId());
+        boolean reviewWritten = reviewReader.isReviewWritten(myReservation.getId());
 
-        return MyReservationResponse.of(myReservation, isReviewWritten);
+        return MyReservationResponse.of(myReservation, reviewWritten);
     }
 
     public Page<ReservationResponse> getOwnerReservations(Long userId, Long parkingZoneId, int page, int size) {
 
         // 조회하려는 주차공간이 없는 주차공간일 경우 예외
-        if (!parkingZoneQueryService.existsById(parkingZoneId)) {
+        if (!parkingZoneReader.existsById(parkingZoneId)) {
             throw new ParkingEasyException(ReservationErrorCode.NOT_FOUND_PARKING_ZONE);
         }
 
         // 조회하려는 주차공간이 본인 소유의 주차공간이 아닐 경우 예외
-        if (!parkingZoneQueryService.findById(parkingZoneId).getParkingLot().getOwner().getId().equals(userId)) {
+        ParkingZone parkingZone = parkingZoneReader.findById(parkingZoneId);
+        if (!parkingZone.isOwnedBy(userId)) {
             throw new ParkingEasyException(ReservationErrorCode.NOT_MY_PARKING_ZONE);
         }
 

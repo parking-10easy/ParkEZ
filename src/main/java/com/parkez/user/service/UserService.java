@@ -8,5 +8,5 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserCommandService userCommandService;
-    private final UserQueryService userQueryService;
+    private final UserReader userQueryService;
 }

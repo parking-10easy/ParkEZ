@@ -4,7 +4,7 @@ import com.parkez.common.response.Response;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.ReservationResponse;
-import com.parkez.reservation.service.ReservationFacadeService;
+import com.parkez.reservation.service.ReservationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "주차공간 예약 API", description = "주차공간에 대한 예약 API 입니다.")
 public class ReservationController {
 
-    private final ReservationFacadeService reservationFacadeService;
+    private final ReservationService reservationFacadeService;
 
     // 예약 생성
     @PostMapping("/v1/reservations")

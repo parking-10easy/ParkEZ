@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -45,5 +46,21 @@ public class ParkingZone extends BaseEntity {
         this.imageUrl = imageUrl;
         this.status = status;
         this.reviewCount = 0;
+    }
+
+    public String getParkingLotName() {
+        return this.parkingLot.getName();
+    }
+
+    public BigDecimal getParkingLotPricePerHour() {
+        return this.parkingLot.getPricePerHour();
+    }
+
+    public Long getParkingLotOwnerId() {
+        return this.parkingLot.getOwner().getId();
+    }
+
+    public boolean isOwnedBy(Long ownerId) {
+        return getParkingLotOwnerId().equals(ownerId);
     }
 }

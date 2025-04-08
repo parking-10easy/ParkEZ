@@ -3,6 +3,7 @@ package com.parkez.reservation.service;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.repository.ReservationRepository;
+import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
 import org.junit.jupiter.api.Test;
@@ -37,17 +38,18 @@ class ReservationReaderTest {
         PageRequest pageable = PageRequest.of(0, 10);
 
         Reservation reservation = Reservation.builder().build();
+        ReservationWithReviewDto dto = new ReservationWithReviewDto(reservation, true);
 
-        Page<Reservation> reservationPage = new PageImpl<>(List.of(reservation));
-        given(reservationRepository.existsByUserId(anyLong())).willReturn(true);
-        given(reservationRepository.findByUserId(anyLong(), any(PageRequest.class))).willReturn(reservationPage);
+        Page<ReservationWithReviewDto> pageDto = new PageImpl<>(List.of(dto));
+        given(reservationRepository.existsByUser_Id(anyLong())).willReturn(true);
+        given(reservationRepository.findAllWithReviewByUser_Id(anyLong(), any(PageRequest.class))).willReturn(pageDto);
 
         // when
-        Page<Reservation> result = reservationReader.findMyReservations(userId, pageable);
+        Page<ReservationWithReviewDto> result = reservationReader.findMyReservations(userId, pageable);
 
         // then
         assertNotNull(result);
-        assertEquals(reservationPage.getContent(), result.getContent());
+        assertEquals(dto, result.getContent().get(0));
         assertEquals(1, result.getTotalElements());
     }
 
@@ -57,10 +59,10 @@ class ReservationReaderTest {
         Long userId = 1L;
         PageRequest pageable = PageRequest.of(0, 10);
 
-        given(reservationRepository.existsByUserId(anyLong())).willReturn(false);
+        given(reservationRepository.existsByUser_Id(anyLong())).willReturn(false);
 
         // when
-        Page<Reservation> result = reservationReader.findMyReservations(userId, pageable);
+        Page<ReservationWithReviewDto> result = reservationReader.findMyReservations(userId, pageable);
 
         // then
         assertNotNull(result);
@@ -138,8 +140,8 @@ class ReservationReaderTest {
 
         Page<Reservation> reservationPage = new PageImpl<>(List.of(reservation));
 
-        given(reservationRepository.existsByParkingZoneId(anyLong())).willReturn(true);
-        given(reservationRepository.findByParkingZoneId(anyLong(), any(PageRequest.class))).willReturn(reservationPage);
+        given(reservationRepository.existsByParkingZone_Id(anyLong())).willReturn(true);
+        given(reservationRepository.findAllByParkingZone_Id(anyLong(), any(PageRequest.class))).willReturn(reservationPage);
 
         // when
         Page<Reservation> result = reservationReader.findOwnerReservations(parkingZoneId, pageable);
@@ -155,7 +157,7 @@ class ReservationReaderTest {
         Long parkingZoneId = 1L;
         PageRequest pageable = PageRequest.of(0, 10);
 
-        given(reservationRepository.existsByParkingZoneId(anyLong())).willReturn(false);
+        given(reservationRepository.existsByParkingZone_Id(anyLong())).willReturn(false);
 
         // when
         Page<Reservation> result = reservationReader.findOwnerReservations(parkingZoneId, pageable);

@@ -3,16 +3,17 @@ package com.parkez.reservation.service;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
-import com.parkez.parkingzone.service.ParkingZoneQueryService;
+import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.ReservationResponse;
+import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
-import com.parkez.review.service.ReviewQueryService;
+import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
-import com.parkez.user.service.UserQueryService;
+import com.parkez.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -34,20 +36,20 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ReservationFacadeServiceTest {
+class ReservationServiceTest {
 
     @Mock
     private ReservationReader reservationReader;
     @Mock
     private ReservationWriter reservationWriter;
     @Mock
-    private UserQueryService userQueryService;
+    private UserReader userReader;
     @Mock
-    private ParkingZoneQueryService parkingZoneQueryService;
+    private ParkingZoneReader parkingZoneReader;
     @Mock
-    private ReviewQueryService reviewQueryService;
+    private ReviewReader reviewReader;
     @InjectMocks
-    private ReservationFacadeService reservationFacadeService;
+    private ReservationService reservationService;
 
     @Test
     void 예약_생성_테스트() {
@@ -81,25 +83,25 @@ class ReservationFacadeServiceTest {
         ReflectionTestUtils.setField(parkingZone, "id", parkingZoneId);
 
         long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
-        BigDecimal price = parkingZone.getParkingLot().getPricePerHour().multiply(BigDecimal.valueOf(hours));
+        BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
-                .parkingLotName(parkingZone.getParkingLot().getName())
+                .parkingLotName(parkingZone.getParkingLotName())
                 .startDateTime(request.getStartDateTime())
                 .endDateTime(request.getEndDateTime())
                 .price(price)
                 .build();
         ReflectionTestUtils.setField(reservation, "id", reservationId);
 
-        given(userQueryService.findById(anyLong())).willReturn(user);
-        given(parkingZoneQueryService.findById(anyLong())).willReturn(parkingZone);
+        given(userReader.findById(anyLong())).willReturn(user);
+        given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
         given(reservationWriter.createReservation(any(User.class), any(ParkingZone.class), anyString(), any(LocalDateTime.class), any(LocalDateTime.class), any(BigDecimal.class)))
                 .willReturn(reservation);
 
         // when
-        MyReservationResponse result = reservationFacadeService.createReservation(userId, request);
+        MyReservationResponse result = reservationService.createReservation(userId, request);
 
         // then
         assertNotNull(result);
@@ -142,7 +144,7 @@ class ReservationFacadeServiceTest {
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                () -> reservationFacadeService.createReservation(userId, request));
+                () -> reservationService.createReservation(userId, request));
         assertNotNull(exception);
         assertEquals(ReservationErrorCode.NOT_VALID_REQUEST_TIME, exception.getErrorCode());
     }
@@ -174,25 +176,28 @@ class ReservationFacadeServiceTest {
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
-                .parkingLotName(parkingZone.getParkingLot().getName())
+                .parkingLotName(parkingZone.getParkingLotName())
                 .build();
         ReflectionTestUtils.setField(reservation, "id", 1L);
 
         Reservation reviewedReservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
-                .parkingLotName(parkingZone.getParkingLot().getName())
+                .parkingLotName(parkingZone.getParkingLotName())
                 .build();
         ReflectionTestUtils.setField(reviewedReservation, "id", 2L); // 리뷰 작성된 예약
 
-        Page<Reservation> pageMyReservations = new PageImpl<>(List.of(reservation, reviewedReservation));
+        ReservationWithReviewDto dto1 = new ReservationWithReviewDto(reservation, false);
+        ReservationWithReviewDto dto2 = new ReservationWithReviewDto(reviewedReservation, true);
 
+        PageRequest pageable = PageRequest.of(0, size, Sort.by("createdAt").descending());
+        List<ReservationWithReviewDto> content = List.of(dto1, dto2);
+        Page<ReservationWithReviewDto> pageDto = new PageImpl<>(content, pageable, content.size());
 
-        given(reservationReader.findMyReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
-        given(reviewQueryService.findReviewedReservationIds(anyList())).willReturn(Set.of(reviewedReservation.getId()));
+        given(reservationReader.findMyReservations(anyLong(), any(PageRequest.class))).willReturn(pageDto);
 
         // when
-        Page<MyReservationResponse> result = reservationFacadeService.getMyReservations(userId, page, size);
+        Page<MyReservationResponse> result = reservationService.getMyReservations(userId, page, size);
 
         // then
         assertNotNull(result);
@@ -230,25 +235,28 @@ class ReservationFacadeServiceTest {
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
-                .parkingLotName(parkingZone.getParkingLot().getName())
+                .parkingLotName(parkingZone.getParkingLotName())
                 .build();
         ReflectionTestUtils.setField(reservation, "id", 1L);
 
         Reservation reviewedReservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
-                .parkingLotName(parkingZone.getParkingLot().getName())
+                .parkingLotName(parkingZone.getParkingLotName())
                 .build();
         ReflectionTestUtils.setField(reviewedReservation, "id", 2L); // 리뷰 작성된 예약
 
-        Page<Reservation> pageMyReservations = new PageImpl<>(List.of(reservation, reviewedReservation));
+        ReservationWithReviewDto dto1 = new ReservationWithReviewDto(reservation, false);
+        ReservationWithReviewDto dto2 = new ReservationWithReviewDto(reviewedReservation, true);
 
+        PageRequest pageable = PageRequest.of(0, size, Sort.by("createdAt").descending());
+        List<ReservationWithReviewDto> content = List.of(dto1, dto2);
+        Page<ReservationWithReviewDto> pageDto = new PageImpl<>(content, pageable, content.size());
 
-        given(reservationReader.findMyReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
-        given(reviewQueryService.findReviewedReservationIds(anyList())).willReturn(Set.of(reviewedReservation.getId()));
+        given(reservationReader.findMyReservations(anyLong(), any(PageRequest.class))).willReturn(pageDto);
 
         // when
-        Page<MyReservationResponse> result = reservationFacadeService.getMyReservations(userId, page, size);
+        Page<MyReservationResponse> result = reservationService.getMyReservations(userId, page, size);
 
         // then
         assertNotNull(result);
@@ -281,10 +289,10 @@ class ReservationFacadeServiceTest {
         boolean isReviewWritten = false;
 
         given(reservationReader.findReservation(userId, reservationId)).willReturn(reservation);
-        given(reviewQueryService.isReviewWritten(anyLong())).willReturn(isReviewWritten);
+        given(reviewReader.isReviewWritten(anyLong())).willReturn(isReviewWritten);
 
         // when
-        MyReservationResponse result = reservationFacadeService.getMyReservation(reservationId, userId);
+        MyReservationResponse result = reservationService.getMyReservation(reservationId, userId);
 
         // then
         assertNotNull(result);
@@ -321,12 +329,12 @@ class ReservationFacadeServiceTest {
 
         Page<Reservation> pageMyReservations = new PageImpl<>(List.of(reservation));
 
-        given(parkingZoneQueryService.existsById(anyLong())).willReturn(true);
-        given(parkingZoneQueryService.findById(anyLong())).willReturn(parkingZone);
+        given(parkingZoneReader.existsById(anyLong())).willReturn(true);
+        given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
         given(reservationReader.findOwnerReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
 
         // when
-        Page<ReservationResponse> result = reservationFacadeService.getOwnerReservations(userId, parkingZoneId, page, size);
+        Page<ReservationResponse> result = reservationService.getOwnerReservations(userId, parkingZoneId, page, size);
 
         // then
         assertNotNull(result);
@@ -363,12 +371,12 @@ class ReservationFacadeServiceTest {
 
         Page<Reservation> pageMyReservations = new PageImpl<>(List.of(reservation));
 
-        given(parkingZoneQueryService.existsById(anyLong())).willReturn(true);
-        given(parkingZoneQueryService.findById(anyLong())).willReturn(parkingZone);
+        given(parkingZoneReader.existsById(anyLong())).willReturn(true);
+        given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
         given(reservationReader.findOwnerReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
 
         // when
-        Page<ReservationResponse> result = reservationFacadeService.getOwnerReservations(userId, parkingZoneId, page, size);
+        Page<ReservationResponse> result = reservationService.getOwnerReservations(userId, parkingZoneId, page, size);
 
         // then
         assertNotNull(result);
@@ -383,11 +391,11 @@ class ReservationFacadeServiceTest {
         int page = 1;
         int size = 10;
 
-        given(parkingZoneQueryService.existsById(anyLong())).willReturn(false);
+        given(parkingZoneReader.existsById(anyLong())).willReturn(false);
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                () -> reservationFacadeService.getOwnerReservations(userId, parkingZoneId, page, size));
+                () -> reservationService.getOwnerReservations(userId, parkingZoneId, page, size));
         assertEquals(ReservationErrorCode.NOT_FOUND_PARKING_ZONE, exception.getErrorCode());
     }
 
@@ -411,12 +419,12 @@ class ReservationFacadeServiceTest {
                 .parkingLot(parkingLot)
                 .build();
 
-        given(parkingZoneQueryService.existsById(anyLong())).willReturn(true);
-        given(parkingZoneQueryService.findById(anyLong())).willReturn(parkingZone);
+        given(parkingZoneReader.existsById(anyLong())).willReturn(true);
+        given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                () -> reservationFacadeService.getOwnerReservations(userId, parkingZoneId, page, size));
+                () -> reservationService.getOwnerReservations(userId, parkingZoneId, page, size));
         assertEquals(ReservationErrorCode.NOT_MY_PARKING_ZONE, exception.getErrorCode());
     }
 
@@ -434,7 +442,7 @@ class ReservationFacadeServiceTest {
         doNothing().when(reservationWriter).complete(reservation);
 
         // when
-        reservationFacadeService.completeReservation(userId, reservationId);
+        reservationService.completeReservation(userId, reservationId);
 
         // then
         verify(reservationWriter, times(1)).complete(reservation);
@@ -454,7 +462,7 @@ class ReservationFacadeServiceTest {
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                () -> reservationFacadeService.completeReservation(userId, reservationId));
+                () -> reservationService.completeReservation(userId, reservationId));
         assertEquals(ReservationErrorCode.CANT_MODIFY_RESERVATION_STATUS, exception.getErrorCode());
     }
 
@@ -474,7 +482,7 @@ class ReservationFacadeServiceTest {
         doNothing().when(reservationWriter).cancel(reservation);
 
         // when
-        reservationFacadeService.cancelReservation(userId, reservationId);
+        reservationService.cancelReservation(userId, reservationId);
 
         // then
         verify(reservationWriter, times(1)).cancel(reservation);
@@ -493,7 +501,7 @@ class ReservationFacadeServiceTest {
         given(reservationReader.findReservation(anyLong(), any(Long.class))).willReturn(reservation);
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                () -> reservationFacadeService.cancelReservation(userId, reservationId));
+                () -> reservationService.cancelReservation(userId, reservationId));
         assertEquals(ReservationErrorCode.CANT_CANCEL_COMPLETED_RESERVATION, exception.getErrorCode());
     }
 
@@ -510,7 +518,7 @@ class ReservationFacadeServiceTest {
         given(reservationReader.findReservation(anyLong(), any(Long.class))).willReturn(reservation);
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                () -> reservationFacadeService.cancelReservation(userId, reservationId));
+                () -> reservationService.cancelReservation(userId, reservationId));
         assertEquals(ReservationErrorCode.CANT_CANCEL_CANCELED_RESERVATION, exception.getErrorCode());
     }
 
@@ -530,7 +538,7 @@ class ReservationFacadeServiceTest {
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                () -> reservationFacadeService.cancelReservation(userId, reservationId));
+                () -> reservationService.cancelReservation(userId, reservationId));
         assertEquals(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR, exception.getErrorCode());
     }
 }
