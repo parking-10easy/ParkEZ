@@ -22,6 +22,7 @@ public class ParkingZone extends BaseDeleteEntity {
     @JoinColumn(name = "parking_lot_id", nullable = false)
     private ParkingLot parkingLot;
 
+    @Column(nullable = false)
     private String name;
 
     private String imageUrl;
@@ -52,5 +53,9 @@ public class ParkingZone extends BaseDeleteEntity {
 
     public void updateParkingZoneImage(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public Long getParkingLotId() {
+        return parkingLot.getId();
     }
 }

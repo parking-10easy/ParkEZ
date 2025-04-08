@@ -26,7 +26,7 @@ public class ParkingZoneReader {
 
         return parkingZones.map(parkingZone -> new ParkingZoneResponse(
                 parkingZone.getId(),
-                parkingZone.getParkingLot().getId(),
+                parkingZone.getParkingLotId(),
                 parkingZone.getName(),
                 parkingZone.getImageUrl(),
                 parkingZone.getStatus()

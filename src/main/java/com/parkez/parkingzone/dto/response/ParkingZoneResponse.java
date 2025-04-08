@@ -29,7 +29,7 @@ public class ParkingZoneResponse {
     public static ParkingZoneResponse from(ParkingZone parkingZone) {
         return new ParkingZoneResponse(
                 parkingZone.getId(),
-                parkingZone.getParkingLot().getId(),
+                parkingZone.getParkingLotId(),
                 parkingZone.getName(),
                 parkingZone.getImageUrl(),
                 parkingZone.getStatus()

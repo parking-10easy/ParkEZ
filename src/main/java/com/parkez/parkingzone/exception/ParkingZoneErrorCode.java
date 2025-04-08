@@ -9,10 +9,10 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ParkingZoneErrorCode implements ErrorCode {
 
-    PARKING_ZONE_NOT_FOUND("404", HttpStatus.NOT_FOUND, "해당 주차공간을 찾을 수 없습니다."),
-    FORBIDDEN_TO_UPDATE("403", HttpStatus.FORBIDDEN, "소유자만 수정할 수 있습니다.");
+    PARKING_ZONE_NOT_FOUND(HttpStatus.NOT_FOUND, "PARKING_ZONE_001","해당 주차공간을 찾을 수 없습니다."),
+    FORBIDDEN_TO_UPDATE(HttpStatus.FORBIDDEN, "PARKING_ZONE_002","소유자만 수정할 수 있습니다.");
 
-    private final String code;
     private final HttpStatus httpStatus;
+    private final String code;
     private final String defaultMessage;
 }

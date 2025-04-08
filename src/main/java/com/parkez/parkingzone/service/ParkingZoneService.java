@@ -22,24 +22,25 @@ public class ParkingZoneService {
         return ParkingZoneCreateResponse.from(parkingZoneWriter.createParkingZone(request, parkingLot));
     }
 
-    public Page<ParkingZoneResponse> getParkingZones(PageRequest pageRequest, Long parkingLotId) {
-        return parkingZoneReader.getParkingZones(pageRequest.getPage(), pageRequest.getSize(), parkingLotId);
+    public Page<ParkingZoneResponse> getParkingZones(int page, int size, Long parkingLotId) {
+        parkingLotReader.getExist(parkingLotId);
+        return parkingZoneReader.getParkingZones(page, size, parkingLotId);
     }
 
     public ParkingZoneResponse getParkingZone(Long parkingZoneId) {
         return ParkingZoneResponse.from(parkingZoneReader.getParkingZone(parkingZoneId));
     }
 
-    public ParkingZoneResponse updateParkingZone(Long parkingZoneId, ParkingZoneUpdateRequest request) {
-        return ParkingZoneResponse.from(parkingZoneWriter.updateParkingZone(parkingZoneId, request));
+    public void updateParkingZone(Long parkingZoneId, ParkingZoneUpdateRequest request) {
+        parkingZoneWriter.updateParkingZone(parkingZoneId, request);
     }
 
-    public ParkingZoneResponse updateParkingZoneStatus(Long parkingZoneId, ParkingZoneUpdateStatusRequest request) {
-        return ParkingZoneResponse.from(parkingZoneWriter.updateParkingZoneStatus(parkingZoneId, request));
+    public void updateParkingZoneStatus(Long parkingZoneId, ParkingZoneUpdateStatusRequest request) {
+        parkingZoneWriter.updateParkingZoneStatus(parkingZoneId, request);
     }
 
-    public ParkingZoneResponse updateParkingZoneImage(Long parkingZoneId, ParkingZoneUpdateImageRequest request) {
-        return ParkingZoneResponse.from(parkingZoneWriter.updateParkingZoneImage(parkingZoneId, request));
+    public void updateParkingZoneImage(Long parkingZoneId, ParkingZoneUpdateImageRequest request) {
+        parkingZoneWriter.updateParkingZoneImage(parkingZoneId, request);
     }
 
     public void deleteParkingZone(Long parkingZoneId) {

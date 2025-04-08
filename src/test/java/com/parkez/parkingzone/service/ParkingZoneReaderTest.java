@@ -117,11 +117,11 @@ class ParkingZoneReaderTest {
     @Test
     void 존재하지_않는_주차공간을_조회하면_예외가_발생한다() {
         // given
-        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(99L)).thenReturn(Optional.empty());
+        when(parkingZoneRepository.findByIdAndDeletedAtIsNull(-1L)).thenReturn(Optional.empty());
 
         // when & then
         assertThrows(ParkingEasyException.class,
-                () -> parkingZoneReader.getParkingZone(99L),
+                () -> parkingZoneReader.getParkingZone(-1L),
                 "해당 주차공간을 찾을 수 없습니다.");
     }
 }
