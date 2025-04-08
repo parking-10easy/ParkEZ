@@ -2,7 +2,7 @@ package com.parkez.parkinglot.service;
 
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
-import com.parkez.parkinglot.dto.response.ParkingLotSearchRequest;
+import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;

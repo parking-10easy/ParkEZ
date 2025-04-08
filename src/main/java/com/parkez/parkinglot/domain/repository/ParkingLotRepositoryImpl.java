@@ -1,7 +1,7 @@
 package com.parkez.parkinglot.domain.repository;
 
 import com.parkez.parkinglot.domain.entity.ParkingLot;
-import com.parkez.parkinglot.dto.response.ParkingLotSearchRequest;
+import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;

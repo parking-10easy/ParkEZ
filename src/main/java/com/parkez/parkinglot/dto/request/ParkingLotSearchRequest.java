@@ -1,4 +1,4 @@
-package com.parkez.parkinglot.dto.response;
+package com.parkez.parkinglot.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;

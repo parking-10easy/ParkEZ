@@ -1,7 +1,7 @@
 package com.parkez.parkinglot.web;
 
 import com.parkez.common.response.Response;
-import com.parkez.parkinglot.dto.response.ParkingLotSearchRequest;
+import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.service.ParkingLotService;
 import io.swagger.v3.oas.annotations.Operation;
