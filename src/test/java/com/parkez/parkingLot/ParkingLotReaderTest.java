@@ -165,7 +165,7 @@ public class ParkingLotReaderTest {
         Long parkingLotId = 1L;
         when(parkingLotRepository.searchParkingLot(parkingLotId)).thenReturn(Optional.ofNullable(parkingLot1));
 
-        ParkingLot found = parkingLotReader.getParkingLot(parkingLotId);
+        ParkingLot found = parkingLotReader.searchParkingLot(parkingLotId);
         assertEquals("참쉬운주차장", found.getName());
 
     }
@@ -176,7 +176,7 @@ public class ParkingLotReaderTest {
         when(parkingLotRepository.searchParkingLot(parkingLotId)).thenReturn(Optional.empty());
 
         ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
-            parkingLotReader.getParkingLot(parkingLotId);
+            parkingLotReader.searchParkingLot(parkingLotId);
         });
         assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
     }
@@ -200,7 +200,7 @@ public class ParkingLotReaderTest {
         when(parkingLotRepository.findById(parkingLotId)).thenReturn(Optional.empty());
 
         ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
-                parkingLotReader.getParkingLot(parkingLotId)
+                parkingLotReader.searchParkingLot(parkingLotId)
         );
         assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
     }
