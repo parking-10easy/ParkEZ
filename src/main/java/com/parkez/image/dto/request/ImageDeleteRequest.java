@@ -1,5 +1,6 @@
 package com.parkez.image.dto.request;
 
+import com.parkez.image.enums.ImageTargetType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
@@ -13,14 +14,14 @@ public class ImageDeleteRequest {
 
     @NotBlank(message = "targetType은 필수 입력값입니다.")
     @Schema(description = "이미지 업로드할 도메인 입력", example = "UserProfile")
-    private String targetType;
+    private ImageTargetType targetType;
 
     @NotBlank(message = "targetId는 필수 입력값입니다.")
     @Schema(description = "이미지 업로드할 도메인의 개별 Id 입력", example = "1")
     private Long targetId;
 
     @Builder
-    private ImageDeleteRequest(String targetType, Long targetId) {
+    private ImageDeleteRequest(ImageTargetType targetType, Long targetId) {
         this.targetType = targetType;
         this.targetId = targetId;
     }

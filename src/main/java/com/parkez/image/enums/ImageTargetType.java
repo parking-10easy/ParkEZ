@@ -17,10 +17,4 @@ public enum ImageTargetType {
 
     private final String description;
 
-    public static ImageTargetType of(String type){
-        return Arrays.stream(values())
-                .filter(e->e.description.equalsIgnoreCase(type))
-                .findFirst()
-                .orElseThrow(()->new ParkingEasyException(ImageErrorCode.INVALID_TARGET_TYPE));
-    }
 }
