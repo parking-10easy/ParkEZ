@@ -1,7 +1,7 @@
 package com.parkez.common.image;
 
-import com.parkez.common.image.dto.ImageDeleteRequest;
-import com.parkez.common.image.dto.ImageUploadRequest;
+import com.parkez.common.image.dto.request.ImageDeleteRequest;
+import com.parkez.common.image.dto.request.ImageUploadRequest;
 import com.parkez.common.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
