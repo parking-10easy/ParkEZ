@@ -35,7 +35,7 @@ public class ParkingLotUserController {
     public Response<ParkingLotSearchResponse> getParkingLot(
             @PathVariable Long parkingLotId
     ){
-      return Response.of(parkingLotService.getParkingLot(parkingLotId));
+      return Response.of(parkingLotService.searchParkingLot(parkingLotId));
     }
 
 }
