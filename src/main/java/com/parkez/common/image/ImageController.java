@@ -2,6 +2,7 @@ package com.parkez.common.image;
 
 import com.parkez.common.image.dto.request.ImageDeleteRequest;
 import com.parkez.common.image.dto.request.ImageUploadRequest;
+import com.parkez.common.image.dto.response.ImageUrlResponse;
 import com.parkez.common.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,22 +22,22 @@ public class ImageController {
 
     @PostMapping
     @Operation(summary = "이미지 업로드", description = "targetType과 targetId로 구분된 폴더에 s3 객체가 생성됩니다.")
-    public Response<List<String>> upload(
+    public Response<ImageUrlResponse> upload(
             @RequestPart("request") ImageUploadRequest request,
             @RequestPart("images") List<MultipartFile> imageFiles) {
 
-        List<String> urls = imageService.upload(request, imageFiles);
-        return Response.of(urls);
+        return Response.of(imageService.upload(request, imageFiles));
+
     }
 
     @PutMapping
     @Operation(summary = "이미지 수정", description = "기존 객체를 지우고 새로운 객체로 업데이트합니다.")
-    public Response<List<String>> update(
+    public Response<ImageUrlResponse> update(
             @RequestPart("request") ImageUploadRequest request,
             @RequestPart("images") List<MultipartFile> imageFiles
     ){
-        List<String> updatedUrls = imageService.update(request, imageFiles);
-        return Response.of(updatedUrls);
+        ;
+        return Response.of(imageService.update(request, imageFiles));
     }
 
     @DeleteMapping

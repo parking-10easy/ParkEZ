@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.model.*;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.image.dto.request.ImageDeleteRequest;
 import com.parkez.common.image.dto.request.ImageUploadRequest;
+import com.parkez.common.image.dto.response.ImageUrlResponse;
 import com.parkez.common.image.enums.AllowedExtension;
 import com.parkez.common.image.enums.ImageTargetType;
 import com.parkez.common.image.exception.ImageErrorCode;
@@ -29,7 +30,7 @@ public class S3ImageService implements ImageService {
     private String bucket;
 
     @Override
-    public List<String> upload(ImageUploadRequest request, List<MultipartFile> files) {
+    public ImageUrlResponse upload(ImageUploadRequest request, List<MultipartFile> files) {
 
         if(files == null || files.isEmpty()) {
             throw new ParkingEasyException(ImageErrorCode.IMAGE_IS_NULL);
@@ -53,11 +54,11 @@ public class S3ImageService implements ImageService {
 
         }
 
-        return imageUrls;
+        return ImageUrlResponse.of(imageUrls);
     }
 
     @Override
-    public List<String> update(ImageUploadRequest request, List<MultipartFile> files) {
+    public ImageUrlResponse update(ImageUploadRequest request, List<MultipartFile> files) {
 
         ImageDeleteRequest deleteRequest = new ImageDeleteRequest(
                 request.getTargetType(),
