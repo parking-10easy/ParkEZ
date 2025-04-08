@@ -8,7 +8,6 @@ import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
-import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.parkinglot.service.ParkingLotWriter;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
@@ -21,9 +20,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,9 +32,6 @@ public class ParkingLotWriterTest {
 
     @InjectMocks
     private ParkingLotWriter parkingLotWriter;
-
-    @Mock
-    private ParkingLotReader parkingLotReader;
 
     @Mock
     private ParkingLotRepository parkingLotrepository;
@@ -107,7 +105,7 @@ public class ParkingLotWriterTest {
     @Test
     void 주차장을_수정한다() {
         Long parkingLotId = 1L;
-        when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(parkingLot);
+        when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(Optional.ofNullable(parkingLot));
         ParkingLotRequest updatedRequest = ParkingLotRequest.builder()
                 .name("수정된 주차장")
                 .address("수정된 주소")
@@ -129,9 +127,9 @@ public class ParkingLotWriterTest {
     }
 
     @Test
-    void 주차장_수정_실패한다_소유자_권한_없음() {
+    void 소유자가_아니면_주차장_수정_실패한다(){
         Long parkingLotId = 1L;
-        when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(parkingLot);
+        when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(Optional.ofNullable(parkingLot));
         ParkingLotRequest updateRequest = ParkingLotRequest.builder()
                 .name("수정된 주차장")
                 .address("수정된 주소")
@@ -147,9 +145,9 @@ public class ParkingLotWriterTest {
     }
 
     @Test
-    void 주차장_상태를_변경한다() {
+    void 주차장_상태를_변경한다(){
         Long parkingLotId = 1L;
-        when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot); // 모킹 추가
+        when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(Optional.ofNullable(parkingLot));
         ParkingLotStatusRequest statusRequest = ParkingLotStatusRequest.builder()
                 .status(ParkingLotStatus.CLOSED)
                 .build();
@@ -158,9 +156,9 @@ public class ParkingLotWriterTest {
     }
 
     @Test
-    void 주차장_상태_변경을_실패한다() {
+    void 소유자가_아니면_주차장_상태_변경을_실패한다() {
         Long parkingLotId = 1L;
-        when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot);
+        when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(Optional.ofNullable(parkingLot));
         ParkingLotStatusRequest statusRequest = ParkingLotStatusRequest.builder()
                 .status(ParkingLotStatus.CLOSED)
                 .build();
@@ -173,7 +171,7 @@ public class ParkingLotWriterTest {
     @Test
     void 주차장을_삭제한다() {
         Long parkingLotId = 1L;
-        when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot);
+        when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(Optional.ofNullable(parkingLot));
         parkingLotWriter.deleteParkingLot(owner, parkingLotId);
         assertNotNull(parkingLot.getDeletedAt());
     }
@@ -181,7 +179,7 @@ public class ParkingLotWriterTest {
     @Test
     void 주차장_삭제를_실패한다() {
         Long parkingLotId = 1L;
-        when(parkingLotReader.getParkingLot(anyLong())).thenReturn(parkingLot);
+        when(parkingLotrepository.findParkingLotById(anyLong())).thenReturn(Optional.ofNullable(parkingLot));
         ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                 parkingLotWriter.deleteParkingLot(user, parkingLotId)
         );
