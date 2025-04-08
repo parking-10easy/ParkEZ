@@ -22,16 +22,14 @@ public class JwtProvider {
 
 	public static final String BEARER_PREFIX = "Bearer ";
 	public static final String AUTHORIZATION_HEADER = "Authorization";
-	private static final long ACCESS_TOKEN_TIME = 15 * 60 * 1000L;
-	public static final long REFRESH_TOKEN_TIME =  24 * 60 * 60 * 1000L;
-
 
 	private final SecretKey signingKey;
+	private final JwtProperties jwtProperties;
 
-
-	public JwtProvider(@Value("${jwt.secret.key}") String secretKey) {
-		byte[] bytes = Base64.getDecoder().decode(secretKey);
+	public JwtProvider(JwtProperties jwtProperties) {
+		byte[] bytes = Base64.getDecoder().decode(jwtProperties.getSecretKey());
 		this.signingKey = Keys.hmacShaKeyFor(bytes);
+		this.jwtProperties = jwtProperties;
 	}
 
 	public String createAccessToken(Long userId, String email, String roleName, String nickname) {
@@ -42,7 +40,7 @@ public class JwtProvider {
 				.claim("email", email)
 				.claim("userRole", roleName)
 				.claim("nickname", nickname)
-				.expiration(createExpiration(ACCESS_TOKEN_TIME))
+				.expiration(createExpiration(jwtProperties.getAccessTokenExpiration()))
 				.issuedAt(date)
 				.signWith(this.signingKey)
 				.compact();
@@ -53,7 +51,7 @@ public class JwtProvider {
 
 		return Jwts.builder()
 			.subject(String.valueOf(userId))
-			.expiration(createExpiration(REFRESH_TOKEN_TIME))
+			.expiration(createExpiration(jwtProperties.getRefreshTokenExpiration()))
 			.issuedAt(date)
 			.signWith(this.signingKey)
 			.compact();
