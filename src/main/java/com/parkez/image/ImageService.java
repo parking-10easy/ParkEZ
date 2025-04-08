@@ -1,8 +1,8 @@
-package com.parkez.common.image;
+package com.parkez.image;
 
-import com.parkez.common.image.dto.request.ImageDeleteRequest;
-import com.parkez.common.image.dto.request.ImageUploadRequest;
-import com.parkez.common.image.dto.response.ImageUrlResponse;
+import com.parkez.image.dto.request.ImageDeleteRequest;
+import com.parkez.image.dto.request.ImageUploadRequest;
+import com.parkez.image.dto.response.ImageUrlResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;

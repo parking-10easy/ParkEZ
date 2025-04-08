@@ -1,16 +1,16 @@
-package com.parkez.common.image;
+package com.parkez.image;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.common.image.dto.request.ImageDeleteRequest;
-import com.parkez.common.image.dto.request.ImageUploadRequest;
-import com.parkez.common.image.dto.response.ImageUrlResponse;
-import com.parkez.common.image.enums.AllowedExtension;
-import com.parkez.common.image.enums.ImageTargetType;
-import com.parkez.common.image.exception.ImageErrorCode;
+import com.parkez.image.dto.request.ImageDeleteRequest;
+import com.parkez.image.dto.request.ImageUploadRequest;
+import com.parkez.image.dto.response.ImageUrlResponse;
+import com.parkez.image.enums.AllowedExtension;
+import com.parkez.image.enums.ImageTargetType;
+import com.parkez.image.exception.ImageErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

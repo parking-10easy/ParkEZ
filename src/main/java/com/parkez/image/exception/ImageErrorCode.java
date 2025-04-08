@@ -1,4 +1,4 @@
-package com.parkez.common.image.exception;
+package com.parkez.image.exception;
 
 import com.parkez.common.exception.ErrorCode;
 import lombok.Getter;

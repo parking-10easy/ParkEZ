@@ -1,4 +1,4 @@
-package com.parkez.common.image.enums;
+package com.parkez.image.enums;
 
 import lombok.Getter;
 

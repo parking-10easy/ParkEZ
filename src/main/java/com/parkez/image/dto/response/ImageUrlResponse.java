@@ -1,4 +1,4 @@
-package com.parkez.common.image.dto.response;
+package com.parkez.image.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;

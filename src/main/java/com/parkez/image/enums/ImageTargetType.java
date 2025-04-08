@@ -1,7 +1,7 @@
-package com.parkez.common.image.enums;
+package com.parkez.image.enums;
 
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.common.image.exception.ImageErrorCode;
+import com.parkez.image.exception.ImageErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
