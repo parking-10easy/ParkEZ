@@ -6,6 +6,7 @@ import com.parkez.reservation.domain.repository.ReservationRepository;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,7 +22,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationReaderTest {
@@ -31,139 +33,152 @@ class ReservationReaderTest {
     @InjectMocks
     private ReservationReader reservationReader;
 
-    @Test
-    void 내_예약_리스트_조회_테스트() {
-        // given
-        Long userId = 1L;
-        PageRequest pageable = PageRequest.of(0, 10);
+    @Nested
+    class getReservationsByUserId {
 
-        Reservation reservation = Reservation.builder().build();
-        ReservationWithReviewDto dto = new ReservationWithReviewDto(reservation, true);
+        @Test
+        void 예약_리스트_조회_테스트() {
+            // given
+            Long userId = 1L;
+            PageRequest pageable = PageRequest.of(0, 10);
 
-        Page<ReservationWithReviewDto> pageDto = new PageImpl<>(List.of(dto));
-        given(reservationRepository.existsByUser_Id(anyLong())).willReturn(true);
-        given(reservationRepository.findAllWithReviewByUser_Id(anyLong(), any(PageRequest.class))).willReturn(pageDto);
+            Reservation reservation = Reservation.builder().build();
+            ReservationWithReviewDto dto = new ReservationWithReviewDto(reservation, true);
 
-        // when
-        Page<ReservationWithReviewDto> result = reservationReader.findMyReservations(userId, pageable);
+            Page<ReservationWithReviewDto> pageDto = new PageImpl<>(List.of(dto));
+            given(reservationRepository.existsByUser_Id(anyLong())).willReturn(true);
+            given(reservationRepository.findAllWithReviewByUser_Id(anyLong(), any(PageRequest.class))).willReturn(pageDto);
 
-        // then
-        assertNotNull(result);
-        assertEquals(dto, result.getContent().get(0));
-        assertEquals(1, result.getTotalElements());
+            // when
+            Page<ReservationWithReviewDto> result = reservationReader.findMyReservations(userId, pageable);
+
+            // then
+            assertNotNull(result);
+            assertEquals(dto, result.getContent().get(0));
+            assertEquals(1, result.getTotalElements());
+        }
+
+        @Test
+        void 예약이_존재하지_않을_경우_빈_페이지_전달() {
+            // given
+            Long userId = 1L;
+            PageRequest pageable = PageRequest.of(0, 10);
+
+            given(reservationRepository.existsByUser_Id(anyLong())).willReturn(false);
+
+            // when
+            Page<ReservationWithReviewDto> result = reservationReader.findMyReservations(userId, pageable);
+
+            // then
+            assertNotNull(result);
+            assertTrue(result.getContent().isEmpty());
+        }
     }
 
-    @Test
-    void 내_예약_리스트_조회_시_빈_리스트_조회_테스트() {
-        // given
-        Long userId = 1L;
-        PageRequest pageable = PageRequest.of(0, 10);
+    @Nested
+    class getReservationByUserId {
 
-        given(reservationRepository.existsByUser_Id(anyLong())).willReturn(false);
+        @Test
+        void 예약_단건_조회_테스트() {
+            // given
+            Long userId = 1L;
+            Long reservationId = 1L;
 
-        // when
-        Page<ReservationWithReviewDto> result = reservationReader.findMyReservations(userId, pageable);
+            User user = User.builder().build();
+            ReflectionTestUtils.setField(user, "id", userId);
 
-        // then
-        assertNotNull(result);
-        assertTrue(result.getContent().isEmpty());
+            Reservation reservation = Reservation.builder()
+                    .user(user)
+                    .build();
+
+            given(reservationRepository.findById(anyLong())).willReturn(Optional.of(reservation));
+
+            // when
+            Reservation result = reservationReader.findReservation(userId, reservationId);
+
+            // then
+            assertNotNull(result);
+            assertEquals(reservation, result);
+        }
+
+        @Test
+        void 예약이_존재하지_않을_경우_예외() {
+            // given
+            Long userId = 1L;
+            Long reservationId = 1L;
+
+            given(reservationRepository.findById(anyLong())).willReturn(Optional.empty());
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> reservationReader.findReservation(userId, reservationId));
+            assertEquals(ReservationErrorCode.NOT_FOUND_RESERVATION, exception.getErrorCode());
+        }
+
+        @Test
+        void 본인이_한_예약이_아닐_경우_예외() {
+            // given
+            Long userId = 1L;
+            Long differentUserId = 2L;
+            Long reservationId = 1L;
+
+            User user = User.builder().build();
+            ReflectionTestUtils.setField(user, "id", userId);
+            User differentUser = User.builder().build();
+            ReflectionTestUtils.setField(differentUser, "id", differentUserId);
+
+            Reservation reservation = Reservation.builder()
+                    .user(differentUser)
+                    .build();
+
+            given(reservationRepository.findById(anyLong())).willReturn(Optional.of(reservation));
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> reservationReader.findReservation(userId, reservationId));
+            assertEquals(ReservationErrorCode.NOT_MY_RESERVATION, exception.getErrorCode());
+        }
     }
 
-    @Test
-    void 예약_단건_조회_테스트() {
-        // given
-        Long userId = 1L;
-        Long reservationId = 1L;
+    @Nested
+    class getReservationsByParkingZoneId {
 
-        User user = User.builder().build();
-        ReflectionTestUtils.setField(user, "id", userId);
+        @Test
+        void 예약_내역_리스트_조회_테스트() {
+            // given
+            Long parkingZoneId = 1L;
+            PageRequest pageable = PageRequest.of(0, 10);
 
-        Reservation reservation = Reservation.builder()
-                .user(user)
-                .build();
+            Reservation reservation = Reservation.builder().build();
 
-        given(reservationRepository.findById(anyLong())).willReturn(Optional.of(reservation));
+            Page<Reservation> reservationPage = new PageImpl<>(List.of(reservation));
 
-        // when
-        Reservation result = reservationReader.findReservation(userId, reservationId);
+            given(reservationRepository.existsByParkingZone_Id(anyLong())).willReturn(true);
+            given(reservationRepository.findAllByParkingZone_Id(anyLong(), any(PageRequest.class))).willReturn(reservationPage);
 
-        // then
-        assertNotNull(result);
-        assertEquals(reservation, result);
+            // when
+            Page<Reservation> result = reservationReader.findOwnerReservations(parkingZoneId, pageable);
+
+            // then
+            assertNotNull(result);
+            assertEquals(reservation, result.getContent().get(0));
+        }
+
+        @Test
+        void 예약이_존재하지_않을_경우_빈_페이지_전달() {
+            // given
+            Long parkingZoneId = 1L;
+            PageRequest pageable = PageRequest.of(0, 10);
+
+            given(reservationRepository.existsByParkingZone_Id(anyLong())).willReturn(false);
+
+            // when
+            Page<Reservation> result = reservationReader.findOwnerReservations(parkingZoneId, pageable);
+
+            // then
+            assertNotNull(result);
+            assertTrue(result.getContent().isEmpty());
+        }
     }
 
-    @Test
-    void 예약_단건_조회_시_예약이_없을_경우_예외() {
-        // given
-        Long userId = 1L;
-        Long reservationId = 1L;
-
-        given(reservationRepository.findById(anyLong())).willReturn(Optional.empty());
-
-        // when & then
-        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                () -> reservationReader.findReservation(userId, reservationId));
-        assertEquals(ReservationErrorCode.NOT_FOUND_RESERVATION, exception.getErrorCode());
-    }
-
-    @Test
-    void 예약_단건_조회_시_본인이_한_예약이_아닐_경우_예외() {
-        // given
-        Long userId = 1L;
-        Long differentUserId = 2L;
-        Long reservationId = 1L;
-
-        User user = User.builder().build();
-        ReflectionTestUtils.setField(user, "id", userId);
-        User differentUser = User.builder().build();
-        ReflectionTestUtils.setField(differentUser, "id", differentUserId);
-
-        Reservation reservation = Reservation.builder()
-                .user(differentUser)
-                .build();
-
-        given(reservationRepository.findById(anyLong())).willReturn(Optional.of(reservation));
-
-        // when & then
-        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                () -> reservationReader.findReservation(userId, reservationId));
-        assertEquals(ReservationErrorCode.NOT_MY_RESERVATION, exception.getErrorCode());
-    }
-
-    @Test
-    void parking_zone_에_대한_예약_내역_리스트_조회_테스트() {
-        // given
-        Long parkingZoneId = 1L;
-        PageRequest pageable = PageRequest.of(0, 10);
-
-        Reservation reservation = Reservation.builder().build();
-
-        Page<Reservation> reservationPage = new PageImpl<>(List.of(reservation));
-
-        given(reservationRepository.existsByParkingZone_Id(anyLong())).willReturn(true);
-        given(reservationRepository.findAllByParkingZone_Id(anyLong(), any(PageRequest.class))).willReturn(reservationPage);
-
-        // when
-        Page<Reservation> result = reservationReader.findOwnerReservations(parkingZoneId, pageable);
-
-        // then
-        assertNotNull(result);
-        assertEquals(reservation, result.getContent().get(0));
-    }
-
-    @Test
-    void parking_zone_에_대한_예약_내역_리스트_조회_시_빈_페이지_전달() {
-        // given
-        Long parkingZoneId = 1L;
-        PageRequest pageable = PageRequest.of(0, 10);
-
-        given(reservationRepository.existsByParkingZone_Id(anyLong())).willReturn(false);
-
-        // when
-        Page<Reservation> result = reservationReader.findOwnerReservations(parkingZoneId, pageable);
-
-        // then
-        assertNotNull(result);
-        assertTrue(result.getContent().isEmpty());
-    }
 }

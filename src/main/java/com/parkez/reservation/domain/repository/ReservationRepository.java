@@ -38,7 +38,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
                 LEFT JOIN Review rv ON rv.reservation = r
                 WHERE r.user.id = :userId
             """)
-    Page<ReservationWithReviewDto> findAllWithReviewByUser_Id(Long userId, Pageable pageable);
+    Page<ReservationWithReviewDto> findAllWithReviewByUser_Id(@Param("userId") Long userId, Pageable pageable);
 
     boolean existsByParkingZone_Id(Long parkingZoneId);
 
