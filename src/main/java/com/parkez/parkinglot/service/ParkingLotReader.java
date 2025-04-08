@@ -26,7 +26,7 @@ public class ParkingLotReader {
     }
 
     // 주차장 단건 조회
-    public ParkingLot getParkingLot(Long parkingLotId) {
+    public ParkingLot searchParkingLot(Long parkingLotId) {
         return parkingLotRepository.searchParkingLot(parkingLotId).orElseThrow(
                 () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
     }

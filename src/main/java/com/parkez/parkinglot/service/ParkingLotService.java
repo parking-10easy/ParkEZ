@@ -30,8 +30,8 @@ public class ParkingLotService {
     }
 
     // 주차장 단건 조회
-    public ParkingLotSearchResponse getParkingLot(Long parkingLotId) {
-        return ParkingLotSearchResponse.from(parkingLotReader.getParkingLot(parkingLotId));
+    public ParkingLotSearchResponse searchParkingLot(Long parkingLotId) {
+        return ParkingLotSearchResponse.from(parkingLotReader.searchParkingLot(parkingLotId));
     }
 
     // 주차장 수정
