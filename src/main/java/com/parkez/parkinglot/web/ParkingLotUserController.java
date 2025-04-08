@@ -32,7 +32,7 @@ public class ParkingLotUserController {
     // 주차장 단건 조회
     @GetMapping("/v1/parking-lots/{parkingLotId}")
     @Operation(summary = "주차장 단건 조회")
-    public Response<ParkingLotSearchResponse> getParkingLot(
+    public Response<ParkingLotSearchResponse> searchParkingLot(
             @PathVariable Long parkingLotId
     ){
       return Response.of(parkingLotService.searchParkingLot(parkingLotId));
