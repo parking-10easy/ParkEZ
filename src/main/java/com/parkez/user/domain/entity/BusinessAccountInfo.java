@@ -1,6 +1,7 @@
 package com.parkez.user.domain.entity;
 
 import jakarta.persistence.Embeddable;
+import lombok.Builder;
 import lombok.Getter;
 
 @Embeddable
@@ -19,11 +20,16 @@ public class BusinessAccountInfo {
         this.bankAccount = null;
     }
 
-    public BusinessAccountInfo(String businessNumber, String depositorName, String bankName, String bankAccount) {
+    private BusinessAccountInfo(String businessNumber, String depositorName, String bankName, String bankAccount) {
         this.businessNumber = businessNumber;
         this.depositorName = depositorName;
         this.bankName = bankName;
         this.bankAccount = bankAccount;
+    }
+
+    public static BusinessAccountInfo create(String businessNumber, String depositorName, String bankName,
+        String bankAccount) {
+        return new BusinessAccountInfo(businessNumber, depositorName, bankName, bankAccount);
     }
 
 }
