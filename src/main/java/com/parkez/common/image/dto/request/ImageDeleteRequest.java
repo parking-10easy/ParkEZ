@@ -2,6 +2,7 @@ package com.parkez.common.image.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -18,7 +19,8 @@ public class ImageDeleteRequest {
     @Schema(description = "이미지 업로드할 도메인의 개별 Id 입력", example = "1")
     private Long targetId;
 
-    public ImageDeleteRequest(String targetType, Long targetId) {
+    @Builder
+    private ImageDeleteRequest(String targetType, Long targetId) {
         this.targetType = targetType;
         this.targetId = targetId;
     }

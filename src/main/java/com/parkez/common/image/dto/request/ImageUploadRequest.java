@@ -21,7 +21,7 @@ public class ImageUploadRequest {
 
 
     @Builder
-    public ImageUploadRequest(String targetType, Long targetId) {
+    private ImageUploadRequest(String targetType, Long targetId) {
         this.targetType = targetType;
         this.targetId = targetId;
     }

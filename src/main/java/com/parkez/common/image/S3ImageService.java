@@ -60,10 +60,10 @@ public class S3ImageService implements ImageService {
     @Override
     public ImageUrlResponse update(ImageUploadRequest request, List<MultipartFile> files) {
 
-        ImageDeleteRequest deleteRequest = new ImageDeleteRequest(
-                request.getTargetType(),
-                request.getTargetId()
-        );
+        ImageDeleteRequest deleteRequest = ImageDeleteRequest.builder()
+                .targetType(request.getTargetType())
+                .targetId(request.getTargetId())
+                .build();
 
         delete(deleteRequest);
 
