@@ -14,7 +14,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Getter
-@Schema(description = "주차장 검색 응답 DTO")
+@Schema(description = "주차장 조회 응답 DTO")
 public class ParkingLotSearchResponse {
 
 

@@ -16,7 +16,7 @@ import java.time.LocalTime;
 
 @Getter
 @NoArgsConstructor
-@Schema(description = "주차장 생성 및 조회 응답 DTO")
+@Schema(description = "주차장 생성 응답 DTO")
 public class ParkingLotResponse {
 
     @Schema(description = "주차장 ID", example = "1")
@@ -49,7 +49,7 @@ public class ParkingLotResponse {
     @Schema(description = "요금 유형", example = "PAID")
     private ChargeType chargeType;
 
-    @Schema(description = "데이터 출처", example = "OWNER_REGISTERED")
+    @Schema(description = "데이터 등록 방식", example = "OWNER_REGISTERED")
     private SourceType sourceType;
 
     @Schema(description = "생성 일시", example = "2025-04-04 08:00:00")

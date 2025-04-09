@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Tag(name = "주차장 관리 API", description = "주차장 관리 및 조회 API입니다.")
-public class ParkingLotOwnerController {
+public class ParkingLotController {
 
     private final ParkingLotService parkingLotService;
 
@@ -55,6 +55,8 @@ public class ParkingLotOwnerController {
         return Response.of(parkingLotService.searchParkingLot(parkingLotId));
     }
 
+    // TODO : owner 조회  /api/v1/parking-lots/me
+
     // 주차장 수정
     @PutMapping("/v1/parking-lots/{parkingLotId}")
     @Operation(summary = "주차장 수정")
@@ -68,7 +70,7 @@ public class ParkingLotOwnerController {
     }
 
     // 주차장 상태 변경
-    @PatchMapping("/v1/parking-lots/{parkingLotId}/status")
+    @PutMapping("/v1/parking-lots/{parkingLotId}/status")
     @Operation(summary = "주차장 상태 수정")
     public Response<Void> updatedParkingLotStatus(
             @Parameter(hidden = true) User user,
@@ -92,7 +94,7 @@ public class ParkingLotOwnerController {
 
     // 주차장 이미지 수정
 
-    @PatchMapping("/v1/parking-lots/{parkingLotId}/images")
+    @PutMapping("/v1/parking-lots/{parkingLotId}/images")
     @Operation(summary = "주차장 이미지 수정")
     public Response<Void> updateParkingLotImages(
             @Parameter(hidden = true) User user,
