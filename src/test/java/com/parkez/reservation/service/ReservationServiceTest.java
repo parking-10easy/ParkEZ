@@ -101,6 +101,18 @@ class ReservationServiceTest {
         return parkingZone;
     }
 
+    private Reservation createReservation(Long id, User user, ParkingZone parkingZone, ReservationRequest request, BigDecimal price) {
+        Reservation reservation = Reservation.builder()
+                .user(user)
+                .parkingZone(parkingZone)
+                .parkingLotName(parkingZone.extractParkingLotName())
+                .startDateTime(request.getStartDateTime())
+                .endDateTime(request.getEndDateTime())
+                .price(price)
+                .build();
+        ReflectionTestUtils.setField(reservation, "id", id);
+    }
+
     private ReservationRequest createRequest(Long id) {
         ReservationRequest request = new ReservationRequest();
         ReflectionTestUtils.setField(request, "parkingZoneId", id);
@@ -120,40 +132,22 @@ class ReservationServiceTest {
             Long parkingZoneId = 1L;
             Long reservationId = 1L;
 
-            ReservationRequest request = new ReservationRequest();
-            ReflectionTestUtils.setField(request, "parkingZoneId", parkingZoneId);
-            ReflectionTestUtils.setField(request, "startDateTime", LocalDateTime.now());
+            AuthUser authUser = createAuthUser(userId);
+
+            ReservationRequest request = createRequest(parkingZoneId);
             ReflectionTestUtils.setField(request, "endDateTime", LocalDateTime.now().plusHours(1));
 
-            User owner = User.builder().build();
-            ReflectionTestUtils.setField(owner, "id", ownerId);
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", userId);
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
 
-            ParkingLot parkingLot = ParkingLot.builder()
-                    .owner(owner)
-                    .pricePerHour(BigDecimal.valueOf(2000))
-                    .name("test")
-                    .build();
-            ReflectionTestUtils.setField(parkingLot, "id", parkingLotId);
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
 
-            ParkingZone parkingZone = ParkingZone.builder()
-                    .parkingLot(parkingLot)
-                    .build();
-            ReflectionTestUtils.setField(parkingZone, "id", parkingZoneId);
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
             long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
             BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
-            Reservation reservation = Reservation.builder()
-                    .user(user)
-                    .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.extractParkingLotName())
-                    .startDateTime(request.getStartDateTime())
-                    .endDateTime(request.getEndDateTime())
-                    .price(price)
-                    .build();
-            ReflectionTestUtils.setField(reservation, "id", reservationId);
+            Reservation reservation = createReservation(reservationId, user, parkingZone, request, price);
 
             given(userReader.getActiveById(anyLong())).willReturn(user);
             given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
@@ -161,7 +155,7 @@ class ReservationServiceTest {
                     .willReturn(reservation);
 
             // when
-            MyReservationResponse result = reservationService.createReservation(userId, request);
+            MyReservationResponse result = reservationService.createReservation(authUser, request);
 
             // then
             assertNotNull(result);
