@@ -47,7 +47,7 @@ public class ParkingLotController {
             @ModelAttribute ParkingLotSearchRequest request,
             @ParameterObject Pageable pageable
     ) {
-        return Response.fromPage(parkingLotService.searchParkingLots(request, pageable));
+        return Response.fromPage(parkingLotService.searchParkingLotsByConditions(request, pageable));
     }
 
     // 주차장 단건 조회
@@ -56,7 +56,7 @@ public class ParkingLotController {
     public Response<ParkingLotSearchResponse> searchParkingLot(
             @PathVariable Long parkingLotId
     ) {
-        return Response.of(parkingLotService.searchParkingLot(parkingLotId));
+        return Response.of(parkingLotService.searchParkingLotById(parkingLotId));
     }
 
     // TODO : owner 조회  /api/v1/parking-lots/me
