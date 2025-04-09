@@ -1,10 +1,7 @@
 package com.parkez.image;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.*;
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.image.config.S3Properties;
 import com.parkez.image.dto.request.ImageRequest;
 import com.parkez.image.dto.response.ImageUrlResponse;
 import com.parkez.image.enums.AllowedExtension;
@@ -12,26 +9,33 @@ import com.parkez.image.enums.ImageTargetType;
 import com.parkez.image.exception.ImageErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
+@EnableConfigurationProperties(S3Properties.class)
+@RequiredArgsConstructor
 public class S3ImageService implements ImageService {
 
-    private final AmazonS3Client s3Client;
+    private final S3Client s3Client;
 
-    @Value("${cloud.aws.s3.bucket}")
-    private String bucket;
+    private final S3Properties s3Properties;
+
+    private String getBucket() {
+        return s3Properties.getS3Bucket();
+    }
 
     @Override
     public ImageUrlResponse upload(ImageRequest request, List<MultipartFile> files) {
@@ -77,26 +81,25 @@ public class S3ImageService implements ImageService {
 
         String folderPrefix = String.format("%s/%d/", targetType.name(), request.getTargetId());
 
-        ListObjectsV2Request listRequest = new ListObjectsV2Request()
-                .withBucketName(bucket)
-                .withPrefix(folderPrefix);
+        ListObjectsV2Request listRequest = ListObjectsV2Request.builder().bucket(getBucket()).prefix(folderPrefix).build();
 
 
-        ListObjectsV2Result result = s3Client.listObjectsV2(listRequest);
-        List<S3ObjectSummary> objectSummaries = result.getObjectSummaries();
+        ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
 
-        if (objectSummaries.isEmpty()) {
+        if (response.contents().isEmpty()) {
             throw new ParkingEasyException(ImageErrorCode.IMAGE_NOT_FOUND);
         }
 
-        // 삭제할 객체 키 리스트 구성
-        List<DeleteObjectsRequest.KeyVersion> keysToDelete = objectSummaries.stream()
-                .map(obj -> new DeleteObjectsRequest.KeyVersion(obj.getKey()))
-                .collect(Collectors.toList());
+        // 삭제할 객체 리스트 구성
+        List<ObjectIdentifier> objectToDelete = response.contents().stream()
+                .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key())
+                        .build()).toList();
 
         // S3 객체 삭제 요청
-        DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest(bucket)
-                .withKeys(keysToDelete);
+        DeleteObjectsRequest deleteRequest = DeleteObjectsRequest.builder()
+                .bucket(getBucket())
+                .delete(Delete.builder().objects(objectToDelete).build())
+                .build();
 
         s3Client.deleteObjects(deleteRequest);
 
@@ -105,21 +108,23 @@ public class S3ImageService implements ImageService {
 
     private void uploadToS3(MultipartFile file, String fileName) {
 
-        ObjectMetadata metadata = createMetadata(file);
-
         try{
             // S3에 파일 업로드 요청 생성
-            PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, fileName, file.getInputStream(), metadata);
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(getBucket())
+                    .key(fileName)
+                    .contentType(file.getContentType())
+                    .contentLength(file.getSize())
+                    .build();
 
             // S3에 파일 업로드
-            s3Client.putObject(putObjectRequest);
-
-        } catch (AmazonServiceException e) {
-            log.error("[S3 Upload Error] AWS 응답 오류 - Status: {}, Code: {}, Message: {}", e.getStatusCode(), e.getErrorCode(), e.getMessage(), e);
-            throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
-
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
         } catch (SdkClientException e) {
             log.error("[S3 Upload Error] 클라이언트 설정 오류 - {}", e.getMessage(), e);
+            throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
+
+        } catch (S3Exception e) {
+            log.error("[S3 Upload Error] S3 업로드 실패 - {}", e.getMessage(), e);
             throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
 
         } catch (IOException e) {
@@ -129,15 +134,6 @@ public class S3ImageService implements ImageService {
 
     }
 
-    private ObjectMetadata createMetadata(MultipartFile file) {
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentType(file.getContentType());
-        metadata.setContentLength(file.getSize());
-
-        return metadata;
-    }
-
-
     private String createS3Key(String targetType, Long targetId, MultipartFile file, LocalDateTime now) {
 
         String uuidFileName = String.format("%s_%s_%s", UUID.randomUUID(), file.getOriginalFilename(), now);
@@ -146,7 +142,7 @@ public class S3ImageService implements ImageService {
 
 
     private String getPublicUrl(String key) {
-        return String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, s3Client.getRegionName(), key);
+        return String.format("https://%s.s3.%s.amazonaws.com/%s", getBucket(), s3Properties.getRegion(), key);
     }
 
     private String extractFileExtension(String fileName){
