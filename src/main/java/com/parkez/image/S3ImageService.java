@@ -112,10 +112,6 @@ public class S3ImageService implements ImageService {
             // S3에 파일 업로드
             s3Client.putObject(putObjectRequest);
 
-        } catch (IOException e) {
-            log.error("[IOException] 파일 스트림 처리 중 실패: {}", e.getMessage(), e);
-            throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
-
         } catch (AmazonServiceException e) {
             log.error("[S3 Upload Error] AWS 응답 오류 - Status: {}, Code: {}, Message: {}", e.getStatusCode(), e.getErrorCode(), e.getMessage(), e);
             throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
@@ -124,6 +120,9 @@ public class S3ImageService implements ImageService {
             log.error("[S3 Upload Error] 클라이언트 설정 오류 - {}", e.getMessage(), e);
             throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
 
+        } catch (IOException e) {
+            log.error("[IOException] 파일 스트림 처리 중 실패: {}", e.getMessage(), e);
+            throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
         }
 
     }
