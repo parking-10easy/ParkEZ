@@ -101,12 +101,6 @@ class ReservationServiceTest {
         return parkingZone;
     }
 
-    private static ParkingZone getParkingZone(Long id) {
-        ParkingZone parkingZone = ParkingZone.builder().build();
-        ReflectionTestUtils.setField(parkingZone, "id", id);
-        return parkingZone;
-    }
-
     private static Reservation createReservation(Long id, User user, ParkingZone parkingZone, ReservationRequest request, BigDecimal price) {
         Reservation reservation = Reservation.builder()
                 .user(user)
@@ -332,15 +326,20 @@ class ReservationServiceTest {
             @Test
             void 예약_단건_조회_테스트() {
                 // given
-                Long userId = 1L;
+                Long ownerId = 1L;
+                Long userId = 2L;
                 Long reservationId = 1L;
+                Long parkingLotId = 1L;
                 Long parkingZoneId = 1L;
 
                 AuthUser authUser = createAuthUser(userId);
 
+                User owner = createOwner(ownerId);
                 User user = createUser(authUser.getId());
 
-                ParkingZone parkingZone = getParkingZone(parkingZoneId);
+                ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+                ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
                 Reservation reservation = getReservation(reservationId, user, parkingZone);
 
@@ -485,14 +484,19 @@ class ReservationServiceTest {
             @Test
             void 예약_사용_완료_테스트() {
                 // given
-                Long userId = 1L;
+                Long ownerId = 1L;
+                Long userId = 2L;
                 Long reservationId = 1L;
+                Long parkingLotId = 1L;
                 Long parkingZoneId = 1L;
 
                 AuthUser authUser = createAuthUser(userId);
                 User user = createUser(authUser.getId());
+                User owner = createOwner(ownerId);
 
-                ParkingZone parkingZone = getParkingZone(parkingZoneId);
+                ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+                ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
                 Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
@@ -510,14 +514,19 @@ class ReservationServiceTest {
             @Test
             void 예약의_상태가_CONFIRMED가_아닐_경우_예외() {
                 // given
-                Long userId = 1L;
+                Long ownerId = 1L;
+                Long userId = 2L;
                 Long reservationId = 1L;
+                Long parkingLotId = 1L;
                 Long parkingZoneId = 1L;
 
                 AuthUser authUser = createAuthUser(userId);
                 User user = createUser(authUser.getId());
+                User owner = createOwner(ownerId);
 
-                ParkingZone parkingZone = getParkingZone(parkingZoneId);
+                ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+                ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
                 Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.PENDING);
@@ -537,15 +546,20 @@ class ReservationServiceTest {
             @Test
             void 예약_취소_테스트() {
                 // given
-                Long userId = 1L;
+                Long ownerId = 1L;
+                Long userId = 2L;
                 Long reservationId = 1L;
                 LocalDateTime startDateTime = LocalDateTime.now().plusHours(3);
+                Long parkingLotId = 1L;
                 Long parkingZoneId = 1L;
 
                 AuthUser authUser = createAuthUser(userId);
                 User user = createUser(authUser.getId());
+                User owner = createOwner(ownerId);
 
-                ParkingZone parkingZone = getParkingZone(parkingZoneId);
+                ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+                ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
                 Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
@@ -564,14 +578,19 @@ class ReservationServiceTest {
             @Test
             void 예약의_상태가_COMPLETED_일_경우_예외() {
                 // given
-                Long userId = 1L;
+                Long ownerId = 1L;
+                Long userId = 2L;
                 Long reservationId = 1L;
+                Long parkingLotId = 1L;
                 Long parkingZoneId = 1L;
 
                 AuthUser authUser = createAuthUser(userId);
                 User user = createUser(authUser.getId());
+                User owner = createOwner(ownerId);
 
-                ParkingZone parkingZone = getParkingZone(parkingZoneId);
+                ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+                ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
                 Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.COMPLETED);
@@ -586,14 +605,19 @@ class ReservationServiceTest {
             @Test
             void 예약의_상태가_CANCELED_일_경우_예외() {
                 // given
-                Long userId = 1L;
+                Long ownerId = 1L;
+                Long userId = 2L;
                 Long reservationId = 1L;
+                Long parkingLotId = 1L;
                 Long parkingZoneId = 1L;
 
                 AuthUser authUser = createAuthUser(userId);
                 User user = createUser(authUser.getId());
+                User owner = createOwner(ownerId);
 
-                ParkingZone parkingZone = getParkingZone(parkingZoneId);
+                ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+                ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
                 Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CANCELED);
@@ -608,15 +632,20 @@ class ReservationServiceTest {
             @Test
             void 남은_시간이_1시간_이내일_경우_예외() {
                 // given
-                Long userId = 1L;
+                Long ownerId = 1L;
+                Long userId = 2L;
                 Long reservationId = 1L;
                 LocalDateTime startDateTime = LocalDateTime.now();
+                Long parkingLotId = 1L;
                 Long parkingZoneId = 1L;
 
                 AuthUser authUser = createAuthUser(userId);
                 User user = createUser(authUser.getId());
+                User owner = createOwner(ownerId);
 
-                ParkingZone parkingZone = getParkingZone(parkingZoneId);
+                ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+                ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
                 Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);

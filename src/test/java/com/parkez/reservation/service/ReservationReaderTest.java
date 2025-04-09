@@ -48,7 +48,6 @@ class ReservationReaderTest {
     }
 
     @Nested
-    // todo class 명은 파스칼케이스, 중복 로직 method 분리, beforeEach 사용해보기, 예외 종류도 method 명에 넣기
     class GetReservationsByUserId {
 
         @Test
