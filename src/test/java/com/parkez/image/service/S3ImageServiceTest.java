@@ -1,12 +1,10 @@
 package com.parkez.image.service;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.*;
+
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.image.ImageService;
 import com.parkez.image.S3ImageService;
+import com.parkez.image.config.S3Properties;
 import com.parkez.image.dto.request.ImageRequest;
 import com.parkez.image.dto.response.ImageUrlResponse;
 import com.parkez.image.enums.ImageTargetType;
@@ -21,8 +19,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,11 +39,18 @@ public class S3ImageServiceTest {
     private S3ImageService imageService;
 
     @Mock
-    private AmazonS3Client s3Client;
+    private S3Client s3Client;
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(imageService, "bucket", "test-bucket");
+        S3Properties s3Properties = new S3Properties(
+                "ap-northeast-2",
+                "dummy-access-key",
+                "dummy-secret-key",
+                "test-bucket"
+        );
+
+        ReflectionTestUtils.setField(imageService, "s3Properties", s3Properties);
     }
 
     @Test
@@ -76,16 +86,17 @@ public class S3ImageServiceTest {
                 .targetId(1L)
                 .build();
 
-        String prefix = "USER_PROFILE/1/";
+        List<S3Object> mockObjects = List.of(
+                S3Object.builder().key("USER_PROFILE/1/file.jpg").build()
+        );
 
-        S3ObjectSummary summary = new S3ObjectSummary();
-        summary.setKey(prefix + "file.jpg");
-
-        ListObjectsV2Result mockResult = new ListObjectsV2Result();
-        mockResult.getObjectSummaries().add(summary);
+        ListObjectsV2Response mockResult = ListObjectsV2Response.builder()
+                .contents(mockObjects)
+                .build();
 
         when(s3Client.listObjectsV2(any(ListObjectsV2Request.class)))
                 .thenReturn(mockResult);
+
 
         // when
         imageService.delete(request);
@@ -102,8 +113,9 @@ public class S3ImageServiceTest {
                 .targetId(1L)
                 .build();
 
-        ListObjectsV2Result mockResult = new ListObjectsV2Result(); // 비어 있음
-
+        ListObjectsV2Response mockResult = ListObjectsV2Response.builder()
+                .contents(Collections.emptyList())
+                .build();
         //when
         when(s3Client.listObjectsV2(any(ListObjectsV2Request.class)))
                 .thenReturn(mockResult);
@@ -167,9 +179,8 @@ public class S3ImageServiceTest {
     }
 
     @Test
-    void 이미지_업로드_중_AmazonServiceException_발생시_IMAGE_UPLOAD_FAIL_예외_발생() throws IOException {
+    void 이미지_업로드_중_S3Exception_발생시_IMAGE_UPLOAD_FAIL_예외_발생() throws IOException {
         // given
-
         ImageRequest request = ImageRequest.builder()
                 .targetType(ImageTargetType.USER_PROFILE)
                 .targetId(1L)
@@ -177,20 +188,17 @@ public class S3ImageServiceTest {
 
         MultipartFile file = new MockMultipartFile(
                 "file",
-                "test-image.png",
-                "image/png",
+                "test-image.jpg",
+                "image/jpeg",
                 "image-content".getBytes()
         );
-
         List<MultipartFile> files = List.of(file);
 
-        // when
-        AmazonServiceException ase = new AmazonServiceException("S3 오류");
-        ase.setStatusCode(500);
-        ase.setErrorCode("InternalError");
-        doThrow(ase).when(s3Client).putObject(any(PutObjectRequest.class));
+        doThrow(S3Exception.builder().message("S3 연결 오류").build())
+                .when(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
 
-        // then
+
+        // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                 () -> imageService.upload(request, files));
 
@@ -213,7 +221,9 @@ public class S3ImageServiceTest {
         );
         List<MultipartFile> files = List.of(file);
 
-        doThrow(new SdkClientException("Sdk 예외")).when(s3Client).putObject(any(PutObjectRequest.class));
+        doThrow(SdkClientException.builder().message("Sdk 에러").build())
+                .when(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
@@ -275,7 +285,7 @@ public class S3ImageServiceTest {
     }
 
     @Test
-    void 파일명이_마침표로_끝날_경우_빈문자열_반환(){
+    void 파일명이_마침표로_끝날_경우_INVALID_EXTENSION_TYPE_예외_발생(){
 
         // given
         MultipartFile file = new MockMultipartFile("file", "filename.", "image/png", "data".getBytes());
