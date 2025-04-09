@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -68,11 +69,11 @@ public class ParkingLot extends BaseDeleteEntity {
 
     @Builder
     private ParkingLot(User owner, String name, String address,
-                      Double latitude, Double longitude,
+                       Double latitude, Double longitude,
                        LocalTime openedAt, LocalTime closedAt,
                        BigDecimal pricePerHour, String description,
-                      Integer quantity, ChargeType chargeType,
-                      SourceType sourceType
+                       Integer quantity, ChargeType chargeType,
+                       SourceType sourceType
     ) {
         this.owner = owner;
         this.name = name;
@@ -107,15 +108,19 @@ public class ParkingLot extends BaseDeleteEntity {
 
     public void updateImages(List<ParkingLotImage> newImages) {
         this.images.clear();
-        if(newImages != null && !newImages.isEmpty()){
+        if (newImages != null && !newImages.isEmpty()) {
             newImages.forEach(this::addImage);
         }
     }
 
-    public void addImage(ParkingLotImage image){
-        if(images != null){
+    public void addImage(ParkingLotImage image) {
+        if (images != null) {
             image.updateParkingLot(this);
             this.images.add(image);
         }
+    }
+
+    public boolean isOwned(Long userId) {
+        return Objects.equals(this.owner.getId(), userId);
     }
 }

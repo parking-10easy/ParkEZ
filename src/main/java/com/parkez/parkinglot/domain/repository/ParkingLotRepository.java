@@ -10,4 +10,5 @@ public interface ParkingLotRepository extends JpaRepository<ParkingLot, Long>, P
 
     Optional<ParkingLot> findByIdAndDeletedAtIsNull(Long parkingLotId);
 
+    boolean existsByIdAndDeletedAtIsNull(Long parkingLotId);
 }

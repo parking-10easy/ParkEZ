@@ -21,16 +21,12 @@ public class ParkingLotImage extends BaseEntity {
     @JoinColumn(name = "parking_lot_id", nullable = false)
     private ParkingLot parkingLot;
 
-    @Column(nullable = false, length = 100)
-    private String name;
-
     @Column(nullable = false)
     private String imageUrl;
 
     @Builder
-    private ParkingLotImage(ParkingLot parkingLot, String name, String imageUrl) {
+    private ParkingLotImage(ParkingLot parkingLot, String imageUrl) {
         this.parkingLot = parkingLot;
-        this.name = name;
         this.imageUrl = imageUrl;
     }
 
