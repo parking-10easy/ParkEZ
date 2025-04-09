@@ -364,30 +364,24 @@ class ReservationServiceTest {
         @Test
         void 예약_내역_리스트_조회_테스트() {
             // given
-            Long userId = 1L;
-            Long parkingZoneId = 1L;
+            Long ownerId = 1L;
+            Long userId = 2L;
             int page = 1;
             int size = 10;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+            Long reservationId = 1L;
 
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", userId);
+            AuthUser authOwner = createAuthOwner(ownerId);
 
-            ParkingLot parkingLot = ParkingLot.builder()
-                    .owner(user)
-                    .name("test")
-                    .build();
+            User owner = createOwner(authOwner.getId());
+            User user = createUser(userId);
 
-            ParkingZone parkingZone = ParkingZone.builder()
-                    .parkingLot(parkingLot)
-                    .build();
-            ReflectionTestUtils.setField(parkingZone, "id", 1L);
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
 
-            Reservation reservation = Reservation.builder()
-                    .user(user)
-                    .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.getParkingLot().getName())
-                    .build();
-            ReflectionTestUtils.setField(reservation, "id", 1L); // 리뷰 작성된 예약
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            Reservation reservation = getReservation(reservationId, user, parkingZone);
 
             Page<Reservation> pageMyReservations = new PageImpl<>(List.of(reservation));
 
@@ -396,7 +390,7 @@ class ReservationServiceTest {
             given(reservationReader.findOwnerReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
 
             // when
-            Page<OwnerReservationResponse> result = reservationService.getOwnerReservations(userId, parkingZoneId, page, size);
+            Page<OwnerReservationResponse> result = reservationService.getOwnerReservations(authOwner, parkingZoneId, page, size);
 
             // then
             assertNotNull(result);
@@ -406,30 +400,24 @@ class ReservationServiceTest {
         @Test
         void 정상적이지_않은_page_기입_테스트() {
             // given
-            Long userId = 1L;
-            Long parkingZoneId = 1L;
-            int page = 0;
+            Long ownerId = 1L;
+            Long userId = 2L;
+            int page = -1;
             int size = 10;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+            Long reservationId = 1L;
 
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", userId);
+            AuthUser authOwner = createAuthOwner(ownerId);
 
-            ParkingLot parkingLot = ParkingLot.builder()
-                    .owner(user)
-                    .name("test")
-                    .build();
+            User owner = createOwner(authOwner.getId());
+            User user = createUser(userId);
 
-            ParkingZone parkingZone = ParkingZone.builder()
-                    .parkingLot(parkingLot)
-                    .build();
-            ReflectionTestUtils.setField(parkingZone, "id", 1L);
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
 
-            Reservation reservation = Reservation.builder()
-                    .user(user)
-                    .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.getParkingLot().getName())
-                    .build();
-            ReflectionTestUtils.setField(reservation, "id", 1L); // 리뷰 작성된 예약
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            Reservation reservation = getReservation(reservationId, user, parkingZone);
 
             Page<Reservation> pageMyReservations = new PageImpl<>(List.of(reservation));
 
@@ -438,7 +426,7 @@ class ReservationServiceTest {
             given(reservationReader.findOwnerReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
 
             // when
-            Page<OwnerReservationResponse> result = reservationService.getOwnerReservations(userId, parkingZoneId, page, size);
+            Page<OwnerReservationResponse> result = reservationService.getOwnerReservations(authOwner, parkingZoneId, page, size);
 
             // then
             assertNotNull(result);
@@ -448,45 +436,45 @@ class ReservationServiceTest {
         @Test
         void 주차공간이_없을_경우_예외() {
             // given
-            Long userId = 1L;
-            Long parkingZoneId = 1L;
+            Long ownerId = 1L;
+            Long parkingZoneId = -1L;
             int page = 1;
             int size = 10;
+
+            AuthUser authOwner = createAuthOwner(ownerId);
 
             given(parkingZoneReader.existsById(anyLong())).willReturn(false);
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.getOwnerReservations(userId, parkingZoneId, page, size));
+                    () -> reservationService.getOwnerReservations(authOwner, parkingZoneId, page, size));
             assertEquals(ReservationErrorCode.NOT_FOUND_PARKING_ZONE, exception.getErrorCode());
         }
 
         @Test
         void 본인_주차공간이_아닐_경우_예외() {
             // given
-            Long userId = 1L;
+            Long ownerId = 1L;
             Long differentUserId = 2L;
+            Long parkingLotId = 1L;
             Long parkingZoneId = 1L;
             int page = 1;
             int size = 10;
 
-            User differentUser = User.builder().build();
-            ReflectionTestUtils.setField(differentUser, "id", differentUserId);
+            AuthUser authOwner = createAuthOwner(ownerId);
 
-            ParkingLot parkingLot = ParkingLot.builder()
-                    .owner(differentUser)
-                    .build();
+            User differentOwner = createOwner(differentUserId);
 
-            ParkingZone parkingZone = ParkingZone.builder()
-                    .parkingLot(parkingLot)
-                    .build();
+            ParkingLot parkingLot = createParkingLot(parkingLotId, differentOwner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
             given(parkingZoneReader.existsById(anyLong())).willReturn(true);
             given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.getOwnerReservations(userId, parkingZoneId, page, size));
+                    () -> reservationService.getOwnerReservations(authOwner, parkingZoneId, page, size));
             assertEquals(ReservationErrorCode.NOT_MY_PARKING_ZONE, exception.getErrorCode());
         }
     }
