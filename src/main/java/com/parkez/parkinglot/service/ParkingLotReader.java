@@ -20,13 +20,13 @@ public class ParkingLotReader {
     private final ParkingLotRepository parkingLotRepository;
 
     // 주차장 다건 조회 (이름, 주소)
-    public Page<ParkingLotSearchResponse> searchParkingLots(String name, String address, Pageable pageable) {
+    public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(String name, String address, Pageable pageable) {
         Page<ParkingLot> parkingLots = parkingLotRepository.searchParkingLotsByConditions(name, address, pageable);
         return parkingLots.map(ParkingLotSearchResponse::from);
     }
 
     // 주차장 단건 조회
-    public ParkingLot searchParkingLot(Long parkingLotId) {
+    public ParkingLot searchParkingLotById(Long parkingLotId) {
         return parkingLotRepository.searchParkingLotById(parkingLotId).orElseThrow(
                 () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
     }
@@ -46,13 +46,6 @@ public class ParkingLotReader {
     private void checkParkingLotOwnership(AuthUser authUser, ParkingLot parkingLot) {
         if (!parkingLot.isOwned(authUser.getId())) {
             throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
-        }
-    }
-
-    public void validateExistence(Long parkingLotId) {
-        boolean exists = parkingLotRepository.existsByIdAndDeletedAtIsNull(parkingLotId);
-        if (!exists) {
-            throw new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND);
         }
     }
 }

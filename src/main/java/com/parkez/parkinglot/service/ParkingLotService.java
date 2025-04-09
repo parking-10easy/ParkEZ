@@ -51,13 +51,13 @@ public class ParkingLotService {
     }
 
     // 주차장 다건 조회 (이름, 주소)
-    public Page<ParkingLotSearchResponse> searchParkingLots(ParkingLotSearchRequest request, Pageable pageable) {
-        return parkingLotReader.searchParkingLots(request.getName(), request.getAddress(), pageable);
+    public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(ParkingLotSearchRequest request, Pageable pageable) {
+        return parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(), pageable);
     }
 
     // 주차장 단건 조회
-    public ParkingLotSearchResponse searchParkingLot(Long parkingLotId) {
-        return ParkingLotSearchResponse.from(parkingLotReader.searchParkingLot(parkingLotId));
+    public ParkingLotSearchResponse searchParkingLotById(Long parkingLotId) {
+        return ParkingLotSearchResponse.from(parkingLotReader.searchParkingLotById(parkingLotId));
     }
 
     // 주차장 수정 (writer 사용x)
