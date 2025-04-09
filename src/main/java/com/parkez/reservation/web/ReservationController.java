@@ -33,6 +33,7 @@ public class ReservationController {
     }
 
     // 나의 예약 내역 조회
+    @Secured(UserRole.Authority.USER)
     @GetMapping("/v1/reservations/me")
     public Response<MyReservationResponse> getMyReservations(
             @AuthenticatedUser AuthUser authUser,
@@ -43,6 +44,7 @@ public class ReservationController {
     }
 
     // 나의 예약 단건 조회
+    @Secured(UserRole.Authority.USER)
     @GetMapping("/v1/reservations/me/{reservationId}")
     public Response<MyReservationResponse> getMyReservation(
             @AuthenticatedUser AuthUser authUser,
@@ -52,6 +54,7 @@ public class ReservationController {
     }
 
     // Owner 본인 소유 주차장의 예약 내역 리스트 조회
+    @Secured(UserRole.Authority.OWNER)
     @GetMapping("/v1/users/me/parking-zones/{parkingZoneId}/reservations")
     public Response<OwnerReservationResponse> getOwnerReservations(
             @AuthenticatedUser AuthUser authUser,
@@ -63,6 +66,7 @@ public class ReservationController {
     }
 
     // 주차공간 예약 사용 완료(이용 시간 만료)
+    @Secured(UserRole.Authority.USER)
     @PatchMapping("/v1/reservations/me/{reservationId}")
     public Response<Void> completeReservation(
             @AuthenticatedUser AuthUser authUser,
@@ -73,6 +77,7 @@ public class ReservationController {
     }
 
     // 예약 취소
+    @Secured(UserRole.Authority.USER)
     @DeleteMapping("v1/reservations/me/{reservationId}")
     public Response<Void> cancelReservation(
             @AuthenticatedUser AuthUser authUser,

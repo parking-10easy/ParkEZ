@@ -1,6 +1,7 @@
 package com.parkez.reservation.service;
 
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.service.ParkingZoneReader;
@@ -13,6 +14,7 @@ import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,6 +52,61 @@ class ReservationServiceTest {
     private ReviewReader reviewReader;
     @InjectMocks
     private ReservationService reservationService;
+
+    private AuthUser createAuthUser(Long id) {
+        return AuthUser.builder()
+                .id(id)
+                .email("test@example.com")
+                .roleName(UserRole.Authority.USER)
+                .nickname("test")
+                .build();
+    }
+
+    private AuthUser createAuthOwner(Long id) {
+        return AuthUser.builder()
+                .id(id)
+                .email("test@example.com")
+                .roleName(UserRole.Authority.OWNER)
+                .nickname("test")
+                .build();
+    }
+
+    private User createUser(Long id) {
+        User user = User.builder().build();
+        ReflectionTestUtils.setField(user, "id", id);
+        return user;
+    }
+
+    private User createOwner(Long id) {
+        User owner = User.builder().build();
+        ReflectionTestUtils.setField(owner, "id", id);
+        return owner;
+    }
+
+    private ParkingLot createParkingLot(Long id, User owner) {
+        ParkingLot parkingLot = ParkingLot.builder()
+                .owner(owner)
+                .pricePerHour(BigDecimal.valueOf(2000))
+                .name("test")
+                .build();
+        ReflectionTestUtils.setField(parkingLot, "id", id);
+        return parkingLot;
+    }
+
+    private ParkingZone createParkingZone(Long id, ParkingLot parkingLot) {
+        ParkingZone parkingZone = ParkingZone.builder()
+                .parkingLot(parkingLot)
+                .build();
+        ReflectionTestUtils.setField(parkingZone, "id", id);
+        return parkingZone;
+    }
+
+    private ReservationRequest createRequest(Long id) {
+        ReservationRequest request = new ReservationRequest();
+        ReflectionTestUtils.setField(request, "parkingZoneId", id);
+        ReflectionTestUtils.setField(request, "startDateTime", LocalDateTime.now());
+        return request;
+    }
 
     @Nested
     class createReservation {
