@@ -38,6 +38,7 @@ public class S3ImageService implements ImageService {
         this.region = s3Properties.getRegion();
         this.bucket = s3Properties.getS3Bucket();
     }
+
     @Override
     public ImageUrlResponse upload(ImageRequest request, List<MultipartFile> files) {
 
@@ -157,7 +158,7 @@ public class S3ImageService implements ImageService {
         if (index == -1 || index == fileName.length() - 1) {
             throw new ParkingEasyException(ImageErrorCode.INVALID_EXTENSION_TYPE);
         }
-        return fileName.substring(index + 1).toLowerCase();
+        return fileName.substring(index + 1);
 
     }
 
