@@ -18,7 +18,8 @@ public enum ImageErrorCode implements ErrorCode {
     // 400 bad request
     INVALID_TARGET_TYPE(HttpStatus.BAD_REQUEST, "IMAGE_003", "유효하지 않는 타입입니다."),
     IMAGE_IS_NULL(HttpStatus.BAD_REQUEST, "IMAGE_004", "이미지 파일이 비어있습니다."),
-    INVALID_EXTENSION_TYPE(HttpStatus.BAD_REQUEST, "IMAGE_005", "허용되지 않는 파일 확장자입니다.");
+    INVALID_EXTENSION_TYPE(HttpStatus.BAD_REQUEST, "IMAGE_005", "허용되지 않는 파일 확장자입니다."),
+    FILENAME_IS_NULL(HttpStatus.BAD_REQUEST, "IMAGE_006", "파일이름이 존재하지 않습니다. ");
 
     private final HttpStatus httpStatus;
     private final String code;

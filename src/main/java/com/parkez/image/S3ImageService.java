@@ -51,6 +51,10 @@ public class S3ImageService implements ImageService {
 
         for(MultipartFile file : files) {
 
+            if(file.getOriginalFilename() == null || file.getOriginalFilename().isEmpty()) {
+                throw new ParkingEasyException(ImageErrorCode.FILENAME_IS_NULL);
+            }
+
             String fileExtension = extractFileExtension(file.getOriginalFilename());
 
             if(!AllowedExtension.contains(fileExtension)){
@@ -148,10 +152,6 @@ public class S3ImageService implements ImageService {
     }
 
     private String extractFileExtension(String fileName){
-
-        if(fileName==null) {
-            throw new ParkingEasyException(ImageErrorCode.IMAGE_IS_NULL);
-        }
 
         int index = fileName.lastIndexOf('.');
 
