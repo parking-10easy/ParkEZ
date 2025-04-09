@@ -8,6 +8,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 @Getter
+@Schema(description = "예약 생성 요청 DTO")
 public class ReservationRequest {
 
     @NotNull(message = "주차공간 id는 필수값입니다.")

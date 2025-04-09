@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
 
 @Getter
 @RequiredArgsConstructor
-public class ReservationResponse {
+@Schema(description = "오너 마이페이지 내 주차공간들에 대한 예약 내역 응답 DTO")
+public class OwnerReservationResponse {
 
     @Schema(description = "예약 id", example = "1")
     private final Long reservationId;
@@ -43,8 +44,8 @@ public class ReservationResponse {
     @Schema(description = "생성 일시", example = "2025.04.07T10:00:00")
     private final LocalDateTime createdAt;
 
-    public static ReservationResponse from(Reservation reservation) {
-        return new ReservationResponse(
+    public static OwnerReservationResponse from(Reservation reservation) {
+        return new OwnerReservationResponse(
                 reservation.getId(),
                 reservation.extractUserId(),
                 reservation.extractParkingZoneId(),

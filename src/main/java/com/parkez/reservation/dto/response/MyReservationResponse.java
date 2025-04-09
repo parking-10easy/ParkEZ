@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @RequiredArgsConstructor
+@Schema(description = "사용자 마이페이지 내 예약 내역 응답 DTO")
 public class MyReservationResponse {
 
     @Schema(description = "예약 id", example = "1")

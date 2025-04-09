@@ -8,7 +8,7 @@ import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.MyReservationResponse;
-import com.parkez.reservation.dto.response.ReservationResponse;
+import com.parkez.reservation.dto.response.OwnerReservationResponse;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.review.service.ReviewReader;
@@ -98,7 +98,7 @@ class ReservationServiceTest {
                     .build();
             ReflectionTestUtils.setField(reservation, "id", reservationId);
 
-            given(userReader.findById(anyLong())).willReturn(user);
+            given(userReader.getActiveById(anyLong())).willReturn(user);
             given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
             given(reservationWriter.createReservation(any(User.class), any(ParkingZone.class), anyString(), any(LocalDateTime.class), any(LocalDateTime.class), any(BigDecimal.class)))
                     .willReturn(reservation);
@@ -349,7 +349,7 @@ class ReservationServiceTest {
             given(reservationReader.findOwnerReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
 
             // when
-            Page<ReservationResponse> result = reservationService.getOwnerReservations(userId, parkingZoneId, page, size);
+            Page<OwnerReservationResponse> result = reservationService.getOwnerReservations(userId, parkingZoneId, page, size);
 
             // then
             assertNotNull(result);
@@ -391,7 +391,7 @@ class ReservationServiceTest {
             given(reservationReader.findOwnerReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
 
             // when
-            Page<ReservationResponse> result = reservationService.getOwnerReservations(userId, parkingZoneId, page, size);
+            Page<OwnerReservationResponse> result = reservationService.getOwnerReservations(userId, parkingZoneId, page, size);
 
             // then
             assertNotNull(result);
