@@ -487,16 +487,21 @@ class ReservationServiceTest {
             // given
             Long userId = 1L;
             Long reservationId = 1L;
+            Long parkingZoneId = 1L;
 
-            Reservation reservation = Reservation.builder().build();
-            ReflectionTestUtils.setField(reservation, "id", reservationId);
+            AuthUser authUser = createAuthUser(userId);
+            User user = createUser(authUser.getId());
+
+            ParkingZone parkingZone = getParkingZone(parkingZoneId);
+
+            Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
             ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
 
             given(reservationReader.findReservation(userId, reservationId)).willReturn(reservation);
             doNothing().when(reservationWriter).complete(reservation);
 
             // when
-            reservationService.completeReservation(userId, reservationId);
+            reservationService.completeReservation(authUser, reservationId);
 
             // then
             verify(reservationWriter, times(1)).complete(reservation);
@@ -507,16 +512,21 @@ class ReservationServiceTest {
             // given
             Long userId = 1L;
             Long reservationId = 1L;
+            Long parkingZoneId = 1L;
 
-            Reservation reservation = Reservation.builder().build();
-            ReflectionTestUtils.setField(reservation, "id", reservationId);
+            AuthUser authUser = createAuthUser(userId);
+            User user = createUser(authUser.getId());
+
+            ParkingZone parkingZone = getParkingZone(parkingZoneId);
+
+            Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
             ReflectionTestUtils.setField(reservation, "status", ReservationStatus.PENDING);
 
             given(reservationReader.findReservation(userId, reservationId)).willReturn(reservation);
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.completeReservation(userId, reservationId));
+                    () -> reservationService.completeReservation(authUser, reservationId));
             assertEquals(ReservationErrorCode.CANT_MODIFY_RESERVATION_STATUS, exception.getErrorCode());
         }
     }
