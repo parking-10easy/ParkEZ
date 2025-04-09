@@ -1,6 +1,7 @@
 package com.parkez.parkinglot.service;
 
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
@@ -30,9 +31,25 @@ public class ParkingLotReader {
                 () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
     }
 
-    //  soft delete 제외 + null 처리하여 아이디로 단건 조회
-    public ParkingLot getParkingLot(Long parkingLotId) {
+    //  soft delete 제외 + null 처리하여 아이디로 단건 조회 + authUser 본인확인
+    public ParkingLot getOwnedParkingLot(AuthUser authUser, Long parkingLotId){
+        ParkingLot parkingLot = getActiveParkingLot(parkingLotId);
+
+        if (!parkingLot.isOwned(authUser.getId())) {
+            throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
+        }
+
+        return parkingLot;
+    }
+
+    private ParkingLot getActiveParkingLot(Long parkingLotId) {
         return parkingLotRepository.findByIdAndDeletedAtIsNull(parkingLotId)
                 .orElseThrow(() -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+    }
+    public void validateExistence(Long parkingLotId) {
+        boolean exists = parkingLotRepository.existsByIdAndDeletedAtIsNull(parkingLotId);
+        if (!exists) {
+            throw new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND);
+        }
     }
 }

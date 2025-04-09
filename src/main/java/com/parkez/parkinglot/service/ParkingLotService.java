@@ -1,6 +1,7 @@
 package com.parkez.parkinglot.service;
 
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.entity.ParkingLotImage;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
@@ -12,6 +13,7 @@ import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.user.domain.entity.User;
+import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,9 +28,13 @@ public class ParkingLotService {
 
     private final ParkingLotWriter parkingLotWriter;
     private final ParkingLotReader parkingLotReader;
+    private final UserReader userReader;
 
     // 주차장 생성
-    public ParkingLotResponse createParkingLot(User user, ParkingLotRequest request) {
+    public ParkingLotResponse createParkingLot(AuthUser authUser, ParkingLotRequest request) {
+
+        User user = userReader.getActiveById(authUser.getId());
+
         ParkingLot parkingLot = ParkingLot.builder()
                 .owner(user)
                 .name(request.getName())
@@ -54,9 +60,8 @@ public class ParkingLotService {
 
     // 주차장 수정 (writer 사용x)
     @Transactional
-    public void updateParkingLot(User user, Long parkingLotId, ParkingLotRequest request) {
-        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
-        validateUserIsOwnerOfParkingLot(user, parkingLot);
+    public void updateParkingLot(AuthUser authUser, Long parkingLotId, ParkingLotRequest request) {
+        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser, parkingLotId);
         parkingLot.update(
                 request.getName(), request.getAddress(),
                 request.getOpenedAt(), request.getClosedAt(),
@@ -66,9 +71,8 @@ public class ParkingLotService {
 
     // 주차장 상태 변경 (writer 사용x)
     @Transactional
-    public void updateParkingLotStatus(User user, Long parkingLotId, ParkingLotStatusRequest request) {
-        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
-        validateUserIsOwnerOfParkingLot(user, parkingLot);
+    public void updateParkingLotStatus(AuthUser authUser, Long parkingLotId, ParkingLotStatusRequest request) {
+        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser, parkingLotId);
         ParkingLotStatus newStatus;
         try {
             newStatus = ParkingLotStatus.valueOf(request.getStatus().toUpperCase());
@@ -80,9 +84,8 @@ public class ParkingLotService {
 
     // 주차장 이미지 수정 (writer 사용x)
     @Transactional
-    public void updateParkingLotImages(User user, Long parkingLotId, ParkingLotImagesRequest request) {
-        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
-        validateUserIsOwnerOfParkingLot(user, parkingLot);
+    public void updateParkingLotImages(AuthUser authUser, Long parkingLotId, ParkingLotImagesRequest request) {
+        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser, parkingLotId);
         List<ParkingLotImage> newImages = request.getImageUrls().stream()
                 .map(url -> ParkingLotImage.builder().imageUrl(url).parkingLot(parkingLot).build())
                 .toList();
@@ -90,16 +93,9 @@ public class ParkingLotService {
     }
 
     // 주차장 삭제
-    public void deleteParkingLot(User user, Long parkingLotId) {
-        ParkingLot parkingLot = parkingLotReader.getParkingLot(parkingLotId);
-        validateUserIsOwnerOfParkingLot(user, parkingLot);
+    public void deleteParkingLot(AuthUser authUser, Long parkingLotId) {
+        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser, parkingLotId);
         parkingLotWriter.deleteParkingLot(parkingLot);
     }
 
-    // 주차장의 소유자인지 확인
-    private void validateUserIsOwnerOfParkingLot(User user, ParkingLot parkingLot) {
-        if (!user.equals(parkingLot.getOwner())) {
-            throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
-        }
-    }
 }

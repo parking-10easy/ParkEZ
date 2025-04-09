@@ -1,5 +1,7 @@
 package com.parkez.parkinglot.web;
 
+import com.parkez.common.principal.AuthUser;
+import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.common.response.Response;
 import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
@@ -8,7 +10,7 @@ import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.service.ParkingLotService;
-import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -29,11 +32,12 @@ public class ParkingLotController {
     // 주차장 생성
     @PostMapping("/v1/parking-lots")
     @Operation(summary = "주차장 생성")
+    @Secured(UserRole.Authority.OWNER)
     public Response<ParkingLotResponse> createParkingLot(
-            @Parameter User user,
+            @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @Valid @RequestBody ParkingLotRequest request
     ) {
-        return Response.of(parkingLotService.createParkingLot(user, request));
+        return Response.of(parkingLotService.createParkingLot(authUser, request));
     }
 
     // 주차장 다건 조회
@@ -51,7 +55,7 @@ public class ParkingLotController {
     @Operation(summary = "주차장 단건 조회")
     public Response<ParkingLotSearchResponse> searchParkingLot(
             @PathVariable Long parkingLotId
-    ){
+    ) {
         return Response.of(parkingLotService.searchParkingLot(parkingLotId));
     }
 
@@ -60,35 +64,38 @@ public class ParkingLotController {
     // 주차장 수정
     @PutMapping("/v1/parking-lots/{parkingLotId}")
     @Operation(summary = "주차장 수정")
+    @Secured(UserRole.Authority.OWNER)
     public Response<Void> updateParkingLot(
-            @Parameter(hidden = true) User user,
+            @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @PathVariable Long parkingLotId,
-            @RequestBody ParkingLotRequest request
+            @Valid @RequestBody ParkingLotRequest request
     ) {
-        parkingLotService.updateParkingLot(user, parkingLotId, request);
+        parkingLotService.updateParkingLot(authUser, parkingLotId, request);
         return Response.empty();
     }
 
     // 주차장 상태 변경
     @PutMapping("/v1/parking-lots/{parkingLotId}/status")
     @Operation(summary = "주차장 상태 수정")
+    @Secured(UserRole.Authority.OWNER)
     public Response<Void> updatedParkingLotStatus(
-            @Parameter(hidden = true) User user,
+            @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @PathVariable Long parkingLotId,
             @Valid @RequestBody ParkingLotStatusRequest statusRequest
     ) {
-        parkingLotService.updateParkingLotStatus(user, parkingLotId, statusRequest);
+        parkingLotService.updateParkingLotStatus(authUser, parkingLotId, statusRequest);
         return Response.empty();
     }
 
     // 주차장 삭제
     @DeleteMapping("/v1/parking-lots/{parkingLotId}")
     @Operation(summary = "주차장 삭제")
+    @Secured(UserRole.Authority.OWNER)
     public Response<Void> deleteParkingLot(
-            @Parameter(hidden = true) User user,
+            @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @PathVariable Long parkingLotId
     ) {
-        parkingLotService.deleteParkingLot(user, parkingLotId);
+        parkingLotService.deleteParkingLot(authUser, parkingLotId);
         return Response.empty();
     }
 
@@ -96,12 +103,13 @@ public class ParkingLotController {
 
     @PutMapping("/v1/parking-lots/{parkingLotId}/images")
     @Operation(summary = "주차장 이미지 수정")
+    @Secured(UserRole.Authority.OWNER)
     public Response<Void> updateParkingLotImages(
-            @Parameter(hidden = true) User user,
+            @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @PathVariable Long parkingLotId,
             @Valid @RequestBody ParkingLotImagesRequest request
     ) { // 요청 Body로 이미지 URL 리스트를 받음
-        parkingLotService.updateParkingLotImages(user, parkingLotId, request);
+        parkingLotService.updateParkingLotImages(authUser, parkingLotId, request);
         return Response.empty();
     }
 
