@@ -33,30 +33,76 @@ class ReservationWriterTest {
     @InjectMocks
     private ReservationWriter reservationWriter;
 
+    private static User createUser(Long id) {
+        User user = User.builder().build();
+        ReflectionTestUtils.setField(user, "id", id);
+        return user;
+    }
+
+    private static ParkingLot createParkingLot(Long id, User owner, String parkingLotName) {
+        ParkingLot parkingLot = ParkingLot.builder()
+                .owner(owner)
+                .pricePerHour(BigDecimal.valueOf(2000))
+                .name(parkingLotName)
+                .build();
+        ReflectionTestUtils.setField(parkingLot, "id", id);
+        return parkingLot;
+    }
+
+    private static ParkingZone createParkingZone(Long id, ParkingLot parkingLot) {
+        ParkingZone parkingZone = ParkingZone.builder()
+                .parkingLot(parkingLot)
+                .build();
+        ReflectionTestUtils.setField(parkingZone, "id", id);
+        return parkingZone;
+    }
+
+    private static Reservation createReservation(
+            Long id,
+            User user,
+            ParkingZone parkingZone,
+            String parkingLotName,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime,
+            BigDecimal price
+    ) {
+        Reservation reservation = Reservation.builder()
+                .user(user)
+                .parkingZone(parkingZone)
+                .parkingLotName(parkingLotName)
+                .startDateTime(startDateTime)
+                .endDateTime(endDateTime)
+                .price(price)
+                .build();
+        ReflectionTestUtils.setField(reservation, "id", id);
+        return reservation;
+    }
+
+    private static Reservation getReservation(Long id) {
+        Reservation reservation = Reservation.builder().build();
+        ReflectionTestUtils.setField(reservation, "id", id);
+        return reservation;
+    }
+
     @Nested
-    class createReservation {
+    class CreateReservation {
 
         @Test
         void 예약_생성_테스트() {
             // given
-            User owner = User.builder().build();
-            ReflectionTestUtils.setField(owner, "id", 1L);
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", 2L);
-
+            Long userId = 1L;
+            Long ownerId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+            Long reservationId = 1L;
             String parkingLotName = "test";
 
-            ParkingLot parkingLot = ParkingLot.builder()
-                    .owner(owner)
-                    .pricePerHour(BigDecimal.valueOf(2000))
-                    .name(parkingLotName)
-                    .build();
-            ReflectionTestUtils.setField(parkingLot, "id", 1L);
+            User user = createUser(userId);
+            User owner = createUser(ownerId);
 
-            ParkingZone parkingZone = ParkingZone.builder()
-                    .parkingLot(parkingLot)
-                    .build();
-            ReflectionTestUtils.setField(parkingZone, "id", 1L);
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner, parkingLotName);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
             LocalDateTime startDateTime = LocalDateTime.now();
             LocalDateTime endDateTime = LocalDateTime.now().plusHours(1);
@@ -64,14 +110,7 @@ class ReservationWriterTest {
             long hours = ChronoUnit.HOURS.between(startDateTime, endDateTime);
             BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
-            Reservation reservation = Reservation.builder()
-                    .user(user)
-                    .parkingZone(parkingZone)
-                    .parkingLotName(parkingLotName)
-                    .startDateTime(startDateTime)
-                    .endDateTime(endDateTime)
-                    .price(price)
-                    .build();
+            Reservation reservation = createReservation(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price);
 
             given(reservationRepository.existsReservation(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
                     .willReturn(false);
@@ -81,23 +120,31 @@ class ReservationWriterTest {
             Reservation result = reservationWriter.createReservation(user, parkingZone, parkingLotName, startDateTime, endDateTime, price);
 
             // then
-            assertNotNull(result);
-            assertEquals(user, result.getUser());
-            assertEquals(parkingZone, result.getParkingZone());
-            assertEquals(parkingLotName, result.getParkingLotName());
-            assertEquals(BigDecimal.valueOf(2000), result.getPrice());
+            assertAll(
+                    () -> assertNotNull(result),
+                    () -> assertEquals(user, result.getUser()),
+                    () -> assertEquals(parkingZone, result.getParkingZone()),
+                    () -> assertEquals(parkingLotName, result.getParkingLotName()),
+                    () -> assertEquals(BigDecimal.valueOf(2000), result.getPrice())
+            );
         }
 
         @Test
         void 예약이_이미_존재할_경우_예외() {
             // given
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", 2L);
-
+            Long userId = 1L;
+            Long ownerId = 2L;
             String parkingLotName = "test";
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+            BigDecimal price = BigDecimal.valueOf(2000);
 
-            ParkingZone parkingZone = ParkingZone.builder().build();
-            ReflectionTestUtils.setField(parkingZone, "id", 1L);
+            User user = createUser(userId);
+            User owner = createUser(ownerId);
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner, parkingLotName);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
             LocalDateTime startDateTime = LocalDateTime.now();
             LocalDateTime endDateTime = LocalDateTime.now().plusHours(1);
@@ -107,7 +154,7 @@ class ReservationWriterTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationWriter.createReservation(user, parkingZone, parkingLotName, startDateTime, endDateTime, BigDecimal.valueOf(2000)));
+                    () -> reservationWriter.createReservation(user, parkingZone, parkingLotName, startDateTime, endDateTime, price));
             assertNotNull(exception);
             assertEquals(ReservationErrorCode.ALREADY_RESERVED, exception.getErrorCode());
         }
@@ -119,7 +166,9 @@ class ReservationWriterTest {
         @Test
         void 예약_사용_완료_테스트() {
             // given
-            Reservation reservation = Reservation.builder().build();
+            Long reservationId = 1L;
+
+            Reservation reservation = getReservation(reservationId);
             ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
 
             // when
@@ -136,7 +185,9 @@ class ReservationWriterTest {
         @Test
         void 예약_취소_테스트() {
             // given
-            Reservation reservation = Reservation.builder().build();
+            Long reservationId = 1L;
+
+            Reservation reservation = getReservation(reservationId);
             ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
 
             // when
