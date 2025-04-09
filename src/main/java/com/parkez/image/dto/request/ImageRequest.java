@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class ImageRequest {
 
     @NotNull
-    @Schema(description = "이미지 업로드할 도메인 입력", example = "UserProfile")
+    @Schema(description = "이미지 업로드할 도메인 입력", example = "USER_PROFILE")
     private ImageTargetType targetType;
 
     @NotNull
