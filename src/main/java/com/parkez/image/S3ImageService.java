@@ -5,8 +5,7 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.image.dto.request.ImageDeleteRequest;
-import com.parkez.image.dto.request.ImageUploadRequest;
+import com.parkez.image.dto.request.ImageRequest;
 import com.parkez.image.dto.response.ImageUrlResponse;
 import com.parkez.image.enums.AllowedExtension;
 import com.parkez.image.enums.ImageTargetType;
@@ -18,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -34,14 +34,14 @@ public class S3ImageService implements ImageService {
     private String bucket;
 
     @Override
-    public ImageUrlResponse upload(ImageUploadRequest request, List<MultipartFile> files) {
+    public ImageUrlResponse upload(ImageRequest request, List<MultipartFile> files) {
 
         if(files == null || files.isEmpty()) {
             throw new ParkingEasyException(ImageErrorCode.IMAGE_IS_NULL);
         }
 
         List<String> imageUrls = new ArrayList<>();
-        ImageTargetType targetType = ImageTargetType.of(request.getTargetType());
+        ImageTargetType targetType = request.getTargetType();
 
         for(MultipartFile file : files) {
 
@@ -49,8 +49,8 @@ public class S3ImageService implements ImageService {
                 throw new ParkingEasyException(ImageErrorCode.INVALID_EXTENSION_TYPE);
             }
 
-            long currentTime = System.currentTimeMillis();
-            String fileName = createS3Key(targetType.name(), request.getTargetId(), file, currentTime);
+            LocalDateTime now = LocalDateTime.now();
+            String fileName = createS3Key(targetType.name(), request.getTargetId(), file, now);
 
             uploadToS3(file, fileName);
 
@@ -62,21 +62,16 @@ public class S3ImageService implements ImageService {
     }
 
     @Override
-    public ImageUrlResponse update(ImageUploadRequest request, List<MultipartFile> files) {
+    public ImageUrlResponse replace(ImageRequest request, List<MultipartFile> files) {
 
-        ImageDeleteRequest deleteRequest = ImageDeleteRequest.builder()
-                .targetType(request.getTargetType())
-                .targetId(request.getTargetId())
-                .build();
-
-        delete(deleteRequest);
+        delete(request);
 
         return upload(request, files);
     }
 
     @Override
-    public void delete(ImageDeleteRequest request) {
-        ImageTargetType targetType = ImageTargetType.of(request.getTargetType());
+    public void delete(ImageRequest request) {
+        ImageTargetType targetType = request.getTargetType();
 
         String folderPrefix = String.format("%s/%d/", targetType.name(), request.getTargetId());
 
@@ -142,9 +137,9 @@ public class S3ImageService implements ImageService {
     }
 
 
-    private String createS3Key(String targetType, Long targetId, MultipartFile file, long currentTime) {
+    private String createS3Key(String targetType, Long targetId, MultipartFile file, LocalDateTime now) {
 
-        String uuidFileName = UUID.randomUUID() + "_" + file.getOriginalFilename() + "_" + currentTime;
+        String uuidFileName = String.format("%s_%s_%s", UUID.randomUUID(), file.getOriginalFilename(), now);
         return String.format("%s/%d/%s", targetType, targetId, uuidFileName);
     }
 
@@ -167,7 +162,7 @@ public class S3ImageService implements ImageService {
         int index = fileName.lastIndexOf('.');
 
         if (index == -1 || index == fileName.length() - 1) {
-            return ""; // 확장자가 없거나, .으로 끝나는 경우
+            throw new ParkingEasyException(ImageErrorCode.INVALID_EXTENSION_TYPE);
         }
         return fileName.substring(index + 1).toLowerCase();
 
