@@ -101,6 +101,12 @@ class ReservationServiceTest {
         return parkingZone;
     }
 
+    private ParkingZone getParkingZone(Long id) {
+        ParkingZone parkingZone = ParkingZone.builder().build();
+        ReflectionTestUtils.setField(parkingZone, "id", id);
+        return parkingZone;
+    }
+
     private Reservation createReservation(Long id, User user, ParkingZone parkingZone, ReservationRequest request, BigDecimal price) {
         Reservation reservation = Reservation.builder()
                 .user(user)
@@ -111,6 +117,17 @@ class ReservationServiceTest {
                 .price(price)
                 .build();
         ReflectionTestUtils.setField(reservation, "id", id);
+        return reservation;
+    }
+
+    private Reservation getReservation(Long id, User user, ParkingZone parkingZone) {
+        Reservation reservation = Reservation.builder()
+                .user(user)
+                .parkingZone(parkingZone)
+                .parkingLotName(parkingZone.extractParkingLotName())
+                .build();
+        ReflectionTestUtils.setField(reservation, "id", id);
+        return reservation;
     }
 
     private ReservationRequest createRequest(Long id) {
@@ -158,12 +175,14 @@ class ReservationServiceTest {
             MyReservationResponse result = reservationService.createReservation(authUser, request);
 
             // then
-            assertNotNull(result);
-            assertEquals(reservationId, result.getReservationId());
-            assertEquals(userId, result.getUserId());
-            assertEquals(parkingZoneId, result.getParkingZoneId());
-            assertEquals(BigDecimal.valueOf(2000), result.getPrice());
-            assertFalse(result.isReviewWritten());
+            assertAll(
+                    () -> assertNotNull(result),
+                    () -> assertEquals(reservationId, result.getReservationId()),
+                    () -> assertEquals(userId, result.getUserId()),
+                    () -> assertEquals(parkingZoneId, result.getParkingZoneId()),
+                    () -> assertEquals(BigDecimal.valueOf(2000), result.getPrice()),
+                    () -> assertFalse(result.isReviewWritten())
+            );
         }
 
         @Test
@@ -174,32 +193,24 @@ class ReservationServiceTest {
             Long parkingLotId = 1L;
             Long parkingZoneId = 1L;
 
-            ReservationRequest request = new ReservationRequest();
-            ReflectionTestUtils.setField(request, "parkingZoneId", parkingZoneId);
-            ReflectionTestUtils.setField(request, "startDateTime", LocalDateTime.now());
+            AuthUser authUser = createAuthUser(userId);
+
+            ReservationRequest request = createRequest(parkingZoneId);
             ReflectionTestUtils.setField(request, "endDateTime", LocalDateTime.now().minusHours(1));
 
-            User owner = User.builder().build();
-            ReflectionTestUtils.setField(owner, "id", ownerId);
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", userId);
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
 
-            ParkingLot parkingLot = ParkingLot.builder()
-                    .owner(owner)
-                    .pricePerHour(BigDecimal.valueOf(2000))
-                    .name("test")
-                    .build();
-            ReflectionTestUtils.setField(parkingLot, "id", parkingLotId);
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
 
-            ParkingZone parkingZone = ParkingZone.builder()
-                    .parkingLot(parkingLot)
-                    .build();
-            ReflectionTestUtils.setField(parkingZone, "id", parkingZoneId);
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            given(userReader.getActiveById(anyLong())).willReturn(user);
+            given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.createReservation(userId, request));
-            assertNotNull(exception);
+                    () -> reservationService.createReservation(authUser, request));
             assertEquals(ReservationErrorCode.NOT_VALID_REQUEST_TIME, exception.getErrorCode());
         }
     }
@@ -214,36 +225,22 @@ class ReservationServiceTest {
             Long userId = 2L;
             int page = 1;
             int size = 10;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+            Long reservationId = 1L;
+            Long reviewedReservationId = 2L;
 
-            User owner = User.builder().build();
-            ReflectionTestUtils.setField(owner, "id", ownerId);
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", userId);
+            AuthUser authUser = createAuthUser(userId);
 
-            ParkingLot parkingLot = ParkingLot.builder()
-                    .owner(owner)
-                    .name("test")
-                    .build();
-            ReflectionTestUtils.setField(parkingLot, "id", 1L);
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
 
-            ParkingZone parkingZone = ParkingZone.builder()
-                    .parkingLot(parkingLot)
-                    .build();
-            ReflectionTestUtils.setField(parkingZone, "id", 1L);
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
 
-            Reservation reservation = Reservation.builder()
-                    .user(user)
-                    .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.extractParkingLotName())
-                    .build();
-            ReflectionTestUtils.setField(reservation, "id", 1L);
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
-            Reservation reviewedReservation = Reservation.builder()
-                    .user(user)
-                    .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.extractParkingLotName())
-                    .build();
-            ReflectionTestUtils.setField(reviewedReservation, "id", 2L); // 리뷰 작성된 예약
+            Reservation reservation = getReservation(reservationId, user, parkingZone);
+            Reservation reviewedReservation = getReservation(reviewedReservationId, user, parkingZone); // 리뷰 작성된 예약
 
             ReservationWithReviewDto dto1 = new ReservationWithReviewDto(reservation, false);
             ReservationWithReviewDto dto2 = new ReservationWithReviewDto(reviewedReservation, true);
@@ -255,15 +252,24 @@ class ReservationServiceTest {
             given(reservationReader.findMyReservations(anyLong(), any(PageRequest.class))).willReturn(pageDto);
 
             // when
-            Page<MyReservationResponse> result = reservationService.getMyReservations(userId, page, size);
+            Page<MyReservationResponse> result = reservationService.getMyReservations(authUser, page, size);
 
             // then
-            assertNotNull(result);
-            assertEquals(1L, result.getContent().get(0).getReservationId());
-            assertFalse(result.getContent().get(0).isReviewWritten());
-            assertEquals(2L, result.getContent().get(1).getReservationId());
-            assertTrue(result.getContent().get(1).isReviewWritten());
-            assertEquals(2, result.getTotalElements());
+            assertAll(
+                    () -> assertNotNull(result),
+                    () -> {
+                        var first = result.getContent().get(0);
+                        var second = result.getContent().get(1);
+
+                        assertEquals(1L, first.getReservationId());
+                        assertFalse(first.isReviewWritten());
+
+                        assertEquals(2L, second.getReservationId());
+                        assertTrue(second.isReviewWritten());
+
+                        assertEquals(2, result.getTotalElements());
+                    }
+            );
         }
 
         @Test
@@ -271,38 +277,24 @@ class ReservationServiceTest {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
-            int page = 0;
+            int page = -1;
             int size = 10;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+            Long reservationId = 1L;
+            Long reviewedReservationId = 2L;
 
-            User owner = User.builder().build();
-            ReflectionTestUtils.setField(owner, "id", ownerId);
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", userId);
+            AuthUser authUser = createAuthUser(userId);
 
-            ParkingLot parkingLot = ParkingLot.builder()
-                    .owner(owner)
-                    .name("test")
-                    .build();
-            ReflectionTestUtils.setField(parkingLot, "id", 1L);
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
 
-            ParkingZone parkingZone = ParkingZone.builder()
-                    .parkingLot(parkingLot)
-                    .build();
-            ReflectionTestUtils.setField(parkingZone, "id", 1L);
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
 
-            Reservation reservation = Reservation.builder()
-                    .user(user)
-                    .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.extractParkingLotName())
-                    .build();
-            ReflectionTestUtils.setField(reservation, "id", 1L);
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
-            Reservation reviewedReservation = Reservation.builder()
-                    .user(user)
-                    .parkingZone(parkingZone)
-                    .parkingLotName(parkingZone.extractParkingLotName())
-                    .build();
-            ReflectionTestUtils.setField(reviewedReservation, "id", 2L); // 리뷰 작성된 예약
+            Reservation reservation = getReservation(reservationId, user, parkingZone);
+            Reservation reviewedReservation = getReservation(reviewedReservationId, user, parkingZone); // 리뷰 작성된 예약
 
             ReservationWithReviewDto dto1 = new ReservationWithReviewDto(reservation, false);
             ReservationWithReviewDto dto2 = new ReservationWithReviewDto(reviewedReservation, true);
@@ -314,16 +306,24 @@ class ReservationServiceTest {
             given(reservationReader.findMyReservations(anyLong(), any(PageRequest.class))).willReturn(pageDto);
 
             // when
-            Page<MyReservationResponse> result = reservationService.getMyReservations(userId, page, size);
+            Page<MyReservationResponse> result = reservationService.getMyReservations(authUser, page, size);
 
             // then
-            assertNotNull(result);
-            assertEquals(1L, result.getContent().get(0).getReservationId());
-            assertFalse(result.getContent().get(0).isReviewWritten());
-            assertEquals(2L, result.getContent().get(1).getReservationId());
-            assertTrue(result.getContent().get(1).isReviewWritten());
-            assertEquals(2, result.getTotalElements());
-        }
+            assertAll(
+                    () -> assertNotNull(result),
+                    () -> {
+                        var first = result.getContent().get(0);
+                        var second = result.getContent().get(1);
+
+                        assertEquals(1L, first.getReservationId());
+                        assertFalse(first.isReviewWritten());
+
+                        assertEquals(2L, second.getReservationId());
+                        assertTrue(second.isReviewWritten());
+
+                        assertEquals(2, result.getTotalElements());
+                    }
+            );
     }
 
     @Nested
@@ -334,19 +334,15 @@ class ReservationServiceTest {
             // given
             Long userId = 1L;
             Long reservationId = 1L;
+            Long parkingZoneId = 1L;
 
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", userId);
+            AuthUser authUser = createAuthUser(userId);
 
-            ParkingZone parkingZone = ParkingZone.builder()
-                    .build();
-            ReflectionTestUtils.setField(parkingZone, "id", 1L);
+            User user = createUser(authUser.getId());
 
-            Reservation reservation = Reservation.builder()
-                    .user(user)
-                    .parkingZone(parkingZone)
-                    .build();
-            ReflectionTestUtils.setField(reservation, "id", reservationId);
+            ParkingZone parkingZone = getParkingZone(parkingZoneId);
+
+            Reservation reservation = getReservation(reservationId, user, parkingZone);
 
             boolean isReviewWritten = false;
 
@@ -354,7 +350,7 @@ class ReservationServiceTest {
             given(reviewReader.isReviewWritten(anyLong())).willReturn(isReviewWritten);
 
             // when
-            MyReservationResponse result = reservationService.getMyReservation(reservationId, userId);
+            MyReservationResponse result = reservationService.getMyReservation(authUser, reservationId);
 
             // then
             assertNotNull(result);
