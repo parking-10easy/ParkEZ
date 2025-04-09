@@ -299,19 +299,23 @@ public class S3ImageServiceTest {
     }
 
     @Test
-    void 파일명이_null이면_IMAGE_IS_NULL_예외_발생() {
+    void 파일명이_null이면_FILENAME_IS_NULL_예외_발생() {
         // given
-        String fileName = null;
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.getOriginalFilename()).thenReturn(null);
+
+        ImageRequest request = ImageRequest.builder()
+                .targetType(ImageTargetType.USER_PROFILE)
+                .targetId(1L)
+                .build();
+
+        List<MultipartFile> files = List.of(file);
 
         // when & then
         ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                () -> {
-                    ReflectionTestUtils.invokeMethod(imageService, "extractFileExtension", fileName);
-                });
+                () -> imageService.upload(request, files));
 
-        assertEquals(ImageErrorCode.IMAGE_IS_NULL, exception.getErrorCode());
+        assertEquals(ImageErrorCode.FILENAME_IS_NULL, exception.getErrorCode());
     }
-
-
 
 }
