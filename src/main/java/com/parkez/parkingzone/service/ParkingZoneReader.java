@@ -22,7 +22,7 @@ public class ParkingZoneReader {
     public Page<ParkingZoneResponse> getParkingZones(int page, int size, Long parkingLotId) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<ParkingZone> parkingZones = parkingZoneRepository.findAllOrderByModifiedAt(pageable, parkingLotId);
+        Page<ParkingZone> parkingZones = parkingZoneRepository.findAllByParkingLotIdOrderByModifiedAt(pageable, parkingLotId);
 
         return parkingZones.map(parkingZone -> new ParkingZoneResponse(
                 parkingZone.getId(),

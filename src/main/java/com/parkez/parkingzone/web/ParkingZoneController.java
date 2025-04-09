@@ -1,6 +1,9 @@
 package com.parkez.parkingzone.web;
 
-import com.parkez.common.response.Response;
+import com.parkez.common.dto.request.PageRequest;
+import com.parkez.common.dto.response.Response;
+import com.parkez.common.principal.AuthUser;
+import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateImageRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateRequest;
@@ -8,12 +11,17 @@ import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
 import com.parkez.parkingzone.dto.response.ParkingZoneCreateResponse;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import com.parkez.parkingzone.service.ParkingZoneService;
+import com.parkez.user.domain.enums.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api")
@@ -23,24 +31,23 @@ public class ParkingZoneController {
 
     private final ParkingZoneService parkingZoneService;
 
+    @Secured(UserRole.Authority.OWNER)
     @PostMapping("/v1/parking-zones")
     @Operation(summary = "주차공간 생성", description = "주차공간 생성 기능입니다.")
     public Response<ParkingZoneCreateResponse> createParkingZone(
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @Valid @RequestBody ParkingZoneCreateRequest request) {
-        return Response.of(parkingZoneService.createParkingZone(request));
+        return Response.of(parkingZoneService.createParkingZone(authUser, request));
     }
 
-    @GetMapping("/v1/parking-zones")
+    @GetMapping("/v1/parking-lot/{parkingLotId}/parking-zones")
     @Operation(summary = "주차공간 다건 조회", description = "주차공간 다건 조회 기능입니다.")
     public Response<ParkingZoneResponse> getParkingZones(
-            @Parameter(description = "페이지 번호 (default: 1)", example = "1")
-            @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "페이지 크기 (default: 10)", example = "10")
-            @RequestParam(defaultValue = "10") int size,
+            @ParameterObject PageRequest pageRequest,
             @Parameter(description = "주차장 ID (필수)", example = "1")
             @RequestParam Long parkingLotId
     ) {
-        return Response.fromPage(parkingZoneService.getParkingZones(page, size, parkingLotId));
+        return Response.fromPage(parkingZoneService.getParkingZones(pageRequest, parkingLotId));
     }
 
     @GetMapping("/v1/parking-zones/{parkingZoneId}")
@@ -49,42 +56,47 @@ public class ParkingZoneController {
         return Response.of(parkingZoneService.getParkingZone(parkingZoneId));
     }
 
+    @Secured(UserRole.Authority.OWNER)
     @PutMapping("/v1/parking-zones/{parkingZoneId}")
     @Operation(summary = "주차공간 수정", description = "주차공간 수정 기능입니다.")
     public Response<Void> updateParkingZone(
-//            @AuthUser AuthUser authUser,
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long parkingZoneId,
             @Valid @RequestBody ParkingZoneUpdateRequest request) {
-        parkingZoneService.updateParkingZone(parkingZoneId, request);
+        parkingZoneService.updateParkingZone(authUser, parkingZoneId, request);
         return Response.empty();
     }
 
+    @Secured(UserRole.Authority.OWNER)
     @PatchMapping("/v1/parking-zones/{parkingZoneId}/status")
     @Operation(summary = "주차공간 상태 변경", description = "주차공간 상태 변경 기능입니다.")
     public Response<Void> updateParkingZoneStatus(
-//            @AuthUser AuthUser authUser,
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long parkingZoneId,
             @Valid @RequestBody ParkingZoneUpdateStatusRequest request) {
-        parkingZoneService.updateParkingZoneStatus(parkingZoneId, request);
+        parkingZoneService.updateParkingZoneStatus(authUser, parkingZoneId, request);
         return Response.empty();
     }
 
+    @Secured(UserRole.Authority.OWNER)
     @PatchMapping("/v1/parking-zones/{parkingZoneId}/image")
     @Operation(summary = "주차공간 이미지 수정", description = "주차공간 이미지 수정 기능입니다.")
     public Response<Void> updateParkingZoneImage(
-//            @AuthUser AuthUser authUser,
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long parkingZoneId,
             @Valid @RequestBody ParkingZoneUpdateImageRequest request) {
-        parkingZoneService.updateParkingZoneImage(parkingZoneId, request);
+        parkingZoneService.updateParkingZoneImage(authUser, parkingZoneId, request);
         return Response.empty();
     }
 
+    @Secured(UserRole.Authority.OWNER)
     @DeleteMapping("/v1/parking-zones/{parkingZoneId}")
     @Operation(summary = "주차공간 삭제", description = "주차공간 삭제 기능입니다.")
     public Response<Void> deleteParkingZone(
-//            @AuthUser AuthUser authUser,
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long parkingZoneId) {
-        parkingZoneService.deleteParkingZone(parkingZoneId);
+        LocalDateTime deletedAt = LocalDateTime.now();
+        parkingZoneService.deleteParkingZone(authUser, parkingZoneId, deletedAt);
         return Response.empty();
     }
 }
