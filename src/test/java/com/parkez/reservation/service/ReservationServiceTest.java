@@ -53,7 +53,7 @@ class ReservationServiceTest {
     @InjectMocks
     private ReservationService reservationService;
 
-    private AuthUser createAuthUser(Long id) {
+    private static AuthUser createAuthUser(Long id) {
         return AuthUser.builder()
                 .id(id)
                 .email("test@example.com")
@@ -62,7 +62,7 @@ class ReservationServiceTest {
                 .build();
     }
 
-    private AuthUser createAuthOwner(Long id) {
+    private static AuthUser createAuthOwner(Long id) {
         return AuthUser.builder()
                 .id(id)
                 .email("test@example.com")
@@ -71,19 +71,19 @@ class ReservationServiceTest {
                 .build();
     }
 
-    private User createUser(Long id) {
+    private static User createUser(Long id) {
         User user = User.builder().build();
         ReflectionTestUtils.setField(user, "id", id);
         return user;
     }
 
-    private User createOwner(Long id) {
+    private static User createOwner(Long id) {
         User owner = User.builder().build();
         ReflectionTestUtils.setField(owner, "id", id);
         return owner;
     }
 
-    private ParkingLot createParkingLot(Long id, User owner) {
+    private static ParkingLot createParkingLot(Long id, User owner) {
         ParkingLot parkingLot = ParkingLot.builder()
                 .owner(owner)
                 .pricePerHour(BigDecimal.valueOf(2000))
@@ -93,7 +93,7 @@ class ReservationServiceTest {
         return parkingLot;
     }
 
-    private ParkingZone createParkingZone(Long id, ParkingLot parkingLot) {
+    private static ParkingZone createParkingZone(Long id, ParkingLot parkingLot) {
         ParkingZone parkingZone = ParkingZone.builder()
                 .parkingLot(parkingLot)
                 .build();
@@ -101,13 +101,13 @@ class ReservationServiceTest {
         return parkingZone;
     }
 
-    private ParkingZone getParkingZone(Long id) {
+    private static ParkingZone getParkingZone(Long id) {
         ParkingZone parkingZone = ParkingZone.builder().build();
         ReflectionTestUtils.setField(parkingZone, "id", id);
         return parkingZone;
     }
 
-    private Reservation createReservation(Long id, User user, ParkingZone parkingZone, ReservationRequest request, BigDecimal price) {
+    private static Reservation createReservation(Long id, User user, ParkingZone parkingZone, ReservationRequest request, BigDecimal price) {
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
@@ -120,7 +120,7 @@ class ReservationServiceTest {
         return reservation;
     }
 
-    private Reservation getReservation(Long id, User user, ParkingZone parkingZone) {
+    private static Reservation getReservation(Long id, User user, ParkingZone parkingZone) {
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
@@ -130,7 +130,7 @@ class ReservationServiceTest {
         return reservation;
     }
 
-    private ReservationRequest createRequest(Long id) {
+    private static ReservationRequest createRequest(Long id) {
         ReservationRequest request = new ReservationRequest();
         ReflectionTestUtils.setField(request, "parkingZoneId", id);
         ReflectionTestUtils.setField(request, "startDateTime", LocalDateTime.now());
@@ -138,7 +138,7 @@ class ReservationServiceTest {
     }
 
     @Nested
-    class createReservation {
+    class CreateReservation {
 
         @Test
         void 예약_생성_테스트() {
@@ -216,7 +216,7 @@ class ReservationServiceTest {
     }
 
     @Nested
-    class getReservationsByUserId {
+    class GetReservationsByUserId {
 
         @Test
         void 예약_리스트_조회_테스트() {
@@ -327,7 +327,7 @@ class ReservationServiceTest {
         }
 
         @Nested
-        class getReservationById {
+        class GetReservationById {
 
             @Test
             void 예약_단건_조회_테스트() {
@@ -359,7 +359,7 @@ class ReservationServiceTest {
         }
 
         @Nested
-        class getReservationsByParkingZoneId {
+        class GetReservationsByParkingZoneId {
 
             @Test
             void 예약_내역_리스트_조회_테스트() {
@@ -480,7 +480,7 @@ class ReservationServiceTest {
         }
 
         @Nested
-        class completeReservation {
+        class CompleteReservation {
 
             @Test
             void 예약_사용_완료_테스트() {
@@ -532,7 +532,7 @@ class ReservationServiceTest {
         }
 
         @Nested
-        class cancelReservation {
+        class CancelReservation {
 
             @Test
             void 예약_취소_테스트() {

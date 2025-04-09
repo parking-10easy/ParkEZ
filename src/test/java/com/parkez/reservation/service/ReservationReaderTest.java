@@ -33,17 +33,34 @@ class ReservationReaderTest {
     @InjectMocks
     private ReservationReader reservationReader;
 
+    private static User createUser(Long id) {
+        User user = User.builder().build();
+        ReflectionTestUtils.setField(user, "id", id);
+        return user;
+    }
+
+    private static Reservation createReservation(Long id, User user) {
+        Reservation reservation = Reservation.builder()
+                .user(user)
+                .build();
+        ReflectionTestUtils.setField(reservation, "id", id);
+        return reservation;
+    }
+
     @Nested
     // todo class 명은 파스칼케이스, 중복 로직 method 분리, beforeEach 사용해보기, 예외 종류도 method 명에 넣기
-    class getReservationsByUserId {
+    class GetReservationsByUserId {
 
         @Test
         void 예약_리스트_조회_테스트() {
             // given
             Long userId = 1L;
+            Long reservationId = 1L;
             PageRequest pageable = PageRequest.of(0, 10);
 
-            Reservation reservation = Reservation.builder().build();
+            User user = createUser(userId);
+
+            Reservation reservation = createReservation(reservationId, user);
             ReservationWithReviewDto dto = new ReservationWithReviewDto(reservation, true);
 
             Page<ReservationWithReviewDto> pageDto = new PageImpl<>(List.of(dto));
@@ -54,9 +71,11 @@ class ReservationReaderTest {
             Page<ReservationWithReviewDto> result = reservationReader.findMyReservations(userId, pageable);
 
             // then
-            assertNotNull(result);
-            assertEquals(dto, result.getContent().get(0));
-            assertEquals(1, result.getTotalElements());
+            assertAll(
+                    () -> assertNotNull(result),
+                    () -> assertEquals(dto, result.getContent().get(0)),
+                    () -> assertEquals(1, result.getTotalElements())
+            );
         }
 
         @Test
@@ -77,7 +96,7 @@ class ReservationReaderTest {
     }
 
     @Nested
-    class getReservationByUserId {
+    class GetReservationByUserId {
 
         @Test
         void 예약_단건_조회_테스트() {
@@ -85,12 +104,9 @@ class ReservationReaderTest {
             Long userId = 1L;
             Long reservationId = 1L;
 
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", userId);
+            User user = createUser(userId);
 
-            Reservation reservation = Reservation.builder()
-                    .user(user)
-                    .build();
+            Reservation reservation = createReservation(reservationId, user);
 
             given(reservationRepository.findById(anyLong())).willReturn(Optional.of(reservation));
 
@@ -106,7 +122,7 @@ class ReservationReaderTest {
         void 예약이_존재하지_않을_경우_예외() {
             // given
             Long userId = 1L;
-            Long reservationId = 1L;
+            Long reservationId = -1L;
 
             given(reservationRepository.findById(anyLong())).willReturn(Optional.empty());
 
@@ -123,14 +139,9 @@ class ReservationReaderTest {
             Long differentUserId = 2L;
             Long reservationId = 1L;
 
-            User user = User.builder().build();
-            ReflectionTestUtils.setField(user, "id", userId);
-            User differentUser = User.builder().build();
-            ReflectionTestUtils.setField(differentUser, "id", differentUserId);
+            User differentUser = createUser(differentUserId);
 
-            Reservation reservation = Reservation.builder()
-                    .user(differentUser)
-                    .build();
+            Reservation reservation = createReservation(reservationId, differentUser);
 
             given(reservationRepository.findById(anyLong())).willReturn(Optional.of(reservation));
 
@@ -142,15 +153,19 @@ class ReservationReaderTest {
     }
 
     @Nested
-    class getReservationsByParkingZoneId {
+    class GetReservationsByParkingZoneId {
 
         @Test
         void 예약_내역_리스트_조회_테스트() {
             // given
+            Long userId = 1L;
             Long parkingZoneId = 1L;
+            Long reservationId = 1L;
             PageRequest pageable = PageRequest.of(0, 10);
 
-            Reservation reservation = Reservation.builder().build();
+            User user = createUser(userId);
+
+            Reservation reservation = createReservation(reservationId, user);
 
             Page<Reservation> reservationPage = new PageImpl<>(List.of(reservation));
 
