@@ -8,12 +8,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
 
 @Getter
 @Schema(description = "주차장 생성 및 수정 요청 DTO")
+@NoArgsConstructor
 public class ParkingLotRequest {
 
     @NotBlank(message = "이름은 필수 값입니다.")
@@ -34,6 +36,7 @@ public class ParkingLotRequest {
     @Schema(description = "주차장 마감 시간", example = "23:00")
     private LocalTime closedAt;
 
+    @Min(value = 0, message = "시간 당 가격 0 이상이어야 합니다.")
     @NotNull(message = "시간 당 가격은 필수 값 입니다.")
     @Schema(description = "시간 당 가격", example = "2000")
     private BigDecimal pricePerHour;
@@ -46,9 +49,6 @@ public class ParkingLotRequest {
     @NotNull(message = "주차 수량은 필수 값 입니다.")
     @Schema(description = "주차장 수량", example = "100")
     private Integer quantity;
-
-    public ParkingLotRequest() {
-    }
 
     @Builder
     private ParkingLotRequest(String name, String address,

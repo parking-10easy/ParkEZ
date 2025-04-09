@@ -6,11 +6,11 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.Optional;
 
-public interface ParkingLotSearchRepository {
+public interface ParkingLotQueryDslRepository {
 
     // 주차장 다건 조회
-    Page<ParkingLot> searchParkingLots(String name, String address, Pageable pageable);
+    Page<ParkingLot> searchParkingLotsByConditions(String name, String address, Pageable pageable);
 
     // 주차장 단건 조회
-    Optional<ParkingLot> searchParkingLot(Long parkingLotId);
+    Optional<ParkingLot> searchParkingLotById(Long parkingLotId);
 }

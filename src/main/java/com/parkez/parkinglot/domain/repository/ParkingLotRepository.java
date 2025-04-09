@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface ParkingLotRepository extends JpaRepository<ParkingLot, Long>, ParkingLotSearchRepository {
+public interface ParkingLotRepository extends JpaRepository<ParkingLot, Long>, ParkingLotQueryDslRepository {
 
     Optional<ParkingLot> findByIdAndDeletedAtIsNull(Long parkingLotId);
 

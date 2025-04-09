@@ -19,14 +19,14 @@ import static com.parkez.parkinglot.domain.entity.QParkingLot.parkingLot;
 
 @Repository
 @RequiredArgsConstructor
-public class ParkingLotRepositoryImpl implements ParkingLotSearchRepository {
+public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
 
     private final JPAQueryFactory jpaQueryFactory;
 
     // 다건 조회
     //TODO
     @Override
-    public Page<ParkingLot> searchParkingLots(String name, String address, Pageable pageable) {
+    public Page<ParkingLot> searchParkingLotsByConditions(String name, String address, Pageable pageable) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(nameContains(name));
         builder.and(addressContains(address));
@@ -49,7 +49,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotSearchRepository {
     // 단건 조회
     // TODO
     @Override
-    public Optional<ParkingLot> searchParkingLot(Long parkingLotId) {
+    public Optional<ParkingLot> searchParkingLotById(Long parkingLotId) {
         return Optional.ofNullable(
                 jpaQueryFactory.selectFrom(parkingLot)
                         .where(parkingLot.id.eq(parkingLotId)

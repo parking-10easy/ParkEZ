@@ -59,9 +59,11 @@ public class ParkingLot extends BaseDeleteEntity {
     private ChargeType chargeType;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private SourceType sourceType;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ParkingLotStatus status;
 
     @OneToMany(mappedBy = "parkingLot", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -108,15 +110,8 @@ public class ParkingLot extends BaseDeleteEntity {
 
     public void updateImages(List<ParkingLotImage> newImages) {
         this.images.clear();
-        if (newImages != null && !newImages.isEmpty()) {
-            newImages.forEach(this::addImage);
-        }
-    }
-
-    public void addImage(ParkingLotImage image) {
-        if (images != null) {
-            image.updateParkingLot(this);
-            this.images.add(image);
+        if(newImages != null && !newImages.isEmpty()) {
+            this.images.addAll(newImages);
         }
     }
 

@@ -21,24 +21,20 @@ public class ParkingLotReader {
 
     // 주차장 다건 조회 (이름, 주소)
     public Page<ParkingLotSearchResponse> searchParkingLots(String name, String address, Pageable pageable) {
-        Page<ParkingLot> parkingLots = parkingLotRepository.searchParkingLots(name, address, pageable);
+        Page<ParkingLot> parkingLots = parkingLotRepository.searchParkingLotsByConditions(name, address, pageable);
         return parkingLots.map(ParkingLotSearchResponse::from);
     }
 
     // 주차장 단건 조회
     public ParkingLot searchParkingLot(Long parkingLotId) {
-        return parkingLotRepository.searchParkingLot(parkingLotId).orElseThrow(
+        return parkingLotRepository.searchParkingLotById(parkingLotId).orElseThrow(
                 () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
     }
 
     //  soft delete 제외 + null 처리하여 아이디로 단건 조회 + authUser 본인확인
-    public ParkingLot getOwnedParkingLot(AuthUser authUser, Long parkingLotId){
+    public ParkingLot getOwnedParkingLot(AuthUser authUser, Long parkingLotId) {
         ParkingLot parkingLot = getActiveParkingLot(parkingLotId);
-
-        if (!parkingLot.isOwned(authUser.getId())) {
-            throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
-        }
-
+        checkParkingLotOwnership(authUser, parkingLot);
         return parkingLot;
     }
 
@@ -46,6 +42,13 @@ public class ParkingLotReader {
         return parkingLotRepository.findByIdAndDeletedAtIsNull(parkingLotId)
                 .orElseThrow(() -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
     }
+
+    private void checkParkingLotOwnership(AuthUser authUser, ParkingLot parkingLot) {
+        if (!parkingLot.isOwned(authUser.getId())) {
+            throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
+        }
+    }
+
     public void validateExistence(Long parkingLotId) {
         boolean exists = parkingLotRepository.existsByIdAndDeletedAtIsNull(parkingLotId);
         if (!exists) {

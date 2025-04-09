@@ -4,7 +4,9 @@ import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.entity.ParkingLotImage;
+import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
+import com.parkez.parkinglot.domain.enums.SourceType;
 import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
@@ -32,9 +34,7 @@ public class ParkingLotService {
 
     // 주차장 생성
     public ParkingLotResponse createParkingLot(AuthUser authUser, ParkingLotRequest request) {
-
         User user = userReader.getActiveById(authUser.getId());
-
         ParkingLot parkingLot = ParkingLot.builder()
                 .owner(user)
                 .name(request.getName())
@@ -44,6 +44,8 @@ public class ParkingLotService {
                 .pricePerHour(request.getPricePerHour())
                 .description(request.getDescription())
                 .address(request.getAddress())
+                .chargeType(ChargeType.PAID)
+                .sourceType(SourceType.OWNER_REGISTERED)
                 .build();
         return ParkingLotResponse.from(parkingLotWriter.createParkingLot(parkingLot));
     }
