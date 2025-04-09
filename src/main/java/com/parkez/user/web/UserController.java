@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
-import com.parkez.common.response.Response;
+import com.parkez.common.dto.response.Response;
 import com.parkez.user.dto.request.UserChangePasswordRequest;
 import com.parkez.user.dto.request.UserProfileImageUpdateRequest;
 import com.parkez.user.dto.request.UserProfileUpdateRequest;
