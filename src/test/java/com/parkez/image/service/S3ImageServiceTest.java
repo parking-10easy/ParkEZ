@@ -35,7 +35,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class S3ImageServiceTest {
 
-    @InjectMocks
     private S3ImageService imageService;
 
     @Mock
@@ -50,7 +49,7 @@ public class S3ImageServiceTest {
                 "test-bucket"
         );
 
-        ReflectionTestUtils.setField(imageService, "s3Properties", s3Properties);
+        imageService = new S3ImageService(s3Client, s3Properties);
     }
 
     @Test
