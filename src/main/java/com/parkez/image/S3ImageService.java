@@ -7,7 +7,6 @@ import com.parkez.image.dto.response.ImageUrlResponse;
 import com.parkez.image.enums.AllowedExtension;
 import com.parkez.image.enums.ImageTargetType;
 import com.parkez.image.exception.ImageErrorCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -26,17 +25,19 @@ import java.util.UUID;
 @Service
 @Slf4j
 @EnableConfigurationProperties(S3Properties.class)
-@RequiredArgsConstructor
 public class S3ImageService implements ImageService {
 
     private final S3Client s3Client;
 
-    private final S3Properties s3Properties;
+    private final String region;
 
-    private String getBucket() {
-        return s3Properties.getS3Bucket();
+    private final String bucket;
+
+    public S3ImageService(S3Client s3Client, S3Properties s3Properties) {
+        this.s3Client = s3Client;
+        this.region = s3Properties.getRegion();
+        this.bucket = s3Properties.getS3Bucket();
     }
-
     @Override
     public ImageUrlResponse upload(ImageRequest request, List<MultipartFile> files) {
 
@@ -56,7 +57,7 @@ public class S3ImageService implements ImageService {
             }
 
             LocalDateTime now = LocalDateTime.now();
-            String fileName = createS3Key(targetType.name(), request.getTargetId(), file, now);
+            String fileName = createS3Key(targetType.name(), request.getTargetId(), now);
 
             uploadToS3(file, fileName);
 
@@ -81,7 +82,7 @@ public class S3ImageService implements ImageService {
 
         String folderPrefix = String.format("%s/%d/", targetType.name(), request.getTargetId());
 
-        ListObjectsV2Request listRequest = ListObjectsV2Request.builder().bucket(getBucket()).prefix(folderPrefix).build();
+        ListObjectsV2Request listRequest = ListObjectsV2Request.builder().bucket(bucket).prefix(folderPrefix).build();
 
 
         ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
@@ -97,7 +98,7 @@ public class S3ImageService implements ImageService {
 
         // S3 객체 삭제 요청
         DeleteObjectsRequest deleteRequest = DeleteObjectsRequest.builder()
-                .bucket(getBucket())
+                .bucket(bucket)
                 .delete(Delete.builder().objects(objectToDelete).build())
                 .build();
 
@@ -111,7 +112,7 @@ public class S3ImageService implements ImageService {
         try{
             // S3에 파일 업로드 요청 생성
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(getBucket())
+                    .bucket(bucket)
                     .key(fileName)
                     .contentType(file.getContentType())
                     .contentLength(file.getSize())
@@ -134,15 +135,15 @@ public class S3ImageService implements ImageService {
 
     }
 
-    private String createS3Key(String targetType, Long targetId, MultipartFile file, LocalDateTime now) {
+    private String createS3Key(String targetType, Long targetId, LocalDateTime now) {
 
-        String uuidFileName = String.format("%s_%s_%s", UUID.randomUUID(), file.getOriginalFilename(), now);
+        String uuidFileName = String.format("%s_%s", UUID.randomUUID(), now);
         return String.format("%s/%d/%s", targetType, targetId, uuidFileName);
     }
 
 
     private String getPublicUrl(String key) {
-        return String.format("https://%s.s3.%s.amazonaws.com/%s", getBucket(), s3Properties.getRegion(), key);
+        return String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key);
     }
 
     private String extractFileExtension(String fileName){
