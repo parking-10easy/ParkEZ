@@ -19,6 +19,7 @@ import com.parkez.parkinglot.service.ParkingLotWriter;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
+import com.parkez.common.PageRequest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +28,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -57,7 +57,8 @@ public class ParkingLotServiceTest {
     @Mock
     private UserReader userReader;
 
-    private final Pageable pageable = PageRequest.of(0, 10);
+    private final PageRequest pageRequest = new PageRequest(1, 10);
+    Pageable pageable = org.springframework.data.domain.PageRequest.of(pageRequest.getPage() - 1, pageRequest.getSize());
 
     private User getOwnerUser() {
         User ownerUser = User.builder()
@@ -198,10 +199,10 @@ public class ParkingLotServiceTest {
                     .name(null)
                     .address(null)
                     .build();
-            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageable)).thenReturn(page);
+            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
 
             // when
-            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageable);
+            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
 
             // then
             assertNotNull(result);
@@ -212,7 +213,7 @@ public class ParkingLotServiceTest {
                             tuple(searchResponse1.getName(), searchResponse1.getAddress()),
                             tuple(searchResponse2.getName(), searchResponse2.getAddress())
                     );
-            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageable);
+            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize());
         }
 
         @Test
@@ -225,10 +226,10 @@ public class ParkingLotServiceTest {
                     .name(searchResponse1.getName())
                     .address(null)
                     .build();
-            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageable)).thenReturn(page);
+            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
 
             // when
-            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageable);
+            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
 
             // then
             assertNotNull(result);
@@ -238,7 +239,7 @@ public class ParkingLotServiceTest {
                     .containsExactly(
                             tuple(searchResponse1.getName(), searchResponse1.getAddress())
                     );
-            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageable);
+            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize());
         }
 
         @Test
@@ -251,10 +252,10 @@ public class ParkingLotServiceTest {
                     .name(null)
                     .address(searchResponse1.getAddress())
                     .build();
-            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageable)).thenReturn(page);
+            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
 
             // when
-            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageable);
+            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
 
             // then
             assertNotNull(result);
@@ -264,7 +265,7 @@ public class ParkingLotServiceTest {
                     .containsExactly(
                             tuple(searchResponse1.getName(), searchResponse1.getAddress())
                     );
-            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageable);
+            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize());
         }
 
         @Test
@@ -277,10 +278,10 @@ public class ParkingLotServiceTest {
                     .name(searchResponse1.getName())
                     .address(searchResponse1.getAddress())
                     .build();
-            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageable)).thenReturn(page);
+            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
 
             // when
-            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageable);
+            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
 
             // then
             assertNotNull(result);
@@ -290,7 +291,7 @@ public class ParkingLotServiceTest {
                     .containsExactly(
                             tuple(searchResponse1.getName(), searchResponse1.getAddress())
                     );
-            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageable);
+            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize());
         }
     }
 
@@ -327,11 +328,11 @@ public class ParkingLotServiceTest {
             List<MyParkingLotSearchResponse> responses = Arrays.asList(MyParkingResponse1, MyParkingResponse2);
             Page<MyParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
 
-            when(parkingLotReader.getMyParkingLots(userId, pageable)).thenReturn(page);
+            when(parkingLotReader.getMyParkingLots(userId, pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
 
             // when
             AuthUser authUser = getAuthUserOwner();
-            Page<MyParkingLotSearchResponse> result = parkingLotService.getMyParkingLots(authUser, pageable);
+            Page<MyParkingLotSearchResponse> result = parkingLotService.getMyParkingLots(authUser, pageRequest);
 
             // then
             assertThat(result).isNotNull();
@@ -349,11 +350,11 @@ public class ParkingLotServiceTest {
             // given
             Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
             Page<MyParkingLotSearchResponse> page = new PageImpl<>(Collections.emptyList(), pageable, 0);
-            when(parkingLotReader.getMyParkingLots(userIdNotParkingOwner, pageable)).thenReturn(page);
+            when(parkingLotReader.getMyParkingLots(userIdNotParkingOwner, pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
 
             // when
             AuthUser authUserNotOwner = getAuthUserNotParkingLotOwner();
-            Page<MyParkingLotSearchResponse> result = parkingLotService.getMyParkingLots(authUserNotOwner, pageable);
+            Page<MyParkingLotSearchResponse> result = parkingLotService.getMyParkingLots(authUserNotOwner, pageRequest);
 
             assertThat(result).isNotNull();
             assertEquals(0, result.getTotalElements());

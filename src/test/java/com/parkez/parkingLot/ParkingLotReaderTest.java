@@ -1,5 +1,6 @@
 package com.parkez.parkingLot;
 
+import com.parkez.common.PageRequest;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
@@ -17,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -40,7 +40,8 @@ public class ParkingLotReaderTest {
     @Mock
     private ParkingLotRepository parkingLotRepository;
 
-    private final Pageable pageable = PageRequest.of(0, 10);
+    private final PageRequest pageRequest = new PageRequest(1, 10);
+    Pageable pageable = org.springframework.data.domain.PageRequest.of(pageRequest.getPage() - 1, pageRequest.getSize());
 
     private User getOwnerUser() {
         User ownerUser = User.builder()
@@ -84,7 +85,7 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.searchParkingLotsByConditions(null, null, pageable)).thenReturn(page);
 
             // then
-            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(null, null, pageable);
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(null, null,  pageRequest.getPage(),pageRequest.getSize());
             assertNotNull(result);
             assertEquals(2, result.getTotalElements());
             assertThat(result.getContent())
@@ -107,7 +108,7 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.searchParkingLotsByConditions(name, null, pageable)).thenReturn(page);
 
             // then
-            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(name, null, pageable);
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(name, null, pageRequest.getPage(),pageRequest.getSize());
             assertNotNull(result);
             assertEquals(1, result.getTotalElements());
             assertThat(result.getContent())
@@ -129,7 +130,7 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.searchParkingLotsByConditions(null, address, pageable)).thenReturn(page);
 
             // then
-            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(null, address, pageable);
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(null, address,  pageRequest.getPage(),pageRequest.getSize());
             assertNotNull(result);
             assertEquals(1, result.getTotalElements());
             assertThat(result.getContent())
@@ -152,7 +153,8 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.searchParkingLotsByConditions(name, address, pageable)).thenReturn(page);
 
             // then
-            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(name, address, pageable);
+
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(name, address,  pageRequest.getPage(),pageRequest.getSize());
             assertNotNull(result);
             assertThat(result.getContent())
                     .extracting("name", "address")
@@ -209,7 +211,7 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.findMyParkingLots(userId, pageable)).thenReturn(page);
 
             // when
-            Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(userId, pageable);
+            Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(userId,  pageRequest.getPage(),pageRequest.getSize());
 
             //then
             assertNotNull(result);
@@ -230,7 +232,7 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.findMyParkingLots(nonParkingLotOwnerId, pageable)).thenReturn(emptyPage);
 
             // when
-            Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(nonParkingLotOwnerId, pageable);
+            Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(nonParkingLotOwnerId,  pageRequest.getPage(),pageRequest.getSize());
 
             // then
             assertNotNull(result);
