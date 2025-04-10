@@ -51,14 +51,6 @@ public class ParkingLotReaderTest {
         return ownerUser;
     }
 
-    private AuthUser getAuthUserOwner() {
-        return AuthUser.builder()
-                .id(getOwnerUser().getId())
-                .email(getOwnerUser().getEmail())
-                .roleName("ROLE_OWNER")
-                .build();
-    }
-
     private ParkingLot getParkingLot1() {
         User ownerUser = getOwnerUser();
         return ParkingLot.builder()
@@ -215,8 +207,8 @@ public class ParkingLotReaderTest {
                     .thenReturn(Optional.of(parkingLot1));
 
             // when
-            AuthUser authUserOwner = getAuthUserOwner();
-            ParkingLot result = parkingLotReader.getOwnedParkingLot(authUserOwner, parkingLotId);
+            Long userId = getOwnerUser().getId();
+            ParkingLot result = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
 
             // then
             assertNotNull(result);
@@ -231,9 +223,9 @@ public class ParkingLotReaderTest {
                     .thenReturn(Optional.empty());
 
             // when
-            AuthUser authUserOwner = getAuthUserOwner();
+            Long userId = getOwnerUser().getId();
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
-                parkingLotReader.getOwnedParkingLot(authUserOwner, parkingLotId);
+                parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
             });
 
             // then
@@ -248,9 +240,9 @@ public class ParkingLotReaderTest {
                     .thenReturn(Optional.empty());
 
             // when
-            AuthUser authUserOwner = getAuthUserOwner();
+            Long userId = getOwnerUser().getId();
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
-                    parkingLotReader.getOwnedParkingLot(authUserOwner, parkingLotId)
+                    parkingLotReader.getOwnedParkingLot(userId, parkingLotId)
             );
 
             // then

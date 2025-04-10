@@ -304,11 +304,12 @@ public class ParkingLotServiceTest {
         void 특정_주차장을_수정한다() {
             //given
             Long parkingLotId = 1L;
-            AuthUser authUser = getAuthUserOwner();
+            Long userId = getAuthUserOwner().getId();
             ParkingLot parkingLot = getParkingLot();
-            when(parkingLotReader.getOwnedParkingLot(authUser, parkingLotId)).thenReturn(parkingLot);
+            when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
 
             // when
+            AuthUser authUser = getAuthUserOwner();
             ParkingLotRequest request = getParkingLotRequest();
             parkingLotService.updateParkingLot(authUser, parkingLotId, request);
 
@@ -324,8 +325,9 @@ public class ParkingLotServiceTest {
         void 소유자가_아니면_특정_주차장_수정에_실패한다() {
             // given
             Long parkingLotId = 1L;
+            Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
             AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
-            when(parkingLotReader.getOwnedParkingLot(authUserNotParkingOwner, parkingLotId))
+            when(parkingLotReader.getOwnedParkingLot(userIdNotParkingOwner, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER));
 
             // when
@@ -342,11 +344,12 @@ public class ParkingLotServiceTest {
         void 존재하지_않는_아이디로_주차장_수정에_실패한다() {
             // given
             Long parkingLotId = -1L;
-            AuthUser authUser = getAuthUserOwner();
-            when(parkingLotReader.getOwnedParkingLot(authUser, parkingLotId))
+            Long userId = getAuthUserOwner().getId();
+            when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
 
             // when
+            AuthUser authUser = getAuthUserOwner();
             ParkingLotRequest request = getParkingLotRequest();
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                     parkingLotService.updateParkingLot(authUser, parkingLotId, request)
@@ -364,11 +367,12 @@ public class ParkingLotServiceTest {
             // given
             ParkingLot parkingLot = getParkingLot();
             parkingLot.updateStatus(ParkingLotStatus.CLOSED);
-            AuthUser authUser = getAuthUserOwner();
+            Long userId = getAuthUserOwner().getId();
             Long parkingLotId = 1L;
-            when(parkingLotReader.getOwnedParkingLot(authUser, parkingLotId)).thenReturn(parkingLot);
+            when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
 
             // when
+            AuthUser authUser = getAuthUserOwner();
             ParkingLotStatusRequest request = getParkingLotStatusRequest();
             parkingLotService.updateParkingLotStatus(authUser, parkingLotId, request);
 
@@ -379,9 +383,10 @@ public class ParkingLotServiceTest {
         @Test
         void 소유자가_아니면_주차장_상태_변경에_실패한다() {
             // given
-            AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
             Long parkingLotId = 1L;
-            when(parkingLotReader.getOwnedParkingLot(authUserNotParkingOwner, parkingLotId))
+            Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
+            AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
+            when(parkingLotReader.getOwnedParkingLot(userIdNotParkingOwner, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER));
 
             // when
@@ -397,12 +402,13 @@ public class ParkingLotServiceTest {
         @Test
         void 존재하지_않는_아이디로_주차장_상태_변경에_실패한다() {
             // given
-            AuthUser authUser = getAuthUserOwner();
             Long parkingLotId = -1L;
-            when(parkingLotReader.getOwnedParkingLot(authUser, parkingLotId))
+            Long userId = getAuthUserOwner().getId();
+            when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
 
             // when
+            AuthUser authUser = getAuthUserOwner();
             ParkingLotStatusRequest request = getParkingLotStatusRequest();
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                     parkingLotService.updateParkingLotStatus(authUser, parkingLotId, request)
@@ -437,12 +443,13 @@ public class ParkingLotServiceTest {
         @Test
         void 특정_주차장_이미지를_수정한다() {
             // given
-            AuthUser authUser = getAuthUserOwner();
             Long parkingLotId = 1L;
+            Long userId = getAuthUserOwner().getId();
             ParkingLot parkingLot = getParkingLot();
-            when(parkingLotReader.getOwnedParkingLot(authUser, parkingLotId)).thenReturn(parkingLot);
+            when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
 
             // when
+            AuthUser authUser = getAuthUserOwner();
             ParkingLotImagesRequest request = getParkingLotImagesRequest();
             parkingLotService.updateParkingLotImages(authUser, parkingLotId, request);
 
@@ -456,9 +463,10 @@ public class ParkingLotServiceTest {
         @Test
         void 소유자가_아니면_주차장_이미지_수정을_실패한다() {
             // given
-            AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
             Long parkingLotId = 1L;
-            when(parkingLotReader.getOwnedParkingLot(authUserNotParkingOwner, parkingLotId))
+            Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
+            AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
+            when(parkingLotReader.getOwnedParkingLot(userIdNotParkingOwner, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER));
 
             // when
@@ -474,12 +482,13 @@ public class ParkingLotServiceTest {
         @Test
         void 존재하지_않는_아이디로_주차장_이미지_수정에_실패한다() {
             // given
-            AuthUser authUser = getAuthUserOwner();
             Long parkingLotId = -1L;
-            when(parkingLotReader.getOwnedParkingLot(authUser, parkingLotId))
+            Long userId = getAuthUserOwner().getId();
+            when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
 
             // when
+            AuthUser authUser = getAuthUserOwner();
             ParkingLotImagesRequest request = getParkingLotImagesRequest();
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                     parkingLotService.updateParkingLotImages(authUser, parkingLotId, request)
@@ -496,12 +505,13 @@ public class ParkingLotServiceTest {
         @Test
         void 특정_주차장을_삭제한다() {
             // given
-            AuthUser authUser = getAuthUserOwner();
             Long parkingLotId = 1L;
+            Long userId = getAuthUserOwner().getId();
             ParkingLot parkingLot = getParkingLot();
-            when(parkingLotReader.getOwnedParkingLot(authUser, parkingLotId)).thenReturn(parkingLot);
+            when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
 
             // when
+            AuthUser authUser = getAuthUserOwner();
             parkingLotService.deleteParkingLot(authUser, parkingLotId);
 
             // then
@@ -511,9 +521,10 @@ public class ParkingLotServiceTest {
         @Test
         void 소유자가_아니면_주차장_삭제를_실패한다() {
             // given
-            AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
             Long parkingLotId = 1L;
-            when(parkingLotReader.getOwnedParkingLot(authUserNotParkingOwner, parkingLotId))
+            Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
+            AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
+            when(parkingLotReader.getOwnedParkingLot(userIdNotParkingOwner, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER));
 
             // when
@@ -528,12 +539,13 @@ public class ParkingLotServiceTest {
         @Test
         void 존재하지_않는_아이디로_주차장_삭제에_실패한다() {
             // given
-            AuthUser authUser = getAuthUserOwner();
             Long parkingLotId = -1L;
-            when(parkingLotReader.getOwnedParkingLot(authUser, parkingLotId))
+            Long userId = getAuthUserOwner().getId();
+            when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
 
             // when
+            AuthUser authUser = getAuthUserOwner();
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                     parkingLotService.deleteParkingLot(authUser, parkingLotId)
             );
