@@ -2,6 +2,7 @@ package com.parkez.parkinglot.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
@@ -16,5 +17,10 @@ public class ParkingLotImagesRequest {
             example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"]"
     )
     private List<String> imageUrls;
+
+    @Builder
+    private ParkingLotImagesRequest(List<String> imageUrls){
+        this.imageUrls = imageUrls;
+    }
 
 }

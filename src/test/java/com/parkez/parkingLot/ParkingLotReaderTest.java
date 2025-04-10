@@ -1,19 +1,15 @@
 package com.parkez.parkingLot;
 
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
-import com.parkez.parkinglot.domain.enums.ChargeType;
-import com.parkez.parkinglot.domain.enums.SourceType;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
-import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
-import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkinglot.service.ParkingLotReader;
-import com.parkez.parkinglot.service.ParkingLotService;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,17 +19,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,157 +39,225 @@ public class ParkingLotReaderTest {
     @Mock
     private ParkingLotRepository parkingLotRepository;
 
-    private ParkingLot parkingLot1;
-    private ParkingLot parkingLot2;
-    private ParkingLot deletedParkingLot;
-    private User owner;
-    private Pageable pageable;
+    private final Pageable pageable = PageRequest.of(0, 10);
 
-
-    @BeforeEach
-    void setUp() {
-        // Dummy User 생성 (필요한 최소 정보만 설정)
-        owner = User.builder()
+    private User getOwnerUser() {
+        User ownerUser = User.builder()
                 .email("owner@example.com")
                 .nickname("Owner")
-                .phone("010-1234-5678")
                 .role(UserRole.ROLE_OWNER)
                 .build();
+        ReflectionTestUtils.setField(ownerUser, "id", 1L);
+        return ownerUser;
+    }
 
-        // parkingLot1 생성
-        parkingLot1 = ParkingLot.builder()
-                .owner(owner)
+    private AuthUser getAuthUserOwner() {
+        return AuthUser.builder()
+                .id(getOwnerUser().getId())
+                .email(getOwnerUser().getEmail())
+                .roleName("ROLE_OWNER")
+                .build();
+    }
+
+    private ParkingLot getParkingLot1() {
+        User ownerUser = getOwnerUser();
+        return ParkingLot.builder()
+                .owner(ownerUser)
                 .name("참쉬운주차장")
                 .address("서울시 강남구 테헤란로 123")
-                .openedAt(LocalTime.of(9, 0))
-                .closedAt(LocalTime.of(22, 0))
-                .pricePerHour(new BigDecimal("2000"))
-                .description("설명 1")
-                .quantity(100)
-                .chargeType(ChargeType.PAID)
-                .sourceType(SourceType.OWNER_REGISTERED) // 소유자 등록 데이터
                 .build();
+    }
 
-        // parkingLot2 생성
-        parkingLot2 = ParkingLot.builder()
-                .owner(owner)
+    private ParkingLot getParkingLot2() {
+        User ownerUser = getOwnerUser();
+        return ParkingLot.builder()
+                .owner(ownerUser)
                 .name("어려운주차장")
                 .address("서울시 강남구 테헤란로 111")
-                .openedAt(LocalTime.of(9, 0))
-                .closedAt(LocalTime.of(22, 0))
-                .pricePerHour(new BigDecimal("12000"))
-                .description("설명 2")
-                .quantity(200)
-                .chargeType(ChargeType.PAID)
-                .sourceType(SourceType.PUBLIC_DATA) // 공공 데이터
                 .build();
-
-        // 삭제된 parkingLot 생성
-        deletedParkingLot = ParkingLot.builder()
-                .owner(owner)
-                .name("삭제된 주차장")
-                .address("삭제된 주소")
-                .openedAt(LocalTime.of(8, 0))
-                .closedAt(LocalTime.of(22, 0))
-                .pricePerHour(new BigDecimal("5.00"))
-                .description("삭제된 주차장입니다.")
-                .quantity(100)
-                .chargeType(ChargeType.PAID)
-                .sourceType(SourceType.OWNER_REGISTERED)
-                .build();
-        deletedParkingLot.softDelete(LocalDateTime.now());
-
-        pageable = PageRequest.of(0, 10);
     }
 
-    @Test
-    void 검색_조건이_없을_때_주차장을_전체_조회한다() {
-        List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1, parkingLot2);
-        Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
-        ParkingLotSearchRequest searchRequest = new ParkingLotSearchRequest();
+    @Nested
+    class searchParkingLotsByConditions {
+        @Test
+        void 검색_조건이_없을_때_주차장을_전체_조회한다() {
+            // given
+            ParkingLot parkingLot1 = getParkingLot1();
+            ParkingLot parkingLot2 = getParkingLot2();
+            List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1, parkingLot2);
+            Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
 
-        when(parkingLotRepository.searchParkingLots(searchRequest, pageable)).thenReturn(page);
+            // when
+            when(parkingLotRepository.searchParkingLotsByConditions(null, null, pageable)).thenReturn(page);
 
-        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots(searchRequest, pageable);
+            // then
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(null, null, pageable);
+            assertNotNull(result);
+            assertEquals(2, result.getTotalElements());
+            assertThat(result.getContent())
+                    .extracting("name", "address")
+                    .containsExactly(
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress()),
+                            tuple(parkingLot2.getName(), parkingLot2.getAddress())
+                    );
+        }
 
-        assertNotNull(result);
-        assertEquals(2, result.getTotalElements());
-        assertEquals("참쉬운주차장", result.getContent().get(0).getName());
-        assertEquals("어려운주차장", result.getContent().get(1).getName());
-    }
+        @Test
+        void 이름으로_주차장을_조회한다() {
+            // given
+            ParkingLot parkingLot1 = getParkingLot1();
+            List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1);
+            Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
 
-    @Test
-    void 이름으로_주차장을_조회한다() {
-        List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1);
-        Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+            // when
+            String name = parkingLot1.getName();
+            when(parkingLotRepository.searchParkingLotsByConditions(name, null, pageable)).thenReturn(page);
 
-        ParkingLotSearchRequest searchRequest = new ParkingLotSearchRequest();
-        searchRequest.setName("참쉬운");
-        searchRequest.setAddress(null);
+            // then
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(name, null, pageable);
+            assertNotNull(result);
+            assertEquals(1, result.getTotalElements());
+            assertThat(result.getContent())
+                    .extracting("name", "address")
+                    .containsExactly(
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress())
+                    );
+        }
 
-        when(parkingLotRepository.searchParkingLots(searchRequest, pageable)).thenReturn(page);
+        @Test
+        void 주소로_주차장을_조회한다() {
+            // given
+            ParkingLot parkingLot2 = getParkingLot2();
+            List<ParkingLot> parkingLotList = Arrays.asList(parkingLot2);
+            Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
 
-        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots(searchRequest, pageable);
+            // when
+            String address = parkingLot2.getAddress();
+            when(parkingLotRepository.searchParkingLotsByConditions(null, address, pageable)).thenReturn(page);
 
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals("참쉬운주차장", result.getContent().get(0).getName());
-    }
+            // then
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(null, address, pageable);
+            assertNotNull(result);
+            assertEquals(1, result.getTotalElements());
+            assertThat(result.getContent())
+                    .extracting("name", "address")
+                    .containsExactly(
+                            tuple(parkingLot2.getName(), parkingLot2.getAddress())
+                    );
+        }
 
-    @Test
-    void 주소로_주차장을_조회한다() {
-        List<ParkingLot> parkingLotList = Arrays.asList(parkingLot2);
-        Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+        @Test
+        void 이름과_주소로_주차장을_조회한다() {
+            // given
+            ParkingLot parkingLot2 = getParkingLot2();
+            List<ParkingLot> parkingLotList = Arrays.asList(parkingLot2);
+            Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
 
-        ParkingLotSearchRequest searchRequest = new ParkingLotSearchRequest();
-        searchRequest.setName(null);
-        searchRequest.setAddress("테헤란로 111");
+            // when
+            String name = parkingLot2.getName();
+            String address = parkingLot2.getAddress();
+            when(parkingLotRepository.searchParkingLotsByConditions(name, address, pageable)).thenReturn(page);
 
-        when(parkingLotRepository.searchParkingLots(searchRequest, pageable)).thenReturn(page);
-
-        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots(searchRequest, pageable);
-
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals("어려운주차장", result.getContent().get(0).getName());
-    }
-
-    @Test
-    void 이름과_주소로_주차장을_조회한다(){
-        List<ParkingLot> parkingLotList = Arrays.asList(parkingLot2);
-        Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
-
-        ParkingLotSearchRequest searchRequest = new ParkingLotSearchRequest();
-        searchRequest.setName("어려운");
-        searchRequest.setAddress("테헤란로 111");
-
-        when(parkingLotRepository.searchParkingLots(searchRequest, pageable)).thenReturn(page);
-
-        Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLots(searchRequest, pageable);
-
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals("어려운주차장", result.getContent().get(0).getName());
-    }
-
-    @Test
-    void 아이디로_주차장_단건_조회한다() {
-        Long parkingLotId = 1L;
-        when(parkingLotRepository.searchParkingLot(parkingLotId)).thenReturn(Optional.ofNullable(parkingLot1));
-
-        ParkingLot found = parkingLotReader.searchParkingLot(parkingLotId);
-        assertEquals("참쉬운주차장", found.getName());
+            // then
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(name, address, pageable);
+            assertNotNull(result);
+            assertThat(result.getContent())
+                    .extracting("name", "address")
+                    .containsExactly(
+                            tuple(parkingLot2.getName(), parkingLot2.getAddress())
+                    );
+        }
 
     }
 
-    @Test
-    void 아이디가_없을_때_주차장_단건_조회_실패() {
-        Long parkingLotId = -1L;
-        when(parkingLotRepository.searchParkingLot(parkingLotId)).thenReturn(Optional.empty());
+    @Nested
+    class searchParkingLotById {
+        @Test
+        void 아이디로_주차장을_단건_조회한다() {
+            // given
+            Long parkingLotId = 1L;
+            ParkingLot parkingLot1 = getParkingLot1();
+            when(parkingLotRepository.searchParkingLotById(parkingLotId)).thenReturn(Optional.ofNullable(parkingLot1));
 
-        ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
-            parkingLotReader.searchParkingLot(parkingLotId);
-        });
-        assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
+            // when
+            ParkingLot found = parkingLotReader.searchParkingLotById(parkingLotId);
+
+            // then
+            assertEquals("참쉬운주차장", found.getName());
+
+        }
+
+        @Test
+        void 유효하지_않은_아이디로_주차장_단건_조회에_실패한다() {
+            // given
+            Long parkingLotId = -1L;
+            when(parkingLotRepository.searchParkingLotById(parkingLotId)).thenReturn(Optional.empty());
+
+            // when
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
+                parkingLotReader.searchParkingLotById(parkingLotId);
+            });
+
+            // then
+            assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
+        }
     }
+
+    @Nested
+    class getOwnedParkingLot {
+
+        @Test
+        void 아이디로_주차장_엔티티를_조회한다() {
+            // given
+            Long parkingLotId = 1L;
+            ParkingLot parkingLot1 = getParkingLot1();
+            when(parkingLotRepository.findByIdAndDeletedAtIsNull(parkingLotId))
+                    .thenReturn(Optional.of(parkingLot1));
+
+            // when
+            AuthUser authUserOwner = getAuthUserOwner();
+            ParkingLot result = parkingLotReader.getOwnedParkingLot(authUserOwner, parkingLotId);
+
+            // then
+            assertNotNull(result);
+            assertEquals(parkingLot1.getName(), result.getName());
+        }
+
+        @Test
+        void 유효하지_않은_아이디로_주차장_엔티티_조회에_실패한다() {
+            // given
+            Long parkingLotId = -1L;
+            when(parkingLotRepository.findByIdAndDeletedAtIsNull(parkingLotId))
+                    .thenReturn(Optional.empty());
+
+            // when
+            AuthUser authUserOwner = getAuthUserOwner();
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
+                parkingLotReader.getOwnedParkingLot(authUserOwner, parkingLotId);
+            });
+
+            // then
+            assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
+        }
+
+        @Test
+        void softDelete된_주차장_엔티티_조회시_예외를_발생시킨다() {
+            // given
+            Long parkingLotId = 1L;
+            when(parkingLotRepository.findByIdAndDeletedAtIsNull(parkingLotId))
+                    .thenReturn(Optional.empty());
+
+            // when
+            AuthUser authUserOwner = getAuthUserOwner();
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                    parkingLotReader.getOwnedParkingLot(authUserOwner, parkingLotId)
+            );
+
+            // then
+            assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
+        }
+    }
+
+    // TODO getActiveParkingLot 테스트
+    // TODO validateExistence 테스트
 }
