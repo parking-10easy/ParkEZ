@@ -46,4 +46,14 @@ public class ParkingZone extends BaseEntity {
         this.status = status;
         this.reviewCount = 0;
     }
+
+    public void incrementReviewCount() {
+        this.reviewCount++;
+    }
+
+    public void decrementReviewCount() {
+        if (this.reviewCount > 0) {
+            this.reviewCount--;
+        }
+    }
 }

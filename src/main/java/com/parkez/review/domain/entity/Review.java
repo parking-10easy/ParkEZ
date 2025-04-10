@@ -1,7 +1,7 @@
 package com.parkez.review.domain.entity;
 
+import com.parkez.common.entity.BaseEntity;
 import com.parkez.reservation.domain.entity.Reservation;
-import com.parkez.review.domain.enums.Rating;
 import com.parkez.user.domain.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name="review")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Review {
+public class Review extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,16 +28,19 @@ public class Review {
     private Reservation reservation;
 
     @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private Rating rating;
+    private int rating;
 
     private String content;
 
     @Builder
-    private Review(Rating rating, String content, User user, Reservation reservation) {
+    private Review(int rating, String content, User user, Reservation reservation) {
         this.rating = rating;
         this.content = content;
         this.user = user;
         this.reservation = reservation;
+    }
+
+    public Long getReservationId() {
+        return reservation.getId();
     }
 }
