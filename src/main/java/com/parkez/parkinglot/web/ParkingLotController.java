@@ -1,5 +1,6 @@
 package com.parkez.parkinglot.web;
 
+import com.parkez.common.PageRequest;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.common.response.Response;
@@ -18,7 +19,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,9 +46,9 @@ public class ParkingLotController {
     @Operation(summary = "주차장 다건 조회")
     public Response<ParkingLotSearchResponse> searchParkingLots(
             @ModelAttribute ParkingLotSearchRequest request,
-            @ParameterObject Pageable pageable
+            @ParameterObject PageRequest pageRequest
     ) {
-        return Response.fromPage(parkingLotService.searchParkingLotsByConditions(request, pageable));
+        return Response.fromPage(parkingLotService.searchParkingLotsByConditions(request, pageRequest));
     }
 
     // 주차장 단건 조회
@@ -66,9 +66,9 @@ public class ParkingLotController {
     @Secured(UserRole.Authority.OWNER)
     public Response<MyParkingLotSearchResponse> searchParkingLot(
             @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
-            @ParameterObject Pageable pageable
+            @ParameterObject PageRequest pageRequest
     ) {
-        return Response.fromPage(parkingLotService.getMyParkingLots(authUser, pageable));
+        return Response.fromPage(parkingLotService.getMyParkingLots(authUser, pageRequest));
     }
 
     // 주차장 수정

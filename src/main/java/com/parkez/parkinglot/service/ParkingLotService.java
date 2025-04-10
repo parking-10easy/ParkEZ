@@ -1,5 +1,6 @@
 package com.parkez.parkinglot.service;
 
+import com.parkez.common.PageRequest;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.entity.ParkingLotImage;
@@ -17,7 +18,6 @@ import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,8 +50,8 @@ public class ParkingLotService {
     }
 
     // 주차장 다건 조회 (이름, 주소)
-    public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(ParkingLotSearchRequest request, Pageable pageable) {
-        return parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(), pageable);
+    public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(ParkingLotSearchRequest request, PageRequest pageRequest) {
+        return parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(), pageRequest.getPage(), pageRequest.getSize());
     }
 
     // 주차장 단건 조회
@@ -60,9 +60,9 @@ public class ParkingLotService {
     }
 
     // 본인이 소유한 주차장 조회
-    public Page<MyParkingLotSearchResponse> getMyParkingLots(AuthUser authUser, Pageable pageable) {
+    public Page<MyParkingLotSearchResponse> getMyParkingLots(AuthUser authUser, PageRequest pageRequest) {
         Long userId = authUser.getId();
-        return parkingLotReader.getMyParkingLots(userId, pageable);
+        return parkingLotReader.getMyParkingLots(userId, pageRequest.getPage(), pageRequest.getSize());
     }
 
     // 주차장 수정 (writer 사용x)

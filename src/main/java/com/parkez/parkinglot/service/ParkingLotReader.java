@@ -8,6 +8,7 @@ import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +21,8 @@ public class ParkingLotReader {
     private final ParkingLotRepository parkingLotRepository;
 
     // 주차장 다건 조회 (이름, 주소)
-    public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(String name, String address, Pageable pageable) {
+    public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(String name, String address, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
         Page<ParkingLot> parkingLots = parkingLotRepository.searchParkingLotsByConditions(name, address, pageable);
         return parkingLots.map(ParkingLotSearchResponse::from);
     }
@@ -32,8 +34,9 @@ public class ParkingLotReader {
     }
 
     // 본인이 소유한 주차장 조회
-    public Page<MyParkingLotSearchResponse> getMyParkingLots(Long userId, Pageable pageable) {
-        Page<ParkingLot>  parkingLots = parkingLotRepository.findMyParkingLots(userId, pageable);
+    public Page<MyParkingLotSearchResponse> getMyParkingLots(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<ParkingLot> parkingLots = parkingLotRepository.findMyParkingLots(userId, pageable);
         return parkingLots.map(MyParkingLotSearchResponse::from);
     }
 
