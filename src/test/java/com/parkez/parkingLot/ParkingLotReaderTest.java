@@ -1,9 +1,9 @@
 package com.parkez.parkingLot;
 
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
+import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkinglot.service.ParkingLotReader;
@@ -21,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -196,6 +197,49 @@ public class ParkingLotReaderTest {
     }
 
     @Nested
+    class getMyParkingLots {
+        @Test
+        void 본인이_소유한_주차장을_조회한다() {
+            //given
+            ParkingLot parkingLot1 = getParkingLot1();
+            ParkingLot parkingLot2 = getParkingLot2();
+            List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1, parkingLot2);
+            Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+            Long userId = 1L;
+            when(parkingLotRepository.findMyParkingLots(userId, pageable)).thenReturn(page);
+
+            // when
+            Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(userId, pageable);
+
+            //then
+            assertNotNull(result);
+            assertEquals(2, result.getTotalElements());
+            assertThat(result.getContent())
+                    .extracting("name", "address")
+                    .containsExactly(
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress()),
+                            tuple(parkingLot2.getName(), parkingLot2.getAddress())
+                    );
+        }
+
+        @Test
+        void 본인이_등록하지_않은_주차장은_조회되지_않는다() {
+            // given
+            Long nonParkingLotOwnerId = 2L;
+            Page<ParkingLot> emptyPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
+            when(parkingLotRepository.findMyParkingLots(nonParkingLotOwnerId, pageable)).thenReturn(emptyPage);
+
+            // when
+            Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(nonParkingLotOwnerId, pageable);
+
+            // then
+            assertNotNull(result);
+            assertEquals(0, result.getTotalElements());
+        }
+    }
+
+
+    @Nested
     class getOwnedParkingLot {
 
         @Test
@@ -207,7 +251,7 @@ public class ParkingLotReaderTest {
                     .thenReturn(Optional.of(parkingLot1));
 
             // when
-            Long userId = getOwnerUser().getId();
+            Long userId = 1L;
             ParkingLot result = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
 
             // then
@@ -223,7 +267,7 @@ public class ParkingLotReaderTest {
                     .thenReturn(Optional.empty());
 
             // when
-            Long userId = getOwnerUser().getId();
+            Long userId = 1L;
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
                 parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
             });
@@ -240,7 +284,7 @@ public class ParkingLotReaderTest {
                     .thenReturn(Optional.empty());
 
             // when
-            Long userId = getOwnerUser().getId();
+            Long userId = 1L;
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                     parkingLotReader.getOwnedParkingLot(userId, parkingLotId)
             );

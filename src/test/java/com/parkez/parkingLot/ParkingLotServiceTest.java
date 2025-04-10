@@ -9,6 +9,7 @@ import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
+import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
@@ -31,6 +32,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -138,6 +140,21 @@ public class ParkingLotServiceTest {
                 .imageUrls(Arrays.asList("https://example.com/image1.jpg", "https://example.com/image2.jpg"))
                 .build();
     }
+
+    private MyParkingLotSearchResponse getMyParkingLotResponse1() {
+        return MyParkingLotSearchResponse.builder()
+                .name("배고픈 주차장")
+                .address("경주시 황남동 포석로 111")
+                .build();
+    }
+
+    private MyParkingLotSearchResponse getMyParkingLotResponse2() {
+        return MyParkingLotSearchResponse.builder()
+                .name("배부른 주차장")
+                .address("경주시 황남동 포석로 222")
+                .build();
+    }
+
 
     @Nested
     class CreateParkingLot {
@@ -294,6 +311,52 @@ public class ParkingLotServiceTest {
             assertNotNull(result);
             assertEquals(parkingLot.getName(), result.getName());
             verify(parkingLotReader).searchParkingLotById(parkingLotId);
+        }
+    }
+
+    @Nested
+    class getMyParkingLots {
+        @Test
+        void 본인이_소유한_주차장을_조회한다() {
+            // given
+            Long userId = getAuthUserOwner().getId();
+
+            MyParkingLotSearchResponse MyParkingResponse1 = getMyParkingLotResponse1();
+            MyParkingLotSearchResponse MyParkingResponse2 = getMyParkingLotResponse2();
+
+            List<MyParkingLotSearchResponse> responses = Arrays.asList(MyParkingResponse1, MyParkingResponse2);
+            Page<MyParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+
+            when(parkingLotReader.getMyParkingLots(userId, pageable)).thenReturn(page);
+
+            // when
+            AuthUser authUser = getAuthUserOwner();
+            Page<MyParkingLotSearchResponse> result = parkingLotService.getMyParkingLots(authUser, pageable);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result.getTotalElements()).isEqualTo(2);
+            assertThat(result.getContent())
+                    .extracting("name", "address")
+                    .containsExactly(
+                            tuple(MyParkingResponse1.getName(), MyParkingResponse1.getAddress()),
+                            tuple(MyParkingResponse2.getName(), MyParkingResponse2.getAddress())
+                    );
+        }
+
+        @Test
+        void 본인_소유가_아닌_주차장은_조회가_되지_않는다() {
+            // given
+            Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
+            Page<MyParkingLotSearchResponse> page = new PageImpl<>(Collections.emptyList(), pageable, 0);
+            when(parkingLotReader.getMyParkingLots(userIdNotParkingOwner, pageable)).thenReturn(page);
+
+            // when
+            AuthUser authUserNotOwner = getAuthUserNotParkingLotOwner();
+            Page<MyParkingLotSearchResponse> result = parkingLotService.getMyParkingLots(authUserNotOwner, pageable);
+
+            assertThat(result).isNotNull();
+            assertEquals(0, result.getTotalElements());
         }
     }
 
