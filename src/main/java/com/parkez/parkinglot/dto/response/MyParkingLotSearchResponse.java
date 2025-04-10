@@ -1,6 +1,7 @@
 package com.parkez.parkinglot.dto.response;
 
 import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.domain.entity.ParkingLotImage;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,21 +27,26 @@ public class MyParkingLotSearchResponse {
 
     @Builder
     private MyParkingLotSearchResponse(Long parkingLotId, String name, String address,
-                                    Integer reviewCount, String images) {
+                                       Integer reviewCount, String thumbnailImage) {
         this.parkingLotId = parkingLotId;
         this.name = name;
         this.address = address;
+        this.thumbnailImage = thumbnailImage;
         this.reviewCount = reviewCount;
-        this.thumbnailImage = images;
     }
 
     public static MyParkingLotSearchResponse from(ParkingLot parkingLot) {
+        String thumbnailImage = parkingLot.getImages().stream()
+                .findFirst()
+                .map(ParkingLotImage::getImageUrl)
+                .orElse(null);
+
         return MyParkingLotSearchResponse.builder()
                 .parkingLotId(parkingLot.getId())
                 .name(parkingLot.getName())
                 .address(parkingLot.getAddress())
-                //.reviewCount(reviewCount) // 수정 필요
-                //.thumbnailImage(images) // 수정 필요
+                .thumbnailImage(thumbnailImage)
+//                .reviewCount(reviewCount) // 수정 필요
                 .build();
     }
 }

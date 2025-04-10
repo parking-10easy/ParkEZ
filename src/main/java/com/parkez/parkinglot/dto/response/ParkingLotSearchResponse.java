@@ -2,6 +2,7 @@ package com.parkez.parkinglot.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.domain.entity.ParkingLotImage;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
 import com.parkez.parkinglot.domain.enums.SourceType;
@@ -29,7 +30,6 @@ public class ParkingLotSearchResponse {
 
     @Schema(description = "주차장 오픈 시간", example = "09:00")
     private final LocalTime openedAt;
-
 
     @Schema(description = "주차장 마감 시간", example = "23:00")
     private final LocalTime closedAt;
@@ -60,7 +60,7 @@ public class ParkingLotSearchResponse {
     private final Double averageRating;
 
     @Schema(description = "이미지 URL 목록", example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"]")
-    private final List<String> images; // 이미지 수정 필요
+    private final List<String> images;
 
     @Builder
     private ParkingLotSearchResponse(Long parkingLotId, String name, String address,
@@ -86,6 +86,10 @@ public class ParkingLotSearchResponse {
     }
 
     public static ParkingLotSearchResponse from(ParkingLot parkingLot) {
+        List<String> images = parkingLot.getImages().stream()
+                .map(ParkingLotImage::getImageUrl)
+                .toList();
+
         return ParkingLotSearchResponse.builder()
                 .parkingLotId(parkingLot.getId())
                 .name(parkingLot.getName())
@@ -100,7 +104,7 @@ public class ParkingLotSearchResponse {
                 .parkingLotStatus(parkingLot.getStatus())
                 //.reviewCount(reviewCount) // 추가 필요
                 //.averageRating(averageRating) // 추가 필요
-                //.images(images) // 추가 필요
+                .images(images)
                 .build();
     }
 }

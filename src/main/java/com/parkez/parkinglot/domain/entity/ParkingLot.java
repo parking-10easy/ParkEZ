@@ -75,7 +75,7 @@ public class ParkingLot extends BaseDeleteEntity {
                        LocalTime openedAt, LocalTime closedAt,
                        BigDecimal pricePerHour, String description,
                        Integer quantity, ChargeType chargeType,
-                       SourceType sourceType
+                       SourceType sourceType, List<ParkingLotImage> images
     ) {
         this.owner = owner;
         this.name = name;
@@ -90,6 +90,7 @@ public class ParkingLot extends BaseDeleteEntity {
         this.chargeType = chargeType;
         this.sourceType = sourceType;
         this.status = ParkingLotStatus.OPEN;
+        this.images = images;
     }
 
     public void update(String name, String address, LocalTime openedAt,
@@ -108,9 +109,15 @@ public class ParkingLot extends BaseDeleteEntity {
         this.status = newStatus;
     }
 
+    public void addImage(ParkingLotImage image) {
+        images = new ArrayList<>();
+        image.updateParkingLot(this);
+        images.add(image);
+    }
+
     public void updateImages(List<ParkingLotImage> newImages) {
         this.images.clear();
-        if(newImages != null && !newImages.isEmpty()) {
+        if (newImages != null && !newImages.isEmpty()) {
             this.images.addAll(newImages);
         }
     }

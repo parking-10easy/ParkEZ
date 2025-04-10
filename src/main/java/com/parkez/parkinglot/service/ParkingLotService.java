@@ -17,6 +17,7 @@ import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,9 +32,13 @@ public class ParkingLotService {
     private final ParkingLotReader parkingLotReader;
     private final UserReader userReader;
 
+    @Value("${parking-lot.default-image-url}")
+    private String defaultParkingLotImageUrl;
+
     // 주차장 생성
     public ParkingLotResponse createParkingLot(AuthUser authUser, ParkingLotRequest request) {
         User user = userReader.getActiveById(authUser.getId());
+
         ParkingLot parkingLot = ParkingLot.builder()
                 .owner(user)
                 .name(request.getName())
@@ -46,6 +51,12 @@ public class ParkingLotService {
                 .chargeType(ChargeType.PAID)
                 .sourceType(SourceType.OWNER_REGISTERED)
                 .build();
+
+        ParkingLotImage defaultImage = ParkingLotImage.builder()
+                .imageUrl(defaultParkingLotImageUrl)
+                .build();
+        parkingLot.addImage(defaultImage);
+
         return ParkingLotResponse.from(parkingLotWriter.createParkingLot(parkingLot));
     }
 

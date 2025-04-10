@@ -2,6 +2,7 @@ package com.parkez.parkinglot.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.domain.entity.ParkingLotImage;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
 import com.parkez.parkinglot.domain.enums.SourceType;
@@ -60,13 +61,17 @@ public class ParkingLotResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime modifiedAt;
 
+    @Schema(description = "default 이미지", example = "parking-lot-default.jpg")
+    private String defaultImage;
+
+
     @Builder
     private ParkingLotResponse(Long id, String name, String address,
                                LocalDateTime createdAt, LocalDateTime modifiedAt,
                                SourceType sourceType, ChargeType chargeType,
                                ParkingLotStatus status, Integer quantity,
                                String description, BigDecimal pricePerHour,
-                               LocalTime openedAt, LocalTime closedAt
+                               LocalTime openedAt, LocalTime closedAt, String defaultImage
     ) {
         this.id = id;
         this.name = name;
@@ -81,9 +86,15 @@ public class ParkingLotResponse {
         this.openedAt = openedAt;
         this.closedAt = closedAt;
         this.address = address;
+        this.defaultImage = defaultImage;
     }
 
     public static ParkingLotResponse from(ParkingLot parkingLot) {
+        String defaultImage = parkingLot.getImages().stream()
+                .findFirst()
+                .map(ParkingLotImage::getImageUrl)
+                .orElse(null);
+
         return ParkingLotResponse.builder()
                 .id(parkingLot.getId())
                 .name(parkingLot.getName())
@@ -98,7 +109,7 @@ public class ParkingLotResponse {
                 .openedAt(parkingLot.getOpenedAt())
                 .closedAt(parkingLot.getClosedAt())
                 .address(parkingLot.getAddress())
+                .defaultImage(defaultImage)
                 .build();
     }
-
 }
