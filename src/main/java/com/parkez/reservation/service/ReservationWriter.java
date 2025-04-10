@@ -47,8 +47,7 @@ public class ReservationWriter {
                 .price(price)
                 .build();
 
-        reservationRepository.save(reservation);
-        return reservation;
+        return reservationRepository.save(reservation);
     }
 
     public void complete(Reservation reservation) {

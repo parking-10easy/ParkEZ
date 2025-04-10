@@ -19,8 +19,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyList;
@@ -88,7 +91,7 @@ class ReservationWriterTest {
     class CreateReservation {
 
         @Test
-        void 예약_생성_테스트() {
+        void 특정_주차공간에_대한_예약_생성_테스트() {
             // given
             Long userId = 1L;
             Long ownerId = 2L;
@@ -104,8 +107,8 @@ class ReservationWriterTest {
 
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
-            LocalDateTime startDateTime = LocalDateTime.now();
-            LocalDateTime endDateTime = LocalDateTime.now().plusHours(1);
+            LocalDateTime startDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+            LocalDateTime endDateTime = startDateTime.plusHours(1);
 
             long hours = ChronoUnit.HOURS.between(startDateTime, endDateTime);
             BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
@@ -115,22 +118,22 @@ class ReservationWriterTest {
             given(reservationRepository.existsReservation(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
                     .willReturn(false);
             given(reservationRepository.save(any(Reservation.class))).willReturn(reservation);
+            System.out.println(">>> reservation.getId() = " + reservation.getId());
 
             // when
             Reservation result = reservationWriter.createReservation(user, parkingZone, parkingLotName, startDateTime, endDateTime, price);
 
             // then
-            assertAll(
-                    () -> assertNotNull(result),
-                    () -> assertEquals(user, result.getUser()),
-                    () -> assertEquals(parkingZone, result.getParkingZone()),
-                    () -> assertEquals(parkingLotName, result.getParkingLotName()),
-                    () -> assertEquals(BigDecimal.valueOf(2000), result.getPrice())
-            );
+            assertThat(result)
+                    .isNotNull()
+                    .extracting("id", "user", "parkingZone", "parkingLotName", "startDateTime", "endDateTime", "price", "status")
+                    .isEqualTo(
+                            List.of(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price, ReservationStatus.PENDING)
+                    );
         }
 
         @Test
-        void 예약이_이미_존재할_경우_예외() {
+        void 특정_주차공간에_대한_예약_생성_시_예약이_이미_존재할_경우_ALREADY_RESERVED_예외_처리() {
             // given
             Long userId = 1L;
             Long ownerId = 2L;
@@ -164,7 +167,7 @@ class ReservationWriterTest {
     class completeReservation {
 
         @Test
-        void 예약_사용_완료_테스트() {
+        void 특정_예약_사용_완료_테스트() {
             // given
             Long reservationId = 1L;
 
@@ -183,7 +186,7 @@ class ReservationWriterTest {
     class cancelReservation {
 
         @Test
-        void 예약_취소_테스트() {
+        void 특정_예약_취소_테스트() {
             // given
             Long reservationId = 1L;
 
