@@ -20,9 +20,19 @@ public interface ParkingZoneRepository extends JpaRepository<ParkingZone, Long> 
            AND pz.deletedAt IS NULL
            ORDER BY pz.modifiedAt DESC
        """)
-    Page<ParkingZone> findAllByParkingLotIdOrderByModifiedAt(Pageable pageable, @Param("parkingLotId") Long parkingLotId);
+    Page<ParkingZone> findAllByParkingLotIdOrderByModifiedAtDesc(Pageable pageable, @Param("parkingLotId") Long parkingLotId);
 
     Optional<ParkingZone> findByIdAndDeletedAtIsNull(Long parkingZoneId);
+
+    @Query("""
+        SELECT COUNT(pz) > 0 FROM ParkingZone pz
+        JOIN pz.parkingLot pl
+        WHERE pz.id = :parkingZoneId
+        AND pl.owner.id = :ownerId
+        AND pl.deletedAt IS NULL
+        AND pz.deletedAt IS NULL
+    """)
+    boolean existsByIdAndOwnerId(@Param("parkingZoneId") Long parkingZoneId, @Param("ownerId") Long ownerId);
 
     @Modifying
     @Query("""

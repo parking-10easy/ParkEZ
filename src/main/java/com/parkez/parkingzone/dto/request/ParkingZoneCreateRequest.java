@@ -18,12 +18,10 @@ public class ParkingZoneCreateRequest {
     @NotBlank(message = "이름 값 입력은 필수입니다")
     @Schema(description = "주차공간명", example = "A구역")
     private String name;
-    private String imageUrl;
 
     @Builder
-    private ParkingZoneCreateRequest(Long parkingLotId, String name, String imageUrl) {
+    public ParkingZoneCreateRequest(Long parkingLotId, String name) {
         this.parkingLotId = parkingLotId;
         this.name = name;
-        this.imageUrl = imageUrl;
     }
 }

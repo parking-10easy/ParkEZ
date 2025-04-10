@@ -8,10 +8,10 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-@Schema(description = "주차 구역 응답 DTO")
+@Schema(description = "주차 공간 응답 DTO")
 public class ParkingZoneResponse {
 
-    @Schema(description = "주차 구역 ID", example = "1")
+    @Schema(description = "주차 공간 ID", example = "1")
     private final Long id;
 
     @Schema(description = "주차장 ID", example = "1")

@@ -22,20 +22,18 @@ public class ParkingZoneReader {
     public Page<ParkingZoneResponse> getParkingZones(int page, int size, Long parkingLotId) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<ParkingZone> parkingZones = parkingZoneRepository.findAllByParkingLotIdOrderByModifiedAt(pageable, parkingLotId);
+        Page<ParkingZone> parkingZones = parkingZoneRepository.findAllByParkingLotIdOrderByModifiedAtDesc(pageable, parkingLotId);
 
-        return parkingZones.map(parkingZone -> new ParkingZoneResponse(
-                parkingZone.getId(),
-                parkingZone.getParkingLotId(),
-                parkingZone.getName(),
-                parkingZone.getImageUrl(),
-                parkingZone.getStatus()
-        ));
-}
+        return parkingZones.map(ParkingZoneResponse::from);
+    }
 
-    public ParkingZone getParkingZone(Long parkingZoneId) {
+    public ParkingZone getActiveByParkingZoneId(Long parkingZoneId) {
         return parkingZoneRepository.findByIdAndDeletedAtIsNull(parkingZoneId).orElseThrow(
                 () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
         );
+    }
+
+    public boolean isOwnedParkingZone(Long parkingZoneId, Long ownerId) {
+        return parkingZoneRepository.existsByIdAndOwnerId(parkingZoneId, ownerId);
     }
 }

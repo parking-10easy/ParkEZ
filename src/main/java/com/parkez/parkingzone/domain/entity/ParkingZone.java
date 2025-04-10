@@ -9,8 +9,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.Objects;
-
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
@@ -59,9 +57,5 @@ public class ParkingZone extends BaseDeleteEntity {
 
     public Long getParkingLotId() {
         return parkingLot.getId();
-    }
-
-    public boolean isOwnedParkingLot(Long userId){
-        return Objects.equals(this.parkingLot.getOwner().getId(), userId);
     }
 }
