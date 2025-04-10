@@ -61,7 +61,8 @@ public class ParkingLotService {
     // 주차장 수정 (writer 사용x)
     @Transactional
     public void updateParkingLot(AuthUser authUser, Long parkingLotId, ParkingLotRequest request) {
-        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser, parkingLotId);
+        Long userId = authUser.getId();
+        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
         parkingLot.update(
                 request.getName(), request.getAddress(),
                 request.getOpenedAt(), request.getClosedAt(),
@@ -72,7 +73,8 @@ public class ParkingLotService {
     // 주차장 상태 변경 (writer 사용x)
     @Transactional
     public void updateParkingLotStatus(AuthUser authUser, Long parkingLotId, ParkingLotStatusRequest request) {
-        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser, parkingLotId);
+        Long userId = authUser.getId();
+        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
         ParkingLotStatus newStatus = ParkingLotStatus.from(request.getStatus());
         parkingLot.updateStatus(newStatus);
     }
@@ -80,7 +82,8 @@ public class ParkingLotService {
     // 주차장 이미지 수정 (writer 사용x)
     @Transactional
     public void updateParkingLotImages(AuthUser authUser, Long parkingLotId, ParkingLotImagesRequest request) {
-        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser, parkingLotId);
+        Long userId = authUser.getId();
+        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
         List<ParkingLotImage> newImages = request.getImageUrls().stream()
                 .map(url -> ParkingLotImage.builder().imageUrl(url).parkingLot(parkingLot).build())
                 .toList();
@@ -89,7 +92,8 @@ public class ParkingLotService {
 
     // 주차장 삭제
     public void deleteParkingLot(AuthUser authUser, Long parkingLotId) {
-        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser, parkingLotId);
+        Long userId = authUser.getId();
+        ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
         parkingLotWriter.deleteParkingLot(parkingLot);
     }
 

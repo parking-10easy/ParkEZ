@@ -1,7 +1,6 @@
 package com.parkez.parkinglot.service;
 
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
@@ -32,9 +31,9 @@ public class ParkingLotReader {
     }
 
     //  soft delete 제외 + null 처리하여 아이디로 단건 조회 + authUser 본인확인
-    public ParkingLot getOwnedParkingLot(AuthUser authUser, Long parkingLotId) {
+    public ParkingLot getOwnedParkingLot(Long userId, Long parkingLotId) {
         ParkingLot parkingLot = getActiveParkingLot(parkingLotId);
-        checkParkingLotOwnership(authUser, parkingLot);
+        checkParkingLotOwnership(userId, parkingLot);
         return parkingLot;
     }
 
@@ -43,8 +42,8 @@ public class ParkingLotReader {
                 .orElseThrow(() -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
     }
 
-    private void checkParkingLotOwnership(AuthUser authUser, ParkingLot parkingLot) {
-        if (!parkingLot.isOwned(authUser.getId())) {
+    private void checkParkingLotOwnership(Long userId, ParkingLot parkingLot) {
+        if (!parkingLot.isOwned(userId)) {
             throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
         }
     }
