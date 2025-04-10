@@ -122,7 +122,7 @@ class ReservationReaderTest {
             given(reservationRepository.findById(anyLong())).willReturn(Optional.of(reservation));
 
             // when
-            Reservation result = reservationReader.findReservation(userId, reservationId);
+            Reservation result = reservationReader.findMyReservation(userId, reservationId);
 
             // then
             assertThat(result)
@@ -140,7 +140,7 @@ class ReservationReaderTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationReader.findReservation(userId, reservationId));
+                    () -> reservationReader.findMyReservation(userId, reservationId));
             assertEquals(ReservationErrorCode.NOT_FOUND_RESERVATION, exception.getErrorCode());
         }
 
@@ -159,7 +159,7 @@ class ReservationReaderTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationReader.findReservation(userId, reservationId));
+                    () -> reservationReader.findMyReservation(userId, reservationId));
             assertEquals(ReservationErrorCode.NOT_MY_RESERVATION, exception.getErrorCode());
         }
     }

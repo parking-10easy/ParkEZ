@@ -11,6 +11,7 @@ import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.OwnerReservationResponse;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
+import com.parkez.reservation.service.jpaconcurrency.ReservationLockService;
 import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
@@ -24,9 +25,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-@Service
+@Service("default")
 @RequiredArgsConstructor
-public class ReservationService {
+public class ReservationService implements ReservationLockService {
 
     private final ReservationReader reservationReader;
     private final ReservationWriter reservationWriter;
@@ -34,6 +35,7 @@ public class ReservationService {
     private final ParkingZoneReader parkingZoneReader;
     private final ReviewReader reviewReader;
 
+    @Override
     public MyReservationResponse createReservation(AuthUser authUser, ReservationRequest request) {
 
         User user = userReader.getActiveById(authUser.getId());
@@ -73,7 +75,7 @@ public class ReservationService {
 
     public MyReservationResponse getMyReservation(AuthUser authUser, Long reservationId) {
 
-        Reservation myReservation = reservationReader.findReservation(authUser.getId(), reservationId);
+        Reservation myReservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
         // 리뷰 작성 여부 조회
         boolean reviewWritten = reviewReader.isReviewWritten(myReservation.getId());
@@ -103,7 +105,7 @@ public class ReservationService {
 
     public void completeReservation(AuthUser authUser, Long reservationId) {
 
-        Reservation reservation = reservationReader.findReservation(authUser.getId(), reservationId);
+        Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
         // 예약 완료 됨 상태의 예약만 사용 완료 됨으로 변경 가능 예외
         if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
@@ -115,7 +117,7 @@ public class ReservationService {
 
     public void cancelReservation(AuthUser authUser, Long reservationId) {
 
-        Reservation reservation = reservationReader.findReservation(authUser.getId(), reservationId);
+        Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
         // 사용 완료 된 예약 또는 이미 취소된 예약은 취소 불가 예외
         if (reservation.getStatus() == ReservationStatus.COMPLETED) {

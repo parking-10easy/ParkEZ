@@ -118,7 +118,6 @@ class ReservationWriterTest {
             given(reservationRepository.existsReservation(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
                     .willReturn(false);
             given(reservationRepository.save(any(Reservation.class))).willReturn(reservation);
-            System.out.println(">>> reservation.getId() = " + reservation.getId());
 
             // when
             Reservation result = reservationWriter.createReservation(user, parkingZone, parkingLotName, startDateTime, endDateTime, price);

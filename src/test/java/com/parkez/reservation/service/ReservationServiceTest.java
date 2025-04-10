@@ -330,7 +330,7 @@ class ReservationServiceTest {
 
                 boolean isReviewWritten = false;
 
-                given(reservationReader.findReservation(userId, reservationId)).willReturn(reservation);
+                given(reservationReader.findMyReservation(userId, reservationId)).willReturn(reservation);
                 given(reviewReader.isReviewWritten(anyLong())).willReturn(isReviewWritten);
 
                 // when
@@ -498,7 +498,7 @@ class ReservationServiceTest {
                 Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
 
-                given(reservationReader.findReservation(userId, reservationId)).willReturn(reservation);
+                given(reservationReader.findMyReservation(userId, reservationId)).willReturn(reservation);
                 doNothing().when(reservationWriter).complete(reservation);
 
                 // when
@@ -528,7 +528,7 @@ class ReservationServiceTest {
                 Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.PENDING);
 
-                given(reservationReader.findReservation(userId, reservationId)).willReturn(reservation);
+                given(reservationReader.findMyReservation(userId, reservationId)).willReturn(reservation);
 
                 // when & then
                 ParkingEasyException exception = assertThrows(ParkingEasyException.class,
@@ -562,7 +562,7 @@ class ReservationServiceTest {
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
                 ReflectionTestUtils.setField(reservation, "startDateTime", startDateTime);
 
-                given(reservationReader.findReservation(anyLong(), any(Long.class))).willReturn(reservation);
+                given(reservationReader.findMyReservation(anyLong(), any(Long.class))).willReturn(reservation);
                 doNothing().when(reservationWriter).cancel(reservation);
 
                 // when
@@ -592,7 +592,7 @@ class ReservationServiceTest {
                 Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.COMPLETED);
 
-                given(reservationReader.findReservation(anyLong(), any(Long.class))).willReturn(reservation);
+                given(reservationReader.findMyReservation(anyLong(), any(Long.class))).willReturn(reservation);
                 // when & then
                 ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                         () -> reservationService.cancelReservation(authUser, reservationId));
@@ -619,7 +619,7 @@ class ReservationServiceTest {
                 Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CANCELED);
 
-                given(reservationReader.findReservation(anyLong(), any(Long.class))).willReturn(reservation);
+                given(reservationReader.findMyReservation(anyLong(), any(Long.class))).willReturn(reservation);
                 // when & then
                 ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                         () -> reservationService.cancelReservation(authUser, reservationId));
@@ -648,7 +648,7 @@ class ReservationServiceTest {
                 ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
                 ReflectionTestUtils.setField(reservation, "startDateTime", startDateTime);
 
-                given(reservationReader.findReservation(anyLong(), any(Long.class))).willReturn(reservation);
+                given(reservationReader.findMyReservation(anyLong(), any(Long.class))).willReturn(reservation);
 
                 // when & then
                 ParkingEasyException exception = assertThrows(ParkingEasyException.class,

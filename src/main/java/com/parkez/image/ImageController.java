@@ -2,7 +2,7 @@ package com.parkez.image;
 
 import com.parkez.image.dto.request.ImageRequest;
 import com.parkez.image.dto.response.ImageUrlResponse;
-import com.parkez.common.response.Response;
+import com.parkez.common.dto.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
