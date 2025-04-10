@@ -7,6 +7,7 @@ import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
+import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.service.ParkingLotService;
@@ -59,7 +60,16 @@ public class ParkingLotController {
         return Response.of(parkingLotService.searchParkingLotById(parkingLotId));
     }
 
-    // TODO : owner 조회  /api/v1/parking-lots/me
+    // 본인이 소유한 주차장 조회
+    @GetMapping("/v1/parking-lots/me")
+    @Operation(summary = "본인이 소유한 주차장 리스트 조회")
+    @Secured(UserRole.Authority.OWNER)
+    public Response<MyParkingLotSearchResponse> searchParkingLot(
+            @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
+            @ParameterObject Pageable pageable
+    ) {
+        return Response.fromPage(parkingLotService.getMyParkingLots(authUser, pageable));
+    }
 
     // 주차장 수정
     @PutMapping("/v1/parking-lots/{parkingLotId}")

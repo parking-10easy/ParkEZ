@@ -10,6 +10,7 @@ import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
+import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.user.domain.entity.User;
@@ -56,6 +57,12 @@ public class ParkingLotService {
     // 주차장 단건 조회
     public ParkingLotSearchResponse searchParkingLotById(Long parkingLotId) {
         return ParkingLotSearchResponse.from(parkingLotReader.searchParkingLotById(parkingLotId));
+    }
+
+    // 본인이 소유한 주차장 조회
+    public Page<MyParkingLotSearchResponse> getMyParkingLots(AuthUser authUser, Pageable pageable) {
+        Long userId = authUser.getId();
+        return parkingLotReader.getMyParkingLots(userId, pageable);
     }
 
     // 주차장 수정 (writer 사용x)

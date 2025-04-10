@@ -13,4 +13,7 @@ public interface ParkingLotQueryDslRepository {
 
     // 주차장 단건 조회
     Optional<ParkingLot> searchParkingLotById(Long parkingLotId);
+
+    // 본인이 소유한 주차장 조회
+    Page<ParkingLot> findMyParkingLots(Long userId, Pageable pageable);
 }

@@ -3,6 +3,7 @@ package com.parkez.parkinglot.service;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
+import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,12 @@ public class ParkingLotReader {
     public ParkingLot searchParkingLotById(Long parkingLotId) {
         return parkingLotRepository.searchParkingLotById(parkingLotId).orElseThrow(
                 () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+    }
+
+    // 본인이 소유한 주차장 조회
+    public Page<MyParkingLotSearchResponse> getMyParkingLots(Long userId, Pageable pageable) {
+        Page<ParkingLot>  parkingLots = parkingLotRepository.findMyParkingLots(userId, pageable);
+        return parkingLots.map(MyParkingLotSearchResponse::from);
     }
 
     //  soft delete 제외 + null 처리하여 아이디로 단건 조회 + authUser 본인확인

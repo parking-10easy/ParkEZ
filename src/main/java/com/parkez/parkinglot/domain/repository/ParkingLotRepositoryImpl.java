@@ -57,6 +57,29 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                         .fetchOne());
     }
 
+    // 소유한 주차장 조회
+    // TODO : 리뷰 + 썸네일 이미지
+    @Override
+    public Page<ParkingLot> findMyParkingLots(Long userId, Pageable pageable) {
+        BooleanExpression ownerMatches = parkingLot.owner.id.eq(userId);
+        BooleanExpression notDeleted = parkingLot.deletedAt.isNull();
+        BooleanBuilder builder = new BooleanBuilder(ownerMatches).and(notDeleted);
+
+        List<ParkingLot> myParkingLots = jpaQueryFactory
+                .selectFrom(parkingLot)
+                .where(builder)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        JPAQuery<Long>  countQuery = jpaQueryFactory
+                .select(parkingLot.count())
+                .from(parkingLot)
+                .where(builder);
+
+        return PageableExecutionUtils.getPage(myParkingLots, pageable, countQuery::fetchOne);
+    }
+
     private BooleanExpression nameContains(String name) {
         return StringUtils.hasText(name) ? parkingLot.name.contains(name) : null;
     }
