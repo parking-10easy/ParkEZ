@@ -1,5 +1,6 @@
 package com.parkez.reservation.web;
 
+import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.common.dto.response.Response;
@@ -34,7 +35,7 @@ public class ReservationController {
     @PostMapping("/v1/reservations/{strategy}")
     @Operation(summary = "예약 생성", description = "락 사용 x OR 낙관적 락 OR 비관적 락을 통한 예약 생성 기능입니다.")
     public Response<MyReservationResponse> createReservation(
-            @AuthenticatedUser AuthUser authUser,
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @Parameter(description = "동시성 제어 전략", example = "default")
             @PathVariable LockStrategy strategy,
             @Valid @RequestBody ReservationRequest request
@@ -48,18 +49,17 @@ public class ReservationController {
     @GetMapping("/v1/reservations/me")
     @Operation(summary = "나의 예약 다건 조회", description = "나의 예약 다건 조회 기능입니다.")
     public Response<MyReservationResponse> getMyReservations(
-            @AuthenticatedUser AuthUser authUser,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return Response.fromPage(reservationService.getMyReservations(authUser, page, size));
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
+            @Parameter PageRequest pageRequest
+            ) {
+        return Response.fromPage(reservationService.getMyReservations(authUser, pageRequest.getPage(), pageRequest.getSize()));
     }
 
     // 나의 예약 단건 조회
     @Secured(UserRole.Authority.USER)
     @GetMapping("/v1/reservations/me/{reservationId}")
     public Response<MyReservationResponse> getMyReservation(
-            @AuthenticatedUser AuthUser authUser,
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long reservationId
     ) {
         return Response.of(reservationService.getMyReservation(authUser, reservationId));
@@ -69,19 +69,18 @@ public class ReservationController {
     @Secured(UserRole.Authority.OWNER)
     @GetMapping("/v1/users/me/parking-zones/{parkingZoneId}/reservations")
     public Response<OwnerReservationResponse> getOwnerReservations(
-            @AuthenticatedUser AuthUser authUser,
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long parkingZoneId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
+            @Parameter PageRequest pageRequest
     ) {
-        return Response.fromPage(reservationService.getOwnerReservations(authUser, parkingZoneId, page, size));
+        return Response.fromPage(reservationService.getOwnerReservations(authUser, parkingZoneId, pageRequest.getPage(), pageRequest.getSize()));
     }
 
     // 주차공간 예약 사용 완료(이용 시간 만료)
     @Secured(UserRole.Authority.USER)
     @PatchMapping("/v1/reservations/me/{reservationId}")
     public Response<Void> completeReservation(
-            @AuthenticatedUser AuthUser authUser,
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long reservationId
     ) {
         reservationService.completeReservation(authUser, reservationId);
@@ -92,7 +91,7 @@ public class ReservationController {
     @Secured(UserRole.Authority.USER)
     @DeleteMapping("v1/reservations/me/{reservationId}")
     public Response<Void> cancelReservation(
-            @AuthenticatedUser AuthUser authUser,
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long reservationId
     ) {
         reservationService.cancelReservation(authUser, reservationId);
