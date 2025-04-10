@@ -1,6 +1,5 @@
 package com.parkez.parkinglot.service;
 
-import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.entity.ParkingLotImage;
@@ -13,7 +12,6 @@ import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
-import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -75,13 +73,8 @@ public class ParkingLotService {
     @Transactional
     public void updateParkingLotStatus(AuthUser authUser, Long parkingLotId, ParkingLotStatusRequest request) {
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser, parkingLotId);
-        ParkingLotStatus newStatus;
-        try {
-            newStatus = ParkingLotStatus.valueOf(request.getStatus().toUpperCase());
-            parkingLot.updateStatus(newStatus);
-        } catch (IllegalArgumentException e) {
-            throw new ParkingEasyException(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS);
-        }
+        ParkingLotStatus newStatus = ParkingLotStatus.from(request.getStatus());
+        parkingLot.updateStatus(newStatus);
     }
 
     // 주차장 이미지 수정 (writer 사용x)
