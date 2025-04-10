@@ -16,6 +16,7 @@ import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -127,7 +130,7 @@ class ReservationServiceTest {
     private static ReservationRequest createRequest(Long id) {
         ReservationRequest request = new ReservationRequest();
         ReflectionTestUtils.setField(request, "parkingZoneId", id);
-        ReflectionTestUtils.setField(request, "startDateTime", LocalDateTime.now());
+        ReflectionTestUtils.setField(request, "startDateTime", LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
         return request;
     }
 
@@ -135,7 +138,7 @@ class ReservationServiceTest {
     class CreateReservation {
 
         @Test
-        void 예약_생성_테스트() {
+        void 특정_주차공간에_대한_예약_생성_테스트() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
@@ -146,7 +149,7 @@ class ReservationServiceTest {
             AuthUser authUser = createAuthUser(userId);
 
             ReservationRequest request = createRequest(parkingZoneId);
-            ReflectionTestUtils.setField(request, "endDateTime", LocalDateTime.now().plusHours(1));
+            ReflectionTestUtils.setField(request, "endDateTime", request.getStartDateTime().plusHours(1));
 
             User owner = createOwner(ownerId);
             User user = createUser(authUser.getId());
@@ -169,18 +172,16 @@ class ReservationServiceTest {
             MyReservationResponse result = reservationService.createReservation(authUser, request);
 
             // then
-            assertAll(
-                    () -> assertNotNull(result),
-                    () -> assertEquals(reservationId, result.getReservationId()),
-                    () -> assertEquals(userId, result.getUserId()),
-                    () -> assertEquals(parkingZoneId, result.getParkingZoneId()),
-                    () -> assertEquals(BigDecimal.valueOf(2000), result.getPrice()),
-                    () -> assertFalse(result.isReviewWritten())
-            );
+            assertThat(result)
+                    .isNotNull()
+                    .extracting("reservationId", "userId", "parkingZoneId", "parkingLotName", "reviewWritten", "startDateTime", "endDateTime", "price")
+                    .isEqualTo(
+                            List.of(reservationId, userId, parkingZoneId, parkingLot.getName(), false, request.getStartDateTime(), request.getEndDateTime(), price)
+                    );
         }
 
         @Test
-        void 입력_시간_오류_예외() {
+        void 특정_주차공간에_대한_예약_생성_시_request_입력_시간_오류의_경우_NOT_VALID_REQUEST_TIME_예외_처리() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
@@ -190,7 +191,7 @@ class ReservationServiceTest {
             AuthUser authUser = createAuthUser(userId);
 
             ReservationRequest request = createRequest(parkingZoneId);
-            ReflectionTestUtils.setField(request, "endDateTime", LocalDateTime.now().minusHours(1));
+            ReflectionTestUtils.setField(request, "endDateTime", request.getStartDateTime().minusHours(1));
 
             User owner = createOwner(ownerId);
             User user = createUser(authUser.getId());
@@ -213,7 +214,7 @@ class ReservationServiceTest {
     class GetReservationsByUserId {
 
         @Test
-        void 예약_리스트_조회_테스트() {
+        void 특정_사용자의_예약_리스트_조회_테스트() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
@@ -249,25 +250,17 @@ class ReservationServiceTest {
             Page<MyReservationResponse> result = reservationService.getMyReservations(authUser, page, size);
 
             // then
-            assertAll(
-                    () -> assertNotNull(result),
-                    () -> {
-                        var first = result.getContent().get(0);
-                        var second = result.getContent().get(1);
-
-                        assertEquals(1L, first.getReservationId());
-                        assertFalse(first.isReviewWritten());
-
-                        assertEquals(2L, second.getReservationId());
-                        assertTrue(second.isReviewWritten());
-
-                        assertEquals(2, result.getTotalElements());
-                    }
-            );
+            assertThat(result.getContent())
+                    .isNotNull()
+                    .extracting("reservationId", "userId", "parkingZoneId", "parkingLotName", "reviewWritten")
+                    .contains(
+                            tuple(reservationId, userId, parkingZoneId, parkingLot.getName(), false),
+                            tuple(reviewedReservationId, userId, parkingZoneId, parkingLot.getName(), true)
+                    );
         }
 
         @Test
-        void 정상적이지_않은_page_기입_테스트() {
+        void 특정_사용자의_예약_리스트_조회_시_정상적이지_않은_page_기입_테스트() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
@@ -303,28 +296,20 @@ class ReservationServiceTest {
             Page<MyReservationResponse> result = reservationService.getMyReservations(authUser, page, size);
 
             // then
-            assertAll(
-                    () -> assertNotNull(result),
-                    () -> {
-                        var first = result.getContent().get(0);
-                        var second = result.getContent().get(1);
-
-                        assertEquals(1L, first.getReservationId());
-                        assertFalse(first.isReviewWritten());
-
-                        assertEquals(2L, second.getReservationId());
-                        assertTrue(second.isReviewWritten());
-
-                        assertEquals(2, result.getTotalElements());
-                    }
-            );
+            assertThat(result.getContent())
+                    .isNotNull()
+                    .extracting("reservationId", "userId", "parkingZoneId", "parkingLotName", "reviewWritten")
+                    .contains(
+                            tuple(reservationId, userId, parkingZoneId, parkingLot.getName(), false),
+                            tuple(reviewedReservationId, userId, parkingZoneId, parkingLot.getName(), true)
+                    );
         }
 
         @Nested
         class GetReservationById {
 
             @Test
-            void 예약_단건_조회_테스트() {
+            void 특정_사용자의_특정_예약_단건_조회_테스트() {
                 // given
                 Long ownerId = 1L;
                 Long userId = 2L;
@@ -352,8 +337,12 @@ class ReservationServiceTest {
                 MyReservationResponse result = reservationService.getMyReservation(authUser, reservationId);
 
                 // then
-                assertNotNull(result);
-                assertEquals(reservationId, result.getReservationId());
+                assertThat(result)
+                        .isNotNull()
+                        .extracting("reservationId", "userId", "parkingZoneId", "parkingLotName", "reviewWritten")
+                        .isEqualTo(
+                                List.of(reservationId, userId, parkingZoneId, parkingLot.getName(), false)
+                        );
             }
         }
 
@@ -361,7 +350,7 @@ class ReservationServiceTest {
         class GetReservationsByParkingZoneId {
 
             @Test
-            void 예약_내역_리스트_조회_테스트() {
+            void 특정_주차공간에_대한_예약_내역_리스트_조회_테스트() {
                 // given
                 Long ownerId = 1L;
                 Long userId = 2L;
@@ -392,12 +381,16 @@ class ReservationServiceTest {
                 Page<OwnerReservationResponse> result = reservationService.getOwnerReservations(authOwner, parkingZoneId, page, size);
 
                 // then
-                assertNotNull(result);
-                assertEquals(parkingZoneId, result.getContent().get(0).getParkingZoneId());
+                assertThat(result.getContent())
+                        .isNotNull()
+                        .extracting("reservationId", "userId", "parkingZoneId", "parkingLotName")
+                        .contains(
+                                tuple(reservationId, userId, parkingZoneId, parkingLot.getName())
+                        );
             }
 
             @Test
-            void 정상적이지_않은_page_기입_테스트() {
+            void 특정_주차공간에_대한_예약_내역_조회_시_정상적이지_않은_page_기입_테스트() {
                 // given
                 Long ownerId = 1L;
                 Long userId = 2L;
@@ -428,12 +421,16 @@ class ReservationServiceTest {
                 Page<OwnerReservationResponse> result = reservationService.getOwnerReservations(authOwner, parkingZoneId, page, size);
 
                 // then
-                assertNotNull(result);
-                assertEquals(parkingZoneId, result.getContent().get(0).getParkingZoneId());
+                assertThat(result.getContent())
+                        .isNotNull()
+                        .extracting("reservationId", "userId", "parkingZoneId", "parkingLotName")
+                        .contains(
+                                tuple(reservationId, userId, parkingZoneId, parkingLot.getName())
+                        );
             }
 
             @Test
-            void 주차공간이_없을_경우_예외() {
+            void 특정_주차공간에_대한_예약_내역_조회_시_주차공간이_없을_경우_NOT_FOUND_PARKING_ZONE_예외_처리() {
                 // given
                 Long ownerId = 1L;
                 Long parkingZoneId = -1L;
@@ -451,7 +448,7 @@ class ReservationServiceTest {
             }
 
             @Test
-            void 본인_주차공간이_아닐_경우_예외() {
+            void 특정_주차공간에_대한_예약_내역_조회_시_본인_주차공간이_아닐_경우_NOT_MY_PARKING_ZONE_예외_처리() {
                 // given
                 Long ownerId = 1L;
                 Long differentUserId = 2L;
@@ -482,7 +479,7 @@ class ReservationServiceTest {
         class CompleteReservation {
 
             @Test
-            void 예약_사용_완료_테스트() {
+            void CONFIRMED_상태의_특정_예약_사용_완료_테스트() {
                 // given
                 Long ownerId = 1L;
                 Long userId = 2L;
@@ -512,7 +509,7 @@ class ReservationServiceTest {
             }
 
             @Test
-            void 예약의_상태가_CONFIRMED가_아닐_경우_예외() {
+            void 예약_사용_완료_시_예약의_상태가_CONFIRMED가_아닐_경우_CANT_MODIFY_RESERVATION_STATUS_예외_처리() {
                 // given
                 Long ownerId = 1L;
                 Long userId = 2L;
@@ -544,7 +541,7 @@ class ReservationServiceTest {
         class CancelReservation {
 
             @Test
-            void 예약_취소_테스트() {
+            void CONFIRMED_상태의_특정_예약_취소_테스트() {
                 // given
                 Long ownerId = 1L;
                 Long userId = 2L;
@@ -576,7 +573,7 @@ class ReservationServiceTest {
             }
 
             @Test
-            void 예약의_상태가_COMPLETED_일_경우_예외() {
+            void 예약_취소_시_예약의_상태가_COMPLETED_일_경우_CANT_CANCEL_COMPLETED_RESERVATION_예외_처리() {
                 // given
                 Long ownerId = 1L;
                 Long userId = 2L;
@@ -603,7 +600,7 @@ class ReservationServiceTest {
             }
 
             @Test
-            void 예약의_상태가_CANCELED_일_경우_예외() {
+            void 예약_취소_시_예약의_상태가_CANCELED_일_경우_CANT_CANCEL_CANCELED_RESERVATION_예외_처리() {
                 // given
                 Long ownerId = 1L;
                 Long userId = 2L;
@@ -630,7 +627,7 @@ class ReservationServiceTest {
             }
 
             @Test
-            void 남은_시간이_1시간_이내일_경우_예외() {
+            void 예약_취소_시_예약시간까지_남은_시간이_1시간_이내일_경우_CANT_CANCEL_WITHIN_ONE_HOUR_예외_처리() {
                 // given
                 Long ownerId = 1L;
                 Long userId = 2L;
