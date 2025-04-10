@@ -59,6 +59,7 @@ public class ParkingLotReaderTest {
                 .owner(ownerUser)
                 .name("참쉬운주차장")
                 .address("서울시 강남구 테헤란로 123")
+                .images(new ArrayList<>())
                 .build();
     }
 
@@ -68,6 +69,7 @@ public class ParkingLotReaderTest {
                 .owner(ownerUser)
                 .name("어려운주차장")
                 .address("서울시 강남구 테헤란로 111")
+                .images(new ArrayList<>())
                 .build();
     }
 

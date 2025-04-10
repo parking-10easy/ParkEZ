@@ -31,6 +31,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -94,6 +95,7 @@ public class ParkingLotServiceTest {
                 .owner(ownerUser)
                 .name(request.getName())
                 .address(request.getAddress())
+                .images(new ArrayList<>())
                 .build();
     }
 
