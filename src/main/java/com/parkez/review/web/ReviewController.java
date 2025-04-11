@@ -1,20 +1,21 @@
 package com.parkez.review.web;
 
+import com.parkez.common.dto.request.PageRequest;
+import com.parkez.common.dto.response.PageResponse;
+import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
-import com.parkez.common.response.Response;
 import com.parkez.review.dto.request.ReviewCreateRequest;
 import com.parkez.review.dto.response.ReviewResponse;
+import com.parkez.review.enums.ReviewSortType;
 import com.parkez.review.service.ReviewService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
@@ -31,5 +32,15 @@ public class ReviewController {
             @Valid @RequestBody ReviewCreateRequest request) {
         return Response.of(reviewService.createReview(authUser, request));
     }
+
+    @GetMapping("/v1/parking-lots/{parkingLotId}/reviews")
+    public Response<ReviewResponse> getReviews(
+            @Parameter(description = "주차장 ID (필수)", example = "1") @PathVariable Long parkingLotId,
+            @ParameterObject PageRequest pageRequest,
+            @Parameter(description = "정렬 타입 (default: LATEST)", example = "LATEST") @RequestParam(required = false) ReviewSortType sortType
+            ) {
+        return Response.fromPage(reviewService.getReviews(parkingLotId, pageRequest, sortType));
+    }
+
 
 }

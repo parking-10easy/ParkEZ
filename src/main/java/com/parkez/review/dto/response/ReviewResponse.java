@@ -19,7 +19,7 @@ public class ReviewResponse {
     private final Long reservationId;
 
     @Schema(description = "별점", example = "5")
-    private final int rating;
+    private final Integer rating;
 
     @Schema(description = "리뷰 내용", example = "자리도 넓고 쾌적해요.")
     private final String content;
