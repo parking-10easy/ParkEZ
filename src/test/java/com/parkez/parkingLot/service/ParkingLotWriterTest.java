@@ -1,9 +1,8 @@
-package com.parkez.parkingLot;
+package com.parkez.parkinglot.service;
 
 
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
-import com.parkez.parkinglot.service.ParkingLotWriter;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

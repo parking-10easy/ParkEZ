@@ -5,6 +5,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: test
       MYSQL_DATABASE: test
+      TZ: Asia/Seoul  # 타임존 설정 추가
     volumes:
       - ./mysql_data:/var/lib/mysql
     ports:
