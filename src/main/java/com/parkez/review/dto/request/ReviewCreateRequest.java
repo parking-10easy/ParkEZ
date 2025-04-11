@@ -26,7 +26,7 @@ public class ReviewCreateRequest {
     private String content;
 
     @Builder
-    public ReviewCreateRequest(Long reservationId, Integer rating, String content) {
+    private ReviewCreateRequest(Long reservationId, Integer rating, String content) {
         this.reservationId = reservationId;
         this.rating = rating;
         this.content = content;
