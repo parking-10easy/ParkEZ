@@ -22,9 +22,7 @@ public enum ReservationErrorCode implements ErrorCode {
     // UNAUTHORIZED
     NOT_MY_RESERVATION(HttpStatus.UNAUTHORIZED, "RESERVATION_008", "예약한 사용자 본인이 아닙니다."),
 
-    NOT_FOUND_PARKING_ZONE(HttpStatus.NOT_FOUND, "RESERVATION_009", "주차공간이 존재하지 않습니다."),
-    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "RESERVATION_010", "유저가 존재하지 않습니다."),
-    NOT_MY_PARKING_ZONE(HttpStatus.UNAUTHORIZED, "RESERVATION_010", "주차공간 소유주가 아닙니다.")
+    NOT_FOUND_PARKING_ZONE(HttpStatus.NOT_FOUND, "RESERVATION_009", "주차공간이 존재하지 않습니다.")
     ;
 
     private final HttpStatus httpStatus;

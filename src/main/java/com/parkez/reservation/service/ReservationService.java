@@ -2,6 +2,7 @@ package com.parkez.reservation.service;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
+import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.reservation.domain.entity.Reservation;
@@ -92,8 +93,8 @@ public class ReservationService implements ReservationLockService {
 
         // 조회하려는 주차공간이 본인 소유의 주차공간이 아닐 경우 예외
         ParkingZone parkingZone = parkingZoneReader.findById(parkingZoneId);
-        if (!parkingZone.isOwnedBy(authUser.getId())) {
-            throw new ParkingEasyException(ReservationErrorCode.NOT_MY_PARKING_ZONE);
+        if (!parkingZone.getParkingLot().isOwned(authUser.getId())) {
+            throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
         }
 
         int adjustedPage = (page > 0) ? page - 1 : 0;

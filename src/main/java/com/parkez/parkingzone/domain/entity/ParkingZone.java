@@ -55,12 +55,4 @@ public class ParkingZone extends BaseEntity {
     public BigDecimal extractParkingLotPricePerHour() {
         return this.parkingLot.getPricePerHour();
     }
-
-    public Long extractParkingLotOwnerId() {
-        return this.parkingLot.getOwner().getId();
-    }
-
-    public boolean isOwnedBy(Long ownerId) {
-        return extractParkingLotOwnerId().equals(ownerId);
-    }
 }

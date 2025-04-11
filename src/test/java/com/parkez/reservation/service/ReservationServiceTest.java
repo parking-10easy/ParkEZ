@@ -3,6 +3,7 @@ package com.parkez.reservation.service;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.reservation.domain.entity.Reservation;
@@ -448,7 +449,7 @@ class ReservationServiceTest {
             }
 
             @Test
-            void 특정_주차공간에_대한_예약_내역_조회_시_본인_주차공간이_아닐_경우_NOT_MY_PARKING_ZONE_예외_처리() {
+            void 특정_주차공간에_대한_예약_내역_조회_시_본인_주차공간이_아닐_경우_NOT_PARKING_LOT_OWNER_예외_처리() {
                 // given
                 Long ownerId = 1L;
                 Long differentUserId = 2L;
@@ -471,7 +472,7 @@ class ReservationServiceTest {
                 // when & then
                 ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                         () -> reservationService.getOwnerReservations(authOwner, parkingZoneId, page, size));
-                assertEquals(ReservationErrorCode.NOT_MY_PARKING_ZONE, exception.getErrorCode());
+                assertEquals(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER, exception.getErrorCode());
             }
         }
 
