@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.parkez.common.aop.CheckMemberStatus;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.common.dto.response.Response;
@@ -31,13 +32,14 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "유저 API", description = "유저 프로필 조회, 수정, 탈퇴 관련 API")
 public class UserController {
 
+	private final UserService userService;
+
+	@CheckMemberStatus
 	@GetMapping("/v1/users/me")
 	@Operation(summary = "내 프로필 조회", description = "내 프로필 정보를 조회한다")
 	public Response<MyProfileResponse> getMyProfile(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser) {
 		return Response.of(userService.getMyProfile(authUser));
 	}
-
-	private final UserService userService;
 
 	@Operation(summary = "유저 프로필 조회", description = "유저의 기본정보를 조회한다.")
 	@GetMapping("/v1/users/{id}")
@@ -45,6 +47,7 @@ public class UserController {
 		return Response.of(userService.getUser(id));
 	}
 
+	@CheckMemberStatus
 	@Operation(summary = "내 프로필 수정", description = "내 프로필 정보를 수정한다.")
 	@PutMapping("/v1/users/me")
 	public Response<Void> updateProfile(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,@Valid @RequestBody UserProfileUpdateRequest request) {
@@ -54,6 +57,7 @@ public class UserController {
 		return Response.empty();
 	}
 
+	@CheckMemberStatus
 	@Operation(summary = "내 프로필 사진 수정", description = "내 프로필 사진을 수정한다.")
 	@PatchMapping("/v1/users/profile-image")
 	public Response<Void> updateProfileImage(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
@@ -62,6 +66,7 @@ public class UserController {
 		return Response.empty();
 	}
 
+	@CheckMemberStatus
 	@Operation(summary = "비밀번호 변경", description = "비밀번호를 변경한다.")
 	@PatchMapping("/v1/users/password")
 	public Response<Void> changePassword(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser, @Valid @RequestBody UserChangePasswordRequest request) {
@@ -69,11 +74,14 @@ public class UserController {
 		return Response.empty();
 	}
 
+	@CheckMemberStatus
 	@Operation(summary = "회원 탈퇴", description = "회원 탈퇴한다.")
 	@DeleteMapping("/v1/users/me")
 	public Response<Void> deleteUser(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser) {
 		userService.deleteUser(authUser.getId());
 		return Response.empty();
 	}
+
+
 
 }
