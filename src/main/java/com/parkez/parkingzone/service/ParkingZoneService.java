@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class ParkingZoneService {
 
@@ -43,18 +42,21 @@ public class ParkingZoneService {
         return ParkingZoneResponse.from(parkingZoneReader.getActiveByParkingZoneId(parkingZoneId));
     }
 
+    @Transactional
     public void updateParkingZoneName(AuthUser authUser, Long parkingZoneId, ParkingZoneUpdateNameRequest request) {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         validateOwner(parkingZone, authUser.getId());
         parkingZone.updateParkingZone(request.getName());
     }
 
+    @Transactional
     public void updateParkingZoneStatus(AuthUser authUser, Long parkingZoneId, ParkingZoneUpdateStatusRequest request) {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         validateOwner(parkingZone, authUser.getId());
         parkingZone.updateParkingZoneStatus(request.getStatus());
     }
 
+    @Transactional
     public void updateParkingZoneImage(AuthUser authUser, Long parkingZoneId, ParkingZoneUpdateImageRequest request) {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         validateOwner(parkingZone, authUser.getId());

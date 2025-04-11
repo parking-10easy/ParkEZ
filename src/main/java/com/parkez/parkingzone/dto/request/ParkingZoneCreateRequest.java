@@ -20,7 +20,7 @@ public class ParkingZoneCreateRequest {
     private String name;
 
     @Builder
-    public ParkingZoneCreateRequest(Long parkingLotId, String name) {
+    private ParkingZoneCreateRequest(Long parkingLotId, String name) {
         this.parkingLotId = parkingLotId;
         this.name = name;
     }
