@@ -6,13 +6,16 @@ import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.service.ReservationReader;
+import com.parkez.review.domain.entity.Review;
 import com.parkez.review.dto.request.ReviewCreateRequest;
+import com.parkez.review.dto.request.ReviewUpdateRequest;
 import com.parkez.review.dto.response.ReviewResponse;
 import com.parkez.review.enums.ReviewSortType;
 import com.parkez.review.exception.ReviewErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -40,5 +43,18 @@ public class ReviewService {
 
     public ReviewResponse getReview(Long reviewId) {
         return ReviewResponse.from(reviewReader.getReviewById(reviewId));
+    }
+
+    @Transactional
+    public void updateReview(AuthUser authUser, Long reviewId, ReviewUpdateRequest request) {
+        Review review = reviewReader.getReviewById(reviewId);
+        validateOwner(authUser.getId(), review);
+        review.update(request.getRating(), request.getContent());
+    }
+
+    private static void validateOwner(Long userId, Review review) {
+        if (!review.isOwned(userId)){
+            throw new ParkingEasyException(ReviewErrorCode.NOT_REVIEW_OWNER);
+        }
     }
 }

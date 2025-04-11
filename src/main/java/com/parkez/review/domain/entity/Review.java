@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Objects;
+
 @Getter
 @Entity
 @Table(name="review")
@@ -46,5 +48,14 @@ public class Review extends BaseEntity {
 
     public String getUserNickname() {
         return user.getNickname();
+    }
+
+    public boolean isOwned(Long userId) {
+        return Objects.equals(user.getId(), userId);
+    }
+
+    public void update(Integer rating, String content) {
+        this.rating = rating;
+        this.content = content;
     }
 }

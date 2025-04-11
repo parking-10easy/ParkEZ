@@ -6,6 +6,7 @@ import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.review.dto.request.ReviewCreateRequest;
+import com.parkez.review.dto.request.ReviewUpdateRequest;
 import com.parkez.review.dto.response.ReviewResponse;
 import com.parkez.review.enums.ReviewSortType;
 import com.parkez.review.service.ReviewService;
@@ -47,6 +48,16 @@ public class ReviewController {
             @Parameter(description = "리뷰 ID (필수)", example = "1") @PathVariable Long reviewId
     ) {
         return Response.of(reviewService.getReview(reviewId));
+    }
+
+    @PutMapping("/v1/reviews/{reviewId}")
+    public Response<Void> updateReview(
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
+            @Parameter(description = "리뷰 ID (필수)", example = "1") @PathVariable Long reviewId,
+            @RequestBody ReviewUpdateRequest request
+    ) {
+        reviewService.updateReview(authUser, reviewId, request);
+        return Response.empty();
     }
 
 
