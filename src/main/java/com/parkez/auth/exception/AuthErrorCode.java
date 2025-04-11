@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum AuthErrorCode implements ErrorCode {
 
+	// 400 BadRequest
+	INVALID_LOGIN_TYPE(HttpStatus.BAD_REQUEST, "AUTH_008","지원하지 않는 로그인 타입입니다"),
+
 	// 401 Unauthorized
 	INVALID_JWT_SIGNATURE(HttpStatus.UNAUTHORIZED, "AUTH_002", "유효하지 않은 JWT 서명입니다."),
 	TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_003", "만료된 JWT 토큰입니다."),
@@ -23,8 +26,9 @@ public enum AuthErrorCode implements ErrorCode {
 
 	// 409 Conflict
 	DUPLICATED_EMAIL(HttpStatus.CONFLICT, "AUTH_005", "이미 가입된 이메일입니다."),
+	ALREADY_COMPLETED(HttpStatus.CONFLICT,"AUTH_009","이미 추가정보 입력이 완료된 사용자입니다.");
 
-	;
+
 	private final HttpStatus httpStatus;
 	private final String code;
 	private final String defaultMessage;

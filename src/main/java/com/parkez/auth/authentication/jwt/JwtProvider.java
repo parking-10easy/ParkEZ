@@ -1,18 +1,22 @@
 package com.parkez.auth.authentication.jwt;
 
+import java.time.Instant;
+import java.util.Base64;
+import java.util.Date;
+
+import javax.crypto.SecretKey;
+
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
-import javax.crypto.SecretKey;
-import java.util.Base64;
-import java.util.Date;
 
 @Component
 @Slf4j
@@ -31,7 +35,7 @@ public class JwtProvider {
 		this.jwtProperties = jwtProperties;
 	}
 
-	public String createAccessToken(Long userId, String email, String roleName, String nickname) {
+	public String createAccessToken(Long userId, String email, String roleName, String nickname, boolean isSignupCompleted) {
 		Date date = new Date();
 		return BEARER_PREFIX +
 			Jwts.builder()
@@ -39,6 +43,7 @@ public class JwtProvider {
 				.claim("email", email)
 				.claim("userRole", roleName)
 				.claim("nickname", nickname)
+				.claim("isSignupCompleted", isSignupCompleted)
 				.expiration(createExpiration(jwtProperties.getAccessTokenExpiration()))
 				.issuedAt(date)
 				.signWith(this.signingKey)
@@ -62,16 +67,6 @@ public class JwtProvider {
 			.build()
 			.parseSignedClaims(token)
 			.getPayload();
-	}
-
-	public boolean isTokenExpired(String token) {
-		try {
-			Claims claims = extractClaims(token);
-			Date expirationDate = claims.getExpiration();
-			return expirationDate != null && expirationDate.before(new Date());
-		} catch (Exception e) {
-			return true;
-		}
 	}
 
 	public String subStringToken(String tokenValue) {

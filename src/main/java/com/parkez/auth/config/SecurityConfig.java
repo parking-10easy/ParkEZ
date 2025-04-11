@@ -16,6 +16,7 @@ import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import com.parkez.auth.authentication.filter.ExceptionHandlerFilter;
 import com.parkez.auth.authentication.filter.JwtAuthenticationFilter;
 import com.parkez.auth.authentication.handler.CustomAuthenticationEntryPoint;
+import com.parkez.user.domain.enums.UserRole;
 
 import lombok.RequiredArgsConstructor;
 
@@ -56,8 +57,8 @@ public class SecurityConfig {
 			.rememberMe(AbstractHttpConfigurer::disable)
 			.authorizeHttpRequests(
 				auth -> auth
+					.requestMatchers(new AntPathRequestMatcher("/api/*/auth/signup/social/**")).authenticated()
 					.requestMatchers(new AntPathRequestMatcher("/api/*/auth/**")).permitAll()
-					.requestMatchers(new RegexRequestMatcher("/api/v[^/]+/users/[0-9]+$", null)).permitAll()
 					.requestMatchers(SWAGGER_URI).permitAll()
 					.anyRequest().authenticated()
 			)

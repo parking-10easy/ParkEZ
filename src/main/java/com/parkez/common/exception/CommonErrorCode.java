@@ -9,8 +9,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum CommonErrorCode implements ErrorCode{
 
+	// 401 Unauthorized
+	UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "COMMON_004", "인증이 필요합니다."),
+
 	// 403 Forbidden
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "COMMON_001", "접근 권한이 없습니다."),
+	MEMBER_INFO_NOT_COMPLETED(HttpStatus.FORBIDDEN, "COMMON_005", "추가정보 입력이 완료되지 않았습니다."),
 
 	// 404 Not Found
 	AUTHORITY_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON_003", "권한이 없는 사용자입니다."),

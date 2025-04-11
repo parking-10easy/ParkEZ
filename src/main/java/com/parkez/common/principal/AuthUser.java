@@ -18,13 +18,15 @@ public class AuthUser {
 	private final String email;
 	private final Collection<? extends GrantedAuthority> authorities;
 	private final String nickname;
+	private final boolean signupCompleted;
 
 	@Builder
-	private AuthUser(Long id, String email,String roleName, String nickname) {
+	private AuthUser(Long id, String email,String roleName, String nickname, boolean signupCompleted) {
 		this.id = id;
 		this.email = email;
 		this.authorities = List.of(new SimpleGrantedAuthority(roleName));
 		this.nickname = nickname;
+		this.signupCompleted = signupCompleted;
 	}
 
 	public String getFirstAuthority() {
@@ -32,5 +34,9 @@ public class AuthUser {
 			.findFirst()
 			.orElseThrow(() -> new ParkingEasyException(CommonErrorCode.AUTHORITY_NOT_FOUND))
 			.getAuthority();
+	}
+
+	public boolean isSignupCompleted() {
+		return signupCompleted;
 	}
 }
