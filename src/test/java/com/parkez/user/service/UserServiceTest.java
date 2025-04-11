@@ -66,7 +66,7 @@ class UserServiceTest {
 			ReflectionTestUtils.setField(user, "id", userId);
 			ReflectionTestUtils.setField(user, "role", userRole);
 			ReflectionTestUtils.setField(user, "profileImageUrl", profileImageUrl);
-			given(userReader.getActiveById(anyLong())).willReturn(user);
+			given(userReader.getActiveUserById(anyLong())).willReturn(user);
 			//when
 			MyProfileResponse myProfileResponse = userService.getMyProfile(authUser);
 			//then
@@ -108,7 +108,7 @@ class UserServiceTest {
 				.profileImageUrl(profileImageUrl)
 				.build();
 			ReflectionTestUtils.setField(user, "id", userId);
-			given(userReader.getActiveById(anyLong())).willReturn(user);
+			given(userReader.getActiveUserById(anyLong())).willReturn(user);
 			//when
 			UserResponse userResponse = userService.getUser(userId);
 			//then
@@ -180,7 +180,7 @@ class UserServiceTest {
 				.phone("011-1234-5678")
 				.businessAccountInfo(BusinessAccountInfo.create(null, null, null, null))
 				.build();
-			given(userReader.getActiveById(anyLong())).willReturn(user);
+			given(userReader.getActiveUserById(anyLong())).willReturn(user);
 			//when
 			userService.updateProfile(authUser, request);
 			//then
@@ -223,7 +223,7 @@ class UserServiceTest {
 				.phone("011-1234-5678")
 				.businessAccountInfo(BusinessAccountInfo.create(null, null, null, null))
 				.build();
-			given(userReader.getActiveById(anyLong())).willReturn(user);
+			given(userReader.getActiveUserById(anyLong())).willReturn(user);
 			//when
 			userService.updateProfile(authUser, request);
 			//then
@@ -263,13 +263,13 @@ class UserServiceTest {
 				.build();
 			ReflectionTestUtils.setField(user, "id", userId);
 			ReflectionTestUtils.setField(userService, "defaultProfileImageUrl", "default.jpg");
-			given(userReader.getActiveById(anyLong())).willReturn(user);
+			given(userReader.getActiveUserById(anyLong())).willReturn(user);
 
 			// when
 			userService.updateProfileImage(userId, request);
 
 			// then
-			verify(userReader).getActiveById(userId);
+			verify(userReader).getActiveUserById(userId);
 			Assertions.assertThat(user)
 				.extracting(
 					"profileImageUrl"
@@ -288,13 +288,13 @@ class UserServiceTest {
 				.profileImageUrl(profileImageUrl)
 				.build();
 			ReflectionTestUtils.setField(user, "id", userId);
-			given(userReader.getActiveById(anyLong())).willReturn(user);
+			given(userReader.getActiveUserById(anyLong())).willReturn(user);
 
 			// when
 			userService.updateProfileImage(userId, request);
 
 			// then
-			verify(userReader).getActiveById(userId);
+			verify(userReader).getActiveUserById(userId);
 			Assertions.assertThat(user)
 				.extracting(
 					"profileImageUrl"
@@ -316,7 +316,7 @@ class UserServiceTest {
 			User user = User.builder()
 				.password(encodedOldPassword)
 				.build();
-			given(userReader.getActiveById(userId)).willReturn(user);
+			given(userReader.getActiveUserById(userId)).willReturn(user);
 			given(bCryptPasswordEncoder.matches(oldPassword, encodedOldPassword)).willReturn(true);
 			given(bCryptPasswordEncoder.matches(newPassword, encodedOldPassword)).willReturn(false);
 			given(bCryptPasswordEncoder.encode(newPassword)).willReturn(encodedNewPassword);
@@ -340,7 +340,7 @@ class UserServiceTest {
 			User user = User.builder()
 				.password(encodedOldPassword)
 				.build();
-			given(userReader.getActiveById(userId)).willReturn(user);
+			given(userReader.getActiveUserById(userId)).willReturn(user);
 			given(bCryptPasswordEncoder.matches(oldPassword, encodedOldPassword)).willReturn(false);
 			UserChangePasswordRequest request = UserChangePasswordRequest.builder()
 				.oldPassword(oldPassword)
@@ -362,7 +362,7 @@ class UserServiceTest {
 			User user = User.builder()
 				.password(encodedOldPassword)
 				.build();
-			given(userReader.getActiveById(userId)).willReturn(user);
+			given(userReader.getActiveUserById(userId)).willReturn(user);
 			given(bCryptPasswordEncoder.matches(oldPassword, encodedOldPassword)).willReturn(true);
 			given(bCryptPasswordEncoder.matches(newPassword, encodedOldPassword)).willReturn(true);
 			UserChangePasswordRequest request = UserChangePasswordRequest.builder()
@@ -386,7 +386,7 @@ class UserServiceTest {
 				.nickname("기존 닉네임")
 				.build();
 
-			given(userReader.getActiveById(anyLong())).willReturn(user);
+			given(userReader.getActiveUserById(anyLong())).willReturn(user);
 
 			// when
 			userService.deleteUser(userId);
