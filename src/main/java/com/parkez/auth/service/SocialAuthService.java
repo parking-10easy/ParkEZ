@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.parkez.auth.authentication.jwt.JwtProvider;
-import com.parkez.auth.authentication.refresh.RefreshTokenRedisStore;
+import com.parkez.auth.authentication.refresh.RefreshTokenStore;
 import com.parkez.auth.dto.request.SocialOwnerProfileCompleteRequest;
 import com.parkez.auth.dto.request.SocialUserProfileCompleteRequest;
 import com.parkez.auth.dto.response.TokenResponse;
@@ -31,7 +31,7 @@ public class SocialAuthService {
 	private final UserReader userReader;
 	private final JwtProvider jwtProvider;
 	private final UserWriter userWriter;
-	private final RefreshTokenRedisStore refreshTokenStore;
+	private final RefreshTokenStore refreshTokenStore;
 
 	@Transactional
 	public TokenResponse login(String providerName, String code, String state) {
