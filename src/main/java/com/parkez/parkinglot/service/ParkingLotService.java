@@ -1,6 +1,6 @@
 package com.parkez.parkinglot.service;
 
-import com.parkez.common.PageRequest;
+import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.entity.ParkingLotImage;

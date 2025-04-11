@@ -1,6 +1,6 @@
 package com.parkez.parkingLot;
 
-import com.parkez.common.PageRequest;
+import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;

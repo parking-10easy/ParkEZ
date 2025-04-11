@@ -19,7 +19,7 @@ import com.parkez.parkinglot.service.ParkingLotWriter;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
-import com.parkez.common.PageRequest;
+import com.parkez.common.dto.request.PageRequest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

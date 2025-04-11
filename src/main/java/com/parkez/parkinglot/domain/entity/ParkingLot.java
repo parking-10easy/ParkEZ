@@ -117,9 +117,7 @@ public class ParkingLot extends BaseDeleteEntity {
 
     public void updateImages(List<ParkingLotImage> newImages) {
         this.images.clear();
-        if (newImages != null && !newImages.isEmpty()) {
-            this.images.addAll(newImages);
-        }
+        this.images.addAll(newImages);
     }
 
     public boolean isOwned(Long userId) {

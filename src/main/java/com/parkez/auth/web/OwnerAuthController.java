@@ -10,7 +10,7 @@ import com.parkez.auth.dto.request.SignupOwnerRequest;
 import com.parkez.auth.dto.response.SignupResponse;
 import com.parkez.auth.dto.response.TokenResponse;
 import com.parkez.auth.service.AuthService;
-import com.parkez.common.response.Response;
+import com.parkez.common.dto.response.Response;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

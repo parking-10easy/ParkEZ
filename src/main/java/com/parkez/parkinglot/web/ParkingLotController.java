@@ -1,9 +1,9 @@
 package com.parkez.parkinglot.web;
 
-import com.parkez.common.PageRequest;
+import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
-import com.parkez.common.response.Response;
+import com.parkez.common.dto.response.Response;
 import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Secured(UserRole.Authority.OWNER)
 @Tag(name = "주차장 관리 API", description = "주차장 관리 및 조회 API입니다.")
 public class ParkingLotController {
 
@@ -33,7 +34,6 @@ public class ParkingLotController {
     // 주차장 생성
     @PostMapping("/v1/parking-lots")
     @Operation(summary = "주차장 생성")
-    @Secured(UserRole.Authority.OWNER)
     public Response<ParkingLotResponse> createParkingLot(
             @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @Valid @RequestBody ParkingLotRequest request
@@ -44,6 +44,7 @@ public class ParkingLotController {
     // 주차장 다건 조회
     @GetMapping("/v1/parking-lots")
     @Operation(summary = "주차장 다건 조회")
+    @Secured({UserRole.Authority.OWNER, UserRole.Authority.USER})
     public Response<ParkingLotSearchResponse> searchParkingLots(
             @ModelAttribute ParkingLotSearchRequest request,
             @ParameterObject PageRequest pageRequest
@@ -54,6 +55,7 @@ public class ParkingLotController {
     // 주차장 단건 조회
     @GetMapping("/v1/parking-lots/{parkingLotId}")
     @Operation(summary = "주차장 단건 조회")
+    @Secured({UserRole.Authority.OWNER, UserRole.Authority.USER})
     public Response<ParkingLotSearchResponse> searchParkingLot(
             @PathVariable Long parkingLotId
     ) {
@@ -63,7 +65,6 @@ public class ParkingLotController {
     // 본인이 소유한 주차장 조회
     @GetMapping("/v1/parking-lots/me")
     @Operation(summary = "본인이 소유한 주차장 리스트 조회")
-    @Secured(UserRole.Authority.OWNER)
     public Response<MyParkingLotSearchResponse> searchParkingLot(
             @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @ParameterObject PageRequest pageRequest
@@ -74,7 +75,6 @@ public class ParkingLotController {
     // 주차장 수정
     @PutMapping("/v1/parking-lots/{parkingLotId}")
     @Operation(summary = "주차장 수정")
-    @Secured(UserRole.Authority.OWNER)
     public Response<Void> updateParkingLot(
             @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @PathVariable Long parkingLotId,
@@ -87,7 +87,6 @@ public class ParkingLotController {
     // 주차장 상태 변경
     @PutMapping("/v1/parking-lots/{parkingLotId}/status")
     @Operation(summary = "주차장 상태 수정")
-    @Secured(UserRole.Authority.OWNER)
     public Response<Void> updatedParkingLotStatus(
             @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @PathVariable Long parkingLotId,
@@ -100,7 +99,6 @@ public class ParkingLotController {
     // 주차장 삭제
     @DeleteMapping("/v1/parking-lots/{parkingLotId}")
     @Operation(summary = "주차장 삭제")
-    @Secured(UserRole.Authority.OWNER)
     public Response<Void> deleteParkingLot(
             @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @PathVariable Long parkingLotId
@@ -113,7 +111,6 @@ public class ParkingLotController {
 
     @PutMapping("/v1/parking-lots/{parkingLotId}/images")
     @Operation(summary = "주차장 이미지 수정")
-    @Secured(UserRole.Authority.OWNER)
     public Response<Void> updateParkingLotImages(
             @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
             @PathVariable Long parkingLotId,

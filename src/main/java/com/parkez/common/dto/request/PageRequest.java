@@ -1,11 +1,9 @@
-package com.parkez.common;
+package com.parkez.common.dto.request;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-
-// 예인님 코드 머지 후 삭제 예정
 @Getter
 @RequiredArgsConstructor
 public class PageRequest {
