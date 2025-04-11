@@ -24,10 +24,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
                     (:start < r.endDateTime AND :end > r.startDateTime)
                   )
             """)
-    boolean existsReservation(@Param("parkingZone") ParkingZone parkingZone,
-                              @Param("start") LocalDateTime start,
-                              @Param("end") LocalDateTime end,
-                              @Param("statusList") List<ReservationStatus> statusList);
+    boolean existsReservationByConditions(@Param("parkingZone") ParkingZone parkingZone,
+                                          @Param("start") LocalDateTime start,
+                                          @Param("end") LocalDateTime end,
+                                          @Param("statusList") List<ReservationStatus> statusList);
 
     boolean existsByUser_Id(Long userId);
 

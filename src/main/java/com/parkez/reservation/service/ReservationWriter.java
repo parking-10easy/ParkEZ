@@ -33,7 +33,7 @@ public class ReservationWriter {
 
         // 이미 해당 시간에 예약이 존재할 경우
         List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
-        boolean exists = reservationRepository.existsReservation(parkingZone, startDateTime, endDateTime, statusList);
+        boolean exists = reservationRepository.existsReservationByConditions(parkingZone, startDateTime, endDateTime, statusList);
         if (exists) {
             throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED);
         }

@@ -23,7 +23,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyList;
@@ -115,7 +114,7 @@ class ReservationWriterTest {
 
             Reservation reservation = createReservation(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price);
 
-            given(reservationRepository.existsReservation(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
+            given(reservationRepository.existsReservationByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
                     .willReturn(false);
             given(reservationRepository.save(any(Reservation.class))).willReturn(reservation);
 
@@ -151,7 +150,7 @@ class ReservationWriterTest {
             LocalDateTime startDateTime = LocalDateTime.now();
             LocalDateTime endDateTime = LocalDateTime.now().plusHours(1);
 
-            given(reservationRepository.existsReservation(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
+            given(reservationRepository.existsReservationByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
                     .willReturn(true);
 
             // when & then
