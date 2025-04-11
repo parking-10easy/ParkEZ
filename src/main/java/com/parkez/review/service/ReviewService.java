@@ -52,7 +52,13 @@ public class ReviewService {
         review.update(request.getRating(), request.getContent());
     }
 
-    private static void validateOwner(Long userId, Review review) {
+    public void deleteReview(AuthUser authUser, Long reviewId) {
+        Review review = reviewReader.getReviewById(reviewId);
+        validateOwner(authUser.getId(), review);
+        reviewWriter.deleteReviewById(review);
+    }
+
+    private void validateOwner(Long userId, Review review) {
         if (!review.isOwned(userId)){
             throw new ParkingEasyException(ReviewErrorCode.NOT_REVIEW_OWNER);
         }

@@ -30,4 +30,12 @@ public class ReviewWriter {
         return reviewRepository.save(review);
     }
 
+    public void deleteReviewById(Review review) {
+        // 리뷰 수 감소
+        Reservation reservation = review.getReservation();
+        ParkingZone parkingZone = reservation.getParkingZone();
+        parkingZone.decrementReviewCount();
+
+        reviewRepository.deleteById(review.getId());
+    }
 }

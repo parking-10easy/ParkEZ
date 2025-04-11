@@ -1,7 +1,6 @@
 package com.parkez.review.web;
 
 import com.parkez.common.dto.request.PageRequest;
-import com.parkez.common.dto.response.PageResponse;
 import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
@@ -35,6 +34,7 @@ public class ReviewController {
     }
 
     @GetMapping("/v1/parking-lots/{parkingLotId}/reviews")
+    @Operation(summary = "리뷰 다건 조회", description = "리뷰 다건조회 기능입니다.")
     public Response<ReviewResponse> getReviews(
             @Parameter(description = "주차장 ID (필수)", example = "1") @PathVariable Long parkingLotId,
             @ParameterObject PageRequest pageRequest,
@@ -44,6 +44,7 @@ public class ReviewController {
     }
 
     @GetMapping("/v1/reviews/{reviewId}")
+    @Operation(summary = "리뷰 단건 조회", description = "리뷰 단건 조회 기능입니다.")
     public Response<ReviewResponse> getReview(
             @Parameter(description = "리뷰 ID (필수)", example = "1") @PathVariable Long reviewId
     ) {
@@ -51,6 +52,7 @@ public class ReviewController {
     }
 
     @PutMapping("/v1/reviews/{reviewId}")
+    @Operation(summary = "리뷰 수정", description = "리뷰 수정 기능입니다.")
     public Response<Void> updateReview(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @Parameter(description = "리뷰 ID (필수)", example = "1") @PathVariable Long reviewId,
@@ -60,5 +62,13 @@ public class ReviewController {
         return Response.empty();
     }
 
-
+    @DeleteMapping("/v1/reviews/{reviewId}")
+    @Operation(summary = "리뷰 삭제", description = "리뷰 삭제 기능입니다.")
+    public Response<Void> deleteReview(
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
+            @Parameter(description = "리뷰 ID (필수)", example = "1") @PathVariable Long reviewId
+    ) {
+        reviewService.deleteReview(authUser, reviewId);
+        return Response.empty();
+    }
 }
