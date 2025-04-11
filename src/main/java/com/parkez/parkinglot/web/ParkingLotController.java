@@ -11,6 +11,7 @@ import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
+import com.parkez.parkinglot.service.ParkingLotPublicDataService;
 import com.parkez.parkinglot.service.ParkingLotService;
 import com.parkez.user.domain.enums.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 public class ParkingLotController {
 
     private final ParkingLotService parkingLotService;
+    private final ParkingLotPublicDataService parkingLotPublicDataService;
 
     // 주차장 생성
     @PostMapping("/v1/parking-lots")
@@ -108,7 +110,6 @@ public class ParkingLotController {
     }
 
     // 주차장 이미지 수정
-
     @PutMapping("/v1/parking-lots/{parkingLotId}/images")
     @Operation(summary = "주차장 이미지 수정")
     public Response<Void> updateParkingLotImages(
@@ -118,6 +119,14 @@ public class ParkingLotController {
     ) { // 요청 Body로 이미지 URL 리스트를 받음
         parkingLotService.updateParkingLotImages(authUser, parkingLotId, request);
         return Response.empty();
+    }
+
+    // 공공데이터 OpenAPI 호출용 임시 컨트롤러
+    @GetMapping("/api/public-data")
+    @Operation(summary = "공공데이터 OpenAPI 호출용 임시 컨트롤러")
+    public String getPublicData(){
+        parkingLotPublicDataService.getPublicDataFromApi();
+        return "호출 성공";
     }
 
 }
