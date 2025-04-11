@@ -34,8 +34,7 @@ public class ImageController {
     public Response<ImageUrlResponse> update(
             @RequestPart("request") ImageRequest request,
             @RequestPart("images") List<MultipartFile> imageFiles
-    ){
-        ;
+    ) {
         return Response.of(imageService.replace(request, imageFiles));
     }
 
