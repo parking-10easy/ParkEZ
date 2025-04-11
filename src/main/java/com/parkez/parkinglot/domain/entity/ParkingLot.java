@@ -67,7 +67,7 @@ public class ParkingLot extends BaseDeleteEntity {
     private ParkingLotStatus status;
 
     @OneToMany(mappedBy = "parkingLot", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ParkingLotImage> images = new ArrayList<>();
+    private List<ParkingLotImage> images;
 
     @Builder
     private ParkingLot(User owner, String name, String address,
