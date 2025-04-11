@@ -28,12 +28,12 @@ public class Review extends BaseEntity {
     private Reservation reservation;
 
     @Column(nullable = false)
-    private int rating;
+    private Integer rating;
 
     private String content;
 
     @Builder
-    private Review(int rating, String content, User user, Reservation reservation) {
+    private Review(Integer rating, String content, User user, Reservation reservation) {
         this.rating = rating;
         this.content = content;
         this.user = user;

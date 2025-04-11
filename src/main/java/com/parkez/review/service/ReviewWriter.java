@@ -15,7 +15,7 @@ public class ReviewWriter {
 
     private final ReviewRepository reviewRepository;
 
-    public Review createReview(Reservation reservation, int rating, String content) {
+    public Review createReview(Reservation reservation, Integer rating, String content) {
         Review review = Review.builder()
                 .user(reservation.getUser())
                 .reservation(reservation)

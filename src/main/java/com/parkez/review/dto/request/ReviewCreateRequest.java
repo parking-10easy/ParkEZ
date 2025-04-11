@@ -19,14 +19,14 @@ public class ReviewCreateRequest {
     @Schema(description = "평점", example = "5")
     @Min(value = 1, message = "평점은 1점 이상이어야 합니다")
     @Max(value = 5, message = "평점은 최대 5점까지 입력할 수 있습니다")
-    private int rating;
+    private Integer rating;
 
     @Schema(description = "리뷰 내용", example = "자리도 넓고 쾌적해요.")
     @Size(max = 500, message = "리뷰 내용은 최대 500자까지 입력할 수 있습니다")
     private String content;
 
     @Builder
-    public ReviewCreateRequest(Long reservationId, int rating, String content) {
+    public ReviewCreateRequest(Long reservationId, Integer rating, String content) {
         this.reservationId = reservationId;
         this.rating = rating;
         this.content = content;
