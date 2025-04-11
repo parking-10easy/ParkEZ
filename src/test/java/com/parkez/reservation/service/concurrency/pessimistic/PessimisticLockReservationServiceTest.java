@@ -1,4 +1,4 @@
-package com.parkez.reservation.service.jpaconcurrency.pessimistic;
+package com.parkez.reservation.service.concurrency.pessimistic;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
@@ -132,7 +132,7 @@ class PessimisticLockReservationServiceTest {
             Reservation reservation = createReservation(reservationId, user, parkingZone, request, price);
 
             given(userReader.getActiveById(anyLong())).willReturn(user);
-            given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
+            given(parkingZoneReader.findByIdWithPessimisticLock(anyLong())).willReturn(parkingZone);
             given(pessimisticLockReservationWriter.createPessimisticLockReservation(any(User.class), any(ParkingZone.class), anyString(), any(LocalDateTime.class), any(LocalDateTime.class), any(BigDecimal.class)))
                     .willReturn(reservation);
 
@@ -169,7 +169,7 @@ class PessimisticLockReservationServiceTest {
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
             given(userReader.getActiveById(anyLong())).willReturn(user);
-            given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
+            given(parkingZoneReader.findByIdWithPessimisticLock(anyLong())).willReturn(parkingZone);
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,

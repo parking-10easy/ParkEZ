@@ -1,10 +1,10 @@
-package com.parkez.reservation.service.jpaconcurrency.pessimistic;
+package com.parkez.reservation.service.concurrency.pessimistic;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
-import com.parkez.reservation.domain.repository.pessimistic.PessimisticLockReservationRepository;
+import com.parkez.reservation.domain.repository.ReservationRepository;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PessimisticLockReservationWriter {
 
-    private final PessimisticLockReservationRepository pessimisticLockReservationRepository;
+    private final ReservationRepository reservationRepository;
 
     public Reservation createPessimisticLockReservation(
             User user,
@@ -32,8 +32,8 @@ public class PessimisticLockReservationWriter {
     ) {
         // 이미 해당 시간에 예약이 존재할 경우
         List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
-        List<Reservation> reservations = pessimisticLockReservationRepository.findByConditions(parkingZone, startDateTime, endDateTime, statusList);
-        if (!reservations.isEmpty()) {
+        boolean exists = reservationRepository.existsReservationByConditions(parkingZone, startDateTime, endDateTime, statusList);
+        if (exists) {
             throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED);
         }
 
@@ -46,6 +46,6 @@ public class PessimisticLockReservationWriter {
                 .price(price)
                 .build();
 
-        return pessimisticLockReservationRepository.save(reservation);
+        return reservationRepository.save(reservation);
     }
 }

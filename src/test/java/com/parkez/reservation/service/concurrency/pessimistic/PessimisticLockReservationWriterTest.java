@@ -1,11 +1,11 @@
-package com.parkez.reservation.service.jpaconcurrency.pessimistic;
+package com.parkez.reservation.service.concurrency.pessimistic;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
-import com.parkez.reservation.domain.repository.pessimistic.PessimisticLockReservationRepository;
+import com.parkez.reservation.domain.repository.ReservationRepository;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
 import org.junit.jupiter.api.Nested;
@@ -19,7 +19,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +31,7 @@ import static org.mockito.BDDMockito.given;
 class PessimisticLockReservationWriterTest {
 
     @Mock
-    private PessimisticLockReservationRepository pessimisticLockReservationRepository;
+    private ReservationRepository reservationRepository;
     @InjectMocks
     private PessimisticLockReservationWriter pessimisticLockReservationWriter;
 
@@ -109,9 +108,9 @@ class PessimisticLockReservationWriterTest {
 
             Reservation reservation = createReservation(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price);
 
-            given(pessimisticLockReservationRepository.findByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
-                    .willReturn(Collections.emptyList());
-            given(pessimisticLockReservationRepository.save(any(Reservation.class))).willReturn(reservation);
+            given(reservationRepository.existsReservationByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
+                    .willReturn(false);
+            given(reservationRepository.save(any(Reservation.class))).willReturn(reservation);
 
             // when
             Reservation result = pessimisticLockReservationWriter.createPessimisticLockReservation(user, parkingZone, parkingLotName, startDateTime, endDateTime, price);
@@ -145,9 +144,8 @@ class PessimisticLockReservationWriterTest {
             LocalDateTime startDateTime = LocalDateTime.now();
             LocalDateTime endDateTime = LocalDateTime.now().plusHours(1);
 
-            given(pessimisticLockReservationRepository.findByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
-                    .willReturn(List.of(createReservation(1L, user, parkingZone, parkingLotName, startDateTime, endDateTime, price)));
-
+            given(reservationRepository.existsReservationByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
+                    .willReturn(true);
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                     () -> pessimisticLockReservationWriter.createPessimisticLockReservation(user, parkingZone, parkingLotName, startDateTime, endDateTime, price));

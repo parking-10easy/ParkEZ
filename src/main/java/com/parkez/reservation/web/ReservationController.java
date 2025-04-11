@@ -9,7 +9,7 @@ import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.OwnerReservationResponse;
 import com.parkez.reservation.service.ReservationService;
-import com.parkez.reservation.service.jpaconcurrency.ReservationLockService;
+import com.parkez.reservation.service.concurrency.ReservationLockService;
 import com.parkez.user.domain.enums.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

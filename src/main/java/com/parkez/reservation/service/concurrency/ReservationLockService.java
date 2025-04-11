@@ -1,4 +1,4 @@
-package com.parkez.reservation.service.jpaconcurrency;
+package com.parkez.reservation.service.concurrency;
 
 import com.parkez.common.principal.AuthUser;
 import com.parkez.reservation.dto.request.ReservationRequest;

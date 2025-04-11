@@ -1,6 +1,7 @@
-package com.parkez.reservation.service.jpaconcurrency.pessimistic;
+package com.parkez.reservation.service.concurrency.pessimistic;
 
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.SourceType;
@@ -8,15 +9,18 @@ import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
 import com.parkez.reservation.domain.entity.Reservation;
-import com.parkez.reservation.domain.repository.pessimistic.PessimisticLockReservationRepository;
+import com.parkez.reservation.domain.repository.ReservationRepository;
+import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.domain.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -36,21 +40,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PessimisticLockReservationConcurrencyTest {
 
     @Autowired
-    private PessimisticLockReservationWriter pessimisticLockReservationWriter;
-    @Autowired
     private UserRepository userRepository;
     @Autowired
     private ParkingLotRepository parkingLotRepository;
     @Autowired
     private ParkingZoneRepository parkingZoneRepository;
     @Autowired
-    private PessimisticLockReservationRepository parkingZoneReservationRepository;
+    private ReservationRepository reservationRepository;
     @Autowired
-    private PessimisticLockReservationRepository pessimisticLockReservationRepository;
+    private PessimisticLockReservationService pessimisticLockReservationService;
 
-    private User createUser(String email) {
+    private User createUser() {
         return User.builder()
-                .email(email)
+                .email("test@example.com")
                 .password("Qwer123!")
                 .nickname("user")
                 .phone("010-1234-5678")
@@ -79,18 +81,33 @@ class PessimisticLockReservationConcurrencyTest {
                 .build();
     }
 
+    private ReservationRequest createRequest(Long parkingZoneId, LocalDateTime start, LocalDateTime end) {
+        ReservationRequest request = new ReservationRequest();
+        ReflectionTestUtils.setField(request, "parkingZoneId", parkingZoneId);
+        ReflectionTestUtils.setField(request, "startDateTime", start);
+        ReflectionTestUtils.setField(request, "endDateTime", end);
+        return request;
+    }
+
     @Test
     void 서로_다른_사용자가_동시에_예약을_시도하면_단_하나만_성공한다() throws InterruptedException {
         // given
-        User user = userRepository.save(createUser("user@example.com"));
+        User user = userRepository.save(createUser());
+        AuthUser authUser = AuthUser.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .roleName(UserRole.Authority.USER)
+                .nickname(user.getNickname())
+                .build();
 
         ParkingLot parkingLot = parkingLotRepository.save(createParkingLot(user));
         ParkingZone parkingZone = parkingZoneRepository.save(createParkingZone(parkingLot));
+        parkingZoneRepository.flush();
 
         LocalDateTime start = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         LocalDateTime end = start.plusHours(1);
-        long hours = ChronoUnit.HOURS.between(start, end);
-        BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+
+        ReservationRequest request = createRequest(parkingZone.getId(), start, end);
 
         int requestCount = 1000;
         ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -101,7 +118,8 @@ class PessimisticLockReservationConcurrencyTest {
         for (int i = 0; i < requestCount; i++) {
             executor.submit(() -> {
                 try {
-                    pessimisticLockReservationWriter.createPessimisticLockReservation(user, parkingZone, parkingLot.getName(), start, end, price);
+                    pessimisticLockReservationService.createReservation(authUser, request);
+                    log.info("[성공] 예약 요청 성공");
                 } catch (ParkingEasyException e) {
                     if (e.getErrorCode().equals(ReservationErrorCode.ALREADY_RESERVED)) {
                         log.warn(e.getMessage());
@@ -118,8 +136,9 @@ class PessimisticLockReservationConcurrencyTest {
         latch.await();
 
         // then
-        List<Reservation> result = pessimisticLockReservationRepository.findAll();
+        List<Reservation> result = reservationRepository.findAll();
         assertThat(result).hasSize(1);
+        System.out.println("성공 요청 수 : " + result.size());
         System.out.println("실패 요청 수 : " + failCount.get());
     }
 }
