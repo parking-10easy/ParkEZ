@@ -43,4 +43,8 @@ public class Review extends BaseEntity {
     public Long getReservationId() {
         return reservation.getId();
     }
+
+    public String getUserNickname() {
+        return user.getNickname();
+    }
 }

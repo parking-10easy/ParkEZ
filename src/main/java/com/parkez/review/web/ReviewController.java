@@ -42,5 +42,12 @@ public class ReviewController {
         return Response.fromPage(reviewService.getReviews(parkingLotId, pageRequest, sortType));
     }
 
+    @GetMapping("/v1/reviews/{reviewId}")
+    public Response<ReviewResponse> getReview(
+            @Parameter(description = "리뷰 ID (필수)", example = "1") @PathVariable Long reviewId
+    ) {
+        return Response.of(reviewService.getReview(reviewId));
+    }
+
 
 }

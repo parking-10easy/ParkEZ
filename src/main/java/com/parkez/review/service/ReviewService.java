@@ -37,4 +37,8 @@ public class ReviewService {
         parkingLotReader.validateExistence(parkingLotId);
         return reviewReader.getReviews(parkingLotId, pageRequest.getPage(), pageRequest.getSize(), sortType);
     }
+
+    public ReviewResponse getReview(Long reviewId) {
+        return ReviewResponse.from(reviewReader.getReviewById(reviewId));
+    }
 }

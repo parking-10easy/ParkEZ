@@ -1,9 +1,11 @@
 package com.parkez.review.service;
 
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.review.domain.entity.Review;
 import com.parkez.review.domain.repository.ReviewRepository;
 import com.parkez.review.dto.response.ReviewResponse;
 import com.parkez.review.enums.ReviewSortType;
+import com.parkez.review.exception.ReviewErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,5 +30,11 @@ public class ReviewReader {
         Page<Review> reviews = reviewRepository.findAllByParkingLotIdWithSort(parkingLotId, pageable, sortType);
 
         return reviews.map(ReviewResponse::from);
+    }
+
+    public Review getReviewById(Long reviewId) {
+        return reviewRepository.findActiveReviewById(reviewId).orElseThrow(
+                () -> new ParkingEasyException(ReviewErrorCode.REVIEW_NOT_FOUND)
+        );
     }
 }

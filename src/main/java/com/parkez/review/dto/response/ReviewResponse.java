@@ -18,6 +18,9 @@ public class ReviewResponse {
     @Schema(description = "예약 ID", example = "1")
     private final Long reservationId;
 
+    @Schema(description = "닉네임", example = "홍길동")
+    private final String nickName;
+
     @Schema(description = "별점", example = "5")
     private final Integer rating;
 
@@ -34,6 +37,7 @@ public class ReviewResponse {
         return new ReviewResponse(
                 review.getId(),
                 review.getReservationId(),
+                review.getUserNickname(),
                 review.getRating(),
                 review.getContent(),
                 review.getCreatedAt(),
