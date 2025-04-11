@@ -15,14 +15,21 @@ public interface ParkingZoneRepository extends JpaRepository<ParkingZone, Long> 
 
     @Query("""
            SELECT pz FROM ParkingZone pz
-           LEFT JOIN FETCH pz.parkingLot
+           LEFT JOIN FETCH pz.parkingLot pl
            WHERE pz.parkingLot.id = :parkingLotId
            AND pz.deletedAt IS NULL
            ORDER BY pz.modifiedAt DESC
        """)
     Page<ParkingZone> findAllByParkingLotIdOrderByModifiedAtDesc(Pageable pageable, @Param("parkingLotId") Long parkingLotId);
 
-    Optional<ParkingZone> findByIdAndDeletedAtIsNull(Long parkingZoneId);
+    @Query("""
+        SELECT pz FROM ParkingZone pz
+        JOIN FETCH pz.parkingLot pl
+        WHERE pz.id = :parkingZoneId
+        AND pz.deletedAt IS NULL
+        AND pl.deletedAt IS NULL
+    """)
+    Optional<ParkingZone> findByIdAndDeletedAtIsNull(@Param("parkingZoneId") Long parkingZoneId);
 
     @Query("""
         SELECT COUNT(pz) > 0 FROM ParkingZone pz

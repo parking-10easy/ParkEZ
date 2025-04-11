@@ -44,8 +44,7 @@ public class ParkingZoneController {
     @Operation(summary = "주차공간 다건 조회", description = "주차공간 다건 조회 기능입니다.")
     public Response<ParkingZoneResponse> getParkingZones(
             @ParameterObject PageRequest pageRequest,
-            @Parameter(description = "주차장 ID (필수)", example = "1")
-            @PathVariable Long parkingLotId
+            @Parameter(description = "주차장 ID (필수)", example = "1") @PathVariable Long parkingLotId
     ) {
         return Response.fromPage(parkingZoneService.getParkingZones(pageRequest, parkingLotId));
     }
@@ -53,7 +52,9 @@ public class ParkingZoneController {
     @Secured({UserRole.Authority.OWNER, UserRole.Authority.USER})
     @GetMapping("/v1/parking-zones/{parkingZoneId}")
     @Operation(summary = "주차공간 단건 조회", description = "주차공간 단건 조회 기능입니다.")
-    public Response<ParkingZoneResponse> getParkingZone(@PathVariable Long parkingZoneId) {
+    public Response<ParkingZoneResponse> getParkingZone(
+            @Parameter(description = "주차공간 ID (필수)", example = "1") @PathVariable Long parkingZoneId
+    ) {
         return Response.of(parkingZoneService.getParkingZone(parkingZoneId));
     }
 
@@ -61,7 +62,7 @@ public class ParkingZoneController {
     @Operation(summary = "주차공간 이름 수정", description = "주차공간 이름 수정 기능입니다.")
     public Response<Void> updateParkingZoneName(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
-            @PathVariable Long parkingZoneId,
+            @Parameter(description = "주차공간 ID (필수)", example = "1") @PathVariable Long parkingZoneId,
             @Valid @RequestBody ParkingZoneUpdateNameRequest request) {
         parkingZoneService.updateParkingZoneName(authUser, parkingZoneId, request);
         return Response.empty();
@@ -71,7 +72,7 @@ public class ParkingZoneController {
     @Operation(summary = "주차공간 상태 변경", description = "주차공간 상태 변경 기능입니다.")
     public Response<Void> updateParkingZoneStatus(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
-            @PathVariable Long parkingZoneId,
+            @Parameter(description = "주차공간 ID (필수)", example = "1") @PathVariable Long parkingZoneId,
             @Valid @RequestBody ParkingZoneUpdateStatusRequest request) {
         parkingZoneService.updateParkingZoneStatus(authUser, parkingZoneId, request);
         return Response.empty();
@@ -81,7 +82,7 @@ public class ParkingZoneController {
     @Operation(summary = "주차공간 이미지 수정", description = "주차공간 이미지 수정 기능입니다.")
     public Response<Void> updateParkingZoneImage(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
-            @PathVariable Long parkingZoneId,
+            @Parameter(description = "주차공간 ID (필수)", example = "1") @PathVariable Long parkingZoneId,
             @Valid @RequestBody ParkingZoneUpdateImageRequest request) {
         parkingZoneService.updateParkingZoneImage(authUser, parkingZoneId, request);
         return Response.empty();
@@ -91,7 +92,8 @@ public class ParkingZoneController {
     @Operation(summary = "주차공간 삭제", description = "주차공간 삭제 기능입니다.")
     public Response<Void> deleteParkingZone(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
-            @PathVariable Long parkingZoneId) {
+            @Parameter(description = "주차공간 ID (필수)", example = "1") @PathVariable Long parkingZoneId
+    ) {
         LocalDateTime deletedAt = LocalDateTime.now();
         parkingZoneService.deleteParkingZone(authUser, parkingZoneId, deletedAt);
         return Response.empty();
