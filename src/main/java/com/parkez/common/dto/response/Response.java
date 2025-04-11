@@ -1,4 +1,4 @@
-package com.parkez.common.response;
+package com.parkez.common.dto.response;
 
 import org.springframework.data.domain.Page;
 
