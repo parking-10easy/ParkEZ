@@ -12,7 +12,7 @@ import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.OwnerReservationResponse;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
-import com.parkez.reservation.service.jpaconcurrency.ReservationLockService;
+import com.parkez.reservation.service.concurrency.ReservationLockService;
 import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
