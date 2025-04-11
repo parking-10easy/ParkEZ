@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import java.util.Optional;
 
+import com.parkez.common.config.QueryDslConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 
 @DataJpaTest
-@Import(PersistenceConfig.class)
+@Import({PersistenceConfig.class, QueryDslConfig.class})
 @ActiveProfiles("test")
 class UserRepositoryTest {
 

@@ -2,17 +2,14 @@ package com.parkez.user.domain.entity;
 
 import com.parkez.common.entity.BaseDeleteEntity;
 import com.parkez.user.domain.enums.UserRole;
-
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Pattern;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-
-import org.springframework.util.StringUtils;
 
 @Entity
 @Getter
