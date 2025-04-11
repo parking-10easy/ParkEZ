@@ -3,7 +3,6 @@ package com.parkez.user.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Nested;
@@ -12,10 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.domain.repository.UserRepository;
 import com.parkez.user.exception.UserErrorCode;
@@ -30,137 +29,113 @@ class UserReaderTest {
 	private UserReader userReader;
 
 	@Nested
-	class Exist {
+	class ExistsUser {
 
 		@Test
-		public void 이메일_존재_시_true_반환() {
+		public void 이메일_role_loginType이_일치하는_유저가_존재하면_True를_반환한다() {
 			//given
 			String email = "test@example.com";
-			given(userRepository.existsByEmailAndRole(anyString(), any(UserRole.class))).willReturn(true);
+			given(userRepository.existsByEmailAndRoleAndLoginType(anyString(), any(UserRole.class), any(LoginType.class))).willReturn(true);
 			//when
-			boolean result = userReader.existByEmailAndRole(email, UserRole.ROLE_OWNER);
+			boolean result = userReader.existsUser(email, UserRole.ROLE_OWNER, LoginType.NORMAL);
 			//then
 			assertThat(result).isTrue();
 		}
 
 		@Test
-		public void 이메일_존재하지_않을_시_false_반환() {
+		public void 이메일_role_loginType이_일치하는_유저가_존재하지_않으면_False를_반환한다() {
 			//given
 			String email = "test@example.com";
-			given(userRepository.existsByEmailAndRole(anyString(), any(UserRole.class))).willReturn(false);
+			given(userRepository.existsByEmailAndRoleAndLoginType(anyString(), any(UserRole.class),any(LoginType.class))).willReturn(false);
 			//when
-			boolean result = userReader.existByEmailAndRole(email, UserRole.ROLE_OWNER);
+			boolean result = userReader.existsUser(email, UserRole.ROLE_OWNER, LoginType.NORMAL);
 			//then
 			assertThat(result).isFalse();
 		}
 	}
 
 	@Nested
-	class GetActiveByEmailAndRole {
+	class GetActiveUser {
 
 		@Test
-		public void 이메일_역할_일치_탈퇴하지않은_사용자_정상조회() {
+		public void 이메일_역할_로그인타입이_일치하고_삭제되지_않은_유저가_존재하면_유저를_반환한다() {
 			//given
 			String email = "test@example.com";
 			UserRole role = UserRole.ROLE_USER;
-			User user = User.builder()
-				.email(email)
-				.nickname("테스트 유저")
-				.phone("010-1234-5678")
-				.build();
-			ReflectionTestUtils.setField(user, "role", role);
-			ReflectionTestUtils.setField(user, "deletedAt", null); // 탈퇴 안 한 상태
-			given(userRepository.findByEmailAndRole(anyString(), any(UserRole.class))).willReturn(Optional.of(user));
+			LoginType loginType = LoginType.NORMAL;
+			User user = createActiveUser(email, role, loginType);
+
+			given(userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(anyString(), any(UserRole.class), any(
+				LoginType.class))).willReturn(Optional.of(user));
+
 			//when
-			User result = userReader.getActiveByEmailAndRole(email, role);
+			User result = userReader.getActiveUser(email, role, loginType);
+
 			//then
-			assertThat(result).isEqualTo(user);
+			assertThat(result).extracting(
+				"email","role","loginType","deletedAt"
+			).containsExactly(email,role,loginType,null);
 		}
 
 		@Test
-		public void 이메일_역할_일치하는_사용자_없으면_EMAIL_NOT_FOUND_예외() {
+		public void 이메일_역할_로그인타입이_일치하고_삭제되지_않은_유저가_존재하지_않으면_EMAIL_NOT_FOUND_예외() {
 			//given
 			String email = "test@example.com";
 			UserRole role = UserRole.ROLE_USER;
-			given(userRepository.findByEmailAndRole(anyString(), any(UserRole.class))).willReturn(Optional.empty());
+			LoginType loginType = LoginType.NORMAL;
+			given(userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(anyString(), any(UserRole.class), any(
+				LoginType.class))).willReturn(Optional.empty());
+
+
 			//when & then
-			assertThatThrownBy(() -> userReader.getActiveByEmailAndRole(email, role))
+			assertThatThrownBy(() -> userReader.getActiveUser(email, role, loginType))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessageContaining(UserErrorCode.EMAIL_NOT_FOUND.getDefaultMessage());
 		}
 
-		@Test
-		public void 이메일_역할_일치하지만_탈퇴한_사용자이면_USER_ALREADY_DELETED_예외() {
-			//given
-			String email = "test@example.com";
-			UserRole role = UserRole.ROLE_USER;
-			User user = User.builder()
+		private User createActiveUser(String email, UserRole role, LoginType loginType) {
+			return User.builder()
 				.email(email)
 				.nickname("테스트 유저")
 				.phone("010-1234-5678")
-				.build();
-			ReflectionTestUtils.setField(user, "role", role);
-			ReflectionTestUtils.setField(user, "deletedAt", LocalDateTime.now());
-			given(userRepository.findByEmailAndRole(anyString(), any(UserRole.class))).willReturn(Optional.of(user));
-			//when & then
-			assertThatThrownBy(() -> userReader.getActiveByEmailAndRole(email, role))
-				.isInstanceOf(ParkingEasyException.class)
-				.hasMessageContaining(UserErrorCode.USER_ALREADY_DELETED.getDefaultMessage());
+				.role(role)
+				.loginType(loginType)
+				.build()
+				;
 		}
 	}
 
 	@Nested
-	class GetActiveByIdAndRole {
+	class GetActiveUserById {
 
 		@Test
-		public void 아이디_역할_일치_탈퇴하지않은_사용자_정상조회() {
+		public void 아이디로_탈퇴하지_않은_유저를_조회하면_유저를_반환한다() {
 			//given
 			Long id = 1L;
-			UserRole role = UserRole.ROLE_USER;
 			User user = User.builder()
 				.nickname("테스트 유저")
 				.phone("010-1234-5678")
 				.build();
-			ReflectionTestUtils.setField(user, "id", id);
-			ReflectionTestUtils.setField(user, "role", role);
-			ReflectionTestUtils.setField(user, "deletedAt", null); // 탈퇴 안 한 상태
-			given(userRepository.findById(anyLong())).willReturn(Optional.of(user));
+
+			given(userRepository.findByIdAndDeletedAtIsNull(anyLong())).willReturn(Optional.of(user));
 			//when
-			User result = userReader.getActiveById(id);
+			User result = userReader.getActiveUserById(id);
 			//then
 			assertThat(result).isEqualTo(user);
 		}
 
 		@Test
-		public void 아이디_역할_일치하는_사용자_없으면_USER_NOT_FOUND_예외() {
+		public void 아이디로_탈퇴하지_않은_유저를_조회_탈퇴했거나_존재하지_않으면_USER_NOT_FOUND_예외발생() {
 			//given
 			Long id = 1L;
-			UserRole role = UserRole.ROLE_USER;
-			given(userRepository.findById(anyLong())).willReturn(Optional.empty());
+			given(userRepository.findByIdAndDeletedAtIsNull(anyLong())).willReturn(Optional.empty());
+
 			//when & then
-			assertThatThrownBy(() -> userReader.getActiveById(id))
+			assertThatThrownBy(() -> userReader.getActiveUserById(id))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessageContaining(UserErrorCode.USER_NOT_FOUND.getDefaultMessage());
 		}
 
-		@Test
-		public void 아이디_역할_일치하지만_탈퇴한_사용자이면_USER_ALREADY_DELETED_예외() {
-			//given
-			Long id = 1L;
-			UserRole role = UserRole.ROLE_USER;
-			User user = User.builder()
-				.nickname("테스트 유저")
-				.phone("010-1234-5678")
-				.build();
-			ReflectionTestUtils.setField(user, "id", id);
-			ReflectionTestUtils.setField(user, "role", role);
-			ReflectionTestUtils.setField(user, "deletedAt", LocalDateTime.now());
-			given(userRepository.findById(anyLong())).willReturn(Optional.of(user));
-			//when & then
-			assertThatThrownBy(() -> userReader.getActiveById(id))
-				.isInstanceOf(ParkingEasyException.class)
-				.hasMessageContaining(UserErrorCode.USER_ALREADY_DELETED.getDefaultMessage());
-		}
 	}
 
 }

@@ -37,7 +37,7 @@ public class ParkingLotService {
 
     // 주차장 생성
     public ParkingLotResponse createParkingLot(AuthUser authUser, ParkingLotRequest request) {
-        User user = userReader.getActiveById(authUser.getId());
+        User user = userReader.getActiveUserById(authUser.getId());
 
         ParkingLot parkingLot = ParkingLot.builder()
                 .owner(user)
