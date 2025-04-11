@@ -55,6 +55,8 @@ public class ParkingLotReader {
     private void checkParkingLotOwnership(Long userId, ParkingLot parkingLot) {
         if (!parkingLot.isOwned(userId)) {
             throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
+        }
+    }
 
     /* ParkingZone 도메인에서 필요한 메서드 - 특정 주차장 존재확인 메서드 */
     public void validateExistence(Long parkingLotId) {
