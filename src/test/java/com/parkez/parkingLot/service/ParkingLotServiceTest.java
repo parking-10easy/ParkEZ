@@ -1,4 +1,4 @@
-package com.parkez.parkingLot;
+package com.parkez.parkinglot.service;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
@@ -13,9 +13,6 @@ import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
-import com.parkez.parkinglot.service.ParkingLotReader;
-import com.parkez.parkinglot.service.ParkingLotService;
-import com.parkez.parkinglot.service.ParkingLotWriter;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
