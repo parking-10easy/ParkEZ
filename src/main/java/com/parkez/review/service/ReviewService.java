@@ -30,10 +30,14 @@ public class ReviewService {
         Reservation reservation = reservationReader.findReservation(authUser.getId(), request.getReservationId());
 
         boolean reviewWritten = reviewReader.isReviewWritten(request.getReservationId());
+        validateReviewWritten(reviewWritten);
+        return ReviewResponse.from(reviewWriter.createReview(reservation, request.getRating(), request.getContent()));
+    }
+
+    private void validateReviewWritten(boolean reviewWritten) {
         if (reviewWritten){
             throw new ParkingEasyException(ReviewErrorCode.ALREADY_REVIEWED);
         }
-        return ReviewResponse.from(reviewWriter.createReview(reservation, request.getRating(), request.getContent()));
     }
 
     public Page<ReviewResponse> getReviews(Long parkingLotId, PageRequest pageRequest, ReviewSortType sortType) {
@@ -55,7 +59,7 @@ public class ReviewService {
     public void deleteReview(AuthUser authUser, Long reviewId) {
         Review review = reviewReader.getReviewById(reviewId);
         validateOwner(authUser.getId(), review);
-        reviewWriter.deleteReviewById(review);
+        reviewWriter.deleteReview(review);
     }
 
     private void validateOwner(Long userId, Review review) {
