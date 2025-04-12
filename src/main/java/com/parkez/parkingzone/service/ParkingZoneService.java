@@ -6,7 +6,11 @@ import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
-import com.parkez.parkingzone.dto.request.*;
+import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
+import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
+import com.parkez.parkingzone.dto.request.ParkingZoneUpdateImageRequest;
+import com.parkez.parkingzone.dto.request.ParkingZoneUpdateNameRequest;
+import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -46,14 +50,15 @@ public class ParkingZoneService {
     public void updateParkingZoneName(AuthUser authUser, Long parkingZoneId, ParkingZoneUpdateNameRequest request) {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         validateOwner(parkingZone, authUser.getId());
-        parkingZone.updateParkingZone(request.getName());
+        parkingZone.updateParkingZoneName(request.getName());
     }
 
     @Transactional
     public void updateParkingZoneStatus(AuthUser authUser, Long parkingZoneId, ParkingZoneUpdateStatusRequest request) {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
+        ParkingZoneStatus newStatus = ParkingZoneStatus.from(request.getStatus());
         validateOwner(parkingZone, authUser.getId());
-        parkingZone.updateParkingZoneStatus(request.getStatus());
+        parkingZone.updateParkingZoneStatus(newStatus);
     }
 
     @Transactional

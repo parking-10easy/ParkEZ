@@ -96,7 +96,7 @@ class ParkingZoneServiceTest {
 
     private ParkingZoneUpdateStatusRequest getUpdateStatusRequest() {
         return ParkingZoneUpdateStatusRequest.builder()
-                .status(ParkingZoneStatus.UNAVAILABLE)
+                .status("UNAVAILABLE")
                 .build();
     }
     private ParkingZoneUpdateImageRequest getUpdateImageRequest() {
@@ -280,7 +280,7 @@ class ParkingZoneServiceTest {
             parkingZoneService.updateParkingZoneStatus(authUser, parkingZone.getId(), updateStatusRequest);
 
             // then
-            assertThat(parkingZone.getStatus()).isEqualTo(updateStatusRequest.getStatus());
+            assertThat(parkingZone.getStatus().name()).isEqualTo(updateStatusRequest.getStatus());
         }
 
         @Test

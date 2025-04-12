@@ -43,7 +43,7 @@ public class ParkingZone extends BaseDeleteEntity {
         this.reviewCount = 0;
     }
 
-    public void updateParkingZone(String name) {
+    public void updateParkingZoneName(String name) {
         this.name = name;
     }
 
