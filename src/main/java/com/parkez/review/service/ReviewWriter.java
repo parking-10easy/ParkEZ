@@ -30,7 +30,7 @@ public class ReviewWriter {
         return reviewRepository.save(review);
     }
 
-    public void deleteReviewById(Review review) {
+    public void deleteReview(Review review) {
         // 리뷰 수 감소
         Reservation reservation = review.getReservation();
         ParkingZone parkingZone = reservation.getParkingZone();
