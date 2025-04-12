@@ -62,7 +62,9 @@ public class ParkingLotService {
 
     // 주차장 다건 조회 (이름, 주소)
     public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(ParkingLotSearchRequest request, PageRequest pageRequest) {
-        return parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(), pageRequest.getPage(), pageRequest.getSize());
+        return parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(),
+                request.getUserLatitude(), request.getUserLongitude(), request.getRadiusInMeters(),
+                pageRequest.getPage(), pageRequest.getSize());
     }
 
     // 주차장 단건 조회

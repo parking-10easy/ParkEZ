@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface ParkingLotQueryDslRepository {
 
     // 주차장 다건 조회
-    Page<ParkingLot> searchParkingLotsByConditions(String name, String address, Pageable pageable);
+    Page<ParkingLot> searchParkingLotsByConditions(String name, String address, Double userLatitude, Double userLongitude, Integer radiusInMeters, Pageable pageable);
 
     // 주차장 단건 조회
     Optional<ParkingLot> searchParkingLotById(Long parkingLotId);

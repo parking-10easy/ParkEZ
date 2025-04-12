@@ -3,6 +3,8 @@ package com.parkez.parkinglot.domain.repository;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +26,15 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     private final JPAQueryFactory jpaQueryFactory;
 
     // 다건 조회
-    //TODO
+    //TODO : 리뷰 카운트 + 별점 + availableQuantity 추가
     @Override
-    public Page<ParkingLot> searchParkingLotsByConditions(String name, String address, Pageable pageable) {
+    public Page<ParkingLot> searchParkingLotsByConditions(String name, String address,
+                                                          Double userLatitude, Double userLongitude, Integer radiusInMeters, Pageable pageable) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(nameContains(name));
         builder.and(addressContains(address));
+        builder.and(withinRadius(userLatitude, userLongitude, radiusInMeters));
+        builder.and(parkingLot.address.isNotEmpty()); // TODO : 주소값이 비어있는 경우, 제외
         builder.and(parkingLot.deletedAt.isNull());
         List<ParkingLot> parkingLots = jpaQueryFactory
                 .selectFrom(parkingLot)
@@ -43,7 +48,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                 .from(parkingLot)
                 .where(builder);
 
-    return PageableExecutionUtils.getPage(parkingLots, pageable, countQuery::fetchOne);
+        return PageableExecutionUtils.getPage(parkingLots, pageable, countQuery::fetchOne);
     }
 
     // 단건 조회
@@ -58,7 +63,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     }
 
     // 소유한 주차장 조회
-    // TODO : 리뷰 + 썸네일 이미지
+    // TODO : 리뷰 카운트
     @Override
     public Page<ParkingLot> findMyParkingLots(Long userId, Pageable pageable) {
         BooleanExpression ownerMatches = parkingLot.owner.id.eq(userId);
@@ -72,7 +77,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        JPAQuery<Long>  countQuery = jpaQueryFactory
+        JPAQuery<Long> countQuery = jpaQueryFactory
                 .select(parkingLot.count())
                 .from(parkingLot)
                 .where(builder);
@@ -80,12 +85,29 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
         return PageableExecutionUtils.getPage(myParkingLots, pageable, countQuery::fetchOne);
     }
 
+    // 이름 조건
     private BooleanExpression nameContains(String name) {
         return StringUtils.hasText(name) ? parkingLot.name.contains(name) : null;
     }
 
+    // 주소 조건
     private BooleanExpression addressContains(String address) {
         return StringUtils.hasText(address) ? parkingLot.address.contains(address) : null;
+    }
+
+    // 범위 조건
+    private BooleanExpression withinRadius(Double userLatitude, Double userLongitude, Integer radiusInMeters) {
+        if (userLatitude == null || userLongitude == null || radiusInMeters == null) {
+            return null;
+        }
+        // 거리 계산
+        NumberExpression<Double> distance = Expressions.numberTemplate(
+                Double.class,
+                "ST_Distance_Sphere(POINT({0}, {1}), POINT({2}, {3}))",
+                parkingLot.longitude, parkingLot.latitude,
+                userLongitude, userLatitude
+        );
+        return distance.loe(radiusInMeters);
     }
 
 }
