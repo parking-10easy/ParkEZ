@@ -1,4 +1,4 @@
-package com.parkez.parkinglot.dto.response;
+package com.parkez.parkinglot.client.publicData;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;

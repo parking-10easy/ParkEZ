@@ -6,8 +6,8 @@ import com.parkez.parkinglot.domain.entity.ParkingLotImage;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.SourceType;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
-import com.parkez.parkinglot.dto.response.ParkingLotData;
-import com.parkez.parkinglot.dto.response.ParkingLotDataResponse;
+import com.parkez.parkinglot.client.publicData.ParkingLotData;
+import com.parkez.parkinglot.client.publicData.ParkingLotDataResponse;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.Getter;
@@ -23,6 +23,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -93,10 +94,7 @@ public class ParkingLotPublicDataService {
         BigDecimal bigDecimal = BigDecimal.ZERO;
         SourceType sourceType = SourceType.PUBLIC_DATA;
 
-        ParkingLotImage defaultImage = ParkingLotImage.builder()
-                .imageUrl(defaultParkingLotImageUrl)
-                .build();
-        List<ParkingLotImage> images = List.of();
+        List<ParkingLotImage> images = new ArrayList<>();
 
         String chargeTypeStr = data.getChargeType();
         ChargeType chargeType = "무료".equals(chargeTypeStr) ? ChargeType.FREE : ChargeType.PAID;
@@ -107,7 +105,7 @@ public class ParkingLotPublicDataService {
         ParkingLot parkingLot = ParkingLot.builder()
                 .owner(user)
                 .name(data.getName())
-                .address(data.getAddress()) // TODO : 주소 값이 없는 데이터도 있는데 어떻게 처리할지 생각/ 제외? 다른 값으로?
+                .address(data.getAddress())
                 .latitude(latitude)
                 .longitude(longitude)
                 .openedAt(openedAt)
@@ -120,7 +118,11 @@ public class ParkingLotPublicDataService {
                 .chargeType(chargeType)
                 .build();
 
+        ParkingLotImage defaultImage = ParkingLotImage.builder()
+                .imageUrl(defaultParkingLotImageUrl)
+                .build();
         defaultImage.updateParkingLot(parkingLot);
+        images.add(defaultImage);
 
         return parkingLot;
     }
