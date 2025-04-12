@@ -20,10 +20,6 @@ public class ReviewReader {
 
     private final ReviewRepository reviewRepository;
 
-    public boolean isReviewWritten(Long reservationId) {
-        return reviewRepository.existsByReservation_Id(reservationId);
-    }
-
     public Page<ReviewResponse> getReviews(Long parkingLotId, int page, int size, ReviewSortType sortType) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
@@ -36,5 +32,9 @@ public class ReviewReader {
         return reviewRepository.findActiveReviewById(reviewId).orElseThrow(
                 () -> new ParkingEasyException(ReviewErrorCode.REVIEW_NOT_FOUND)
         );
+    }
+
+    public boolean isReviewWritten(Long reservationId) {
+        return reviewRepository.existsByReservation_Id(reservationId);
     }
 }

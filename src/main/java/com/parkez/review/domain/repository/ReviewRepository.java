@@ -9,8 +9,6 @@ import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, Long>, ReviewQueryDslRepository {
 
-    boolean existsByReservation_Id(Long reservationId);
-
     @Query("""
         SELECT rv FROM Review rv
         JOIN FETCH rv.reservation r
@@ -21,5 +19,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long>, ReviewQue
           AND pl.deletedAt IS NULL
     """)
     Optional<Review> findActiveReviewById(@Param("reviewId") Long reviewId);
+
+    boolean existsByReservation_Id(Long reservationId);
 
 }
