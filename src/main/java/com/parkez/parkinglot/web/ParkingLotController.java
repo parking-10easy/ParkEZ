@@ -1,13 +1,10 @@
 package com.parkez.parkinglot.web;
 
 import com.parkez.common.dto.request.PageRequest;
+import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
-import com.parkez.common.dto.response.Response;
-import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
-import com.parkez.parkinglot.dto.request.ParkingLotRequest;
-import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
-import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
+import com.parkez.parkinglot.dto.request.*;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
@@ -121,12 +118,12 @@ public class ParkingLotController {
         return Response.empty();
     }
 
-    // 공공데이터 OpenAPI 호출용 임시 컨트롤러
-    @GetMapping("/api/public-data")
-    @Operation(summary = "공공데이터 OpenAPI 호출용 임시 컨트롤러")
-    public String getPublicData(){
-        parkingLotPublicDataService.getPublicDataFromApi();
-        return "호출 성공";
+    // TODO : 공공데이터 OpenAPI 호출용 임시 컨트롤러 -- > schedule 돌릴 예정으로 추후 삭제
+    @PostMapping("/api/public-data")
+    @Operation(summary = "공공데이터 OpenAPI 테스트용 저장 컨트롤러")
+    public Response<Void> savePublicData(){
+        parkingLotPublicDataService.fetchAndSavePublicData();
+        return Response.empty();
     }
 
 }
