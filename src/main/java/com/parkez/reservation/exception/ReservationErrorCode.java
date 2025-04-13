@@ -20,7 +20,11 @@ public enum ReservationErrorCode implements ErrorCode {
     // NOT_FOUND
     NOT_FOUND_RESERVATION(HttpStatus.NOT_FOUND, "RESERVATION_007", "예약이 존재하지 않습니다."),
     // UNAUTHORIZED
-    NOT_MY_RESERVATION(HttpStatus.UNAUTHORIZED, "RESERVATION_008", "예약한 사용자 본인이 아닙니다.")
+    NOT_MY_RESERVATION(HttpStatus.UNAUTHORIZED, "RESERVATION_008", "예약한 사용자 본인이 아닙니다."),
+    // DistributedLock
+    RESERVATION_LOCK_FAILED(HttpStatus.CONFLICT, "RESERVATION_009", "락 획득 실패"),
+    RESERVATION_LOCK_INTERRUPTED(HttpStatus.INTERNAL_SERVER_ERROR, "RESERVATION_010", "락 대기 중 인터럽트 발생"),
+    UNKNOWN_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "RESERVATION_UNKNOWN_ERROR", "예약 생성 중 알 수 없는 오류 발생");
     ;
 
     private final HttpStatus httpStatus;

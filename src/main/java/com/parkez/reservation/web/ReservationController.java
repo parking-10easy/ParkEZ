@@ -1,6 +1,7 @@
 package com.parkez.reservation.web;
 
 import com.parkez.common.dto.request.PageRequest;
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.common.dto.response.Response;
@@ -8,6 +9,7 @@ import com.parkez.reservation.domain.enums.LockStrategy;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.OwnerReservationResponse;
+import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.reservation.service.ReservationService;
 import com.parkez.reservation.service.concurrency.ReservationLockService;
 import com.parkez.user.domain.enums.UserRole;
@@ -41,7 +43,14 @@ public class ReservationController {
             @Valid @RequestBody ReservationRequest request
     ) {
         ReservationLockService service = reservationLockServiceMap.get(strategy.name().toLowerCase());
-        return Response.of(service.createReservation(authUser, request));
+        try {
+            return Response.of(service.createReservation(authUser, request));
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // 인터럽트 상태 복구
+            throw new ParkingEasyException(ReservationErrorCode.RESERVATION_LOCK_INTERRUPTED);
+        }
+
     }
 
     // 나의 예약 내역 조회

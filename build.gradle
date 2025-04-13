@@ -72,6 +72,10 @@ dependencies {
     // aws s3
     implementation platform('software.amazon.awssdk:bom:2.31.2')
     implementation 'software.amazon.awssdk:s3'
+
+    // redis & redisson
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.37.0'
 }
 
 clean {
