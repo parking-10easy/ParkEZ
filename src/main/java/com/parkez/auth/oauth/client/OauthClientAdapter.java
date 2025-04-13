@@ -4,6 +4,10 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.parkez.auth.exception.AuthErrorCode;
+import com.parkez.auth.oauth.enums.OAuthProvider;
+import com.parkez.common.exception.ParkingEasyException;
+
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -12,11 +16,11 @@ public class OauthClientAdapter {
 
 	private final List<OAuthClient> OAuthClients;
 
-	public OAuthClient getClient(String providerName) {
+	public OAuthClient getClient(OAuthProvider provider) {
 		return OAuthClients.stream()
-			.filter(client -> client.supports(providerName))
+			.filter(client -> client.supports(provider))
 			.findFirst()
-			.orElseThrow(() -> new IllegalArgumentException("지원하지 않는 소셜 로그인입니다."));
+			.orElseThrow(() -> new ParkingEasyException(AuthErrorCode.INVALID_OAUTH_PROVIDER));
 	}
 
 }

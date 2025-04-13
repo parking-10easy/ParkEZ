@@ -1,5 +1,7 @@
 package com.parkez.auth.oauth.dto.response;
 
+import com.parkez.auth.oauth.enums.OAuthProvider;
+
 import lombok.Builder;
 import lombok.Getter;
 
@@ -8,22 +10,22 @@ public class OAuthUserInfo {
 	private final Long id;
 	private final String email;
 	private final String nickname;
-	private final String providerName;
+	private final OAuthProvider provider;
 
 	@Builder
-	private OAuthUserInfo(Long id, String email, String nickname, String providerName) {
+	private OAuthUserInfo(Long id, String email, String nickname, OAuthProvider provider) {
 		this.id = id;
 		this.email = email;
 		this.nickname = nickname;
-		this.providerName = providerName;
+		this.provider = provider;
 	}
 
-	public static OAuthUserInfo of(KakaoUserInfoResponse kakaoUserInfoResponse, String providerName) {
+	public static OAuthUserInfo of(KakaoUserInfoResponse kakaoUserInfoResponse, OAuthProvider provider) {
 		return OAuthUserInfo.builder()
 			.id(kakaoUserInfoResponse.getId())
 			.email(kakaoUserInfoResponse.getEmail())
 			.nickname(kakaoUserInfoResponse.getNickname())
-			.providerName(providerName)
+			.provider(provider)
 			.build();
 	}
 

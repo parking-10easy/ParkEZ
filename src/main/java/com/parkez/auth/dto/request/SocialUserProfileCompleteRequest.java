@@ -15,4 +15,11 @@ public class SocialUserProfileCompleteRequest {
 	@Schema(description = "전화번호", example = "010-1234-5678")
 	private String phone;
 
+	public SocialUserProfileCompleteRequest() {
+	}
+
+	@Builder
+	private SocialUserProfileCompleteRequest(String phone) {
+		this.phone = phone;
+	}
 }

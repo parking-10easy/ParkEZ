@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -34,5 +35,16 @@ public class SocialOwnerProfileCompleteRequest {
 	@Schema(description = "예금주명", example = "홍길동")
 	private String depositorName;
 
+	public SocialOwnerProfileCompleteRequest() {
+	}
 
+	@Builder
+	private SocialOwnerProfileCompleteRequest(String phone, String businessNumber, String bankName, String bankAccount,
+		String depositorName) {
+		this.phone = phone;
+		this.businessNumber = businessNumber;
+		this.bankName = bankName;
+		this.bankAccount = bankAccount;
+		this.depositorName = depositorName;
+	}
 }

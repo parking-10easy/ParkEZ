@@ -2,6 +2,9 @@ package com.parkez.auth.oauth.enums;
 
 import java.util.Arrays;
 
+import com.parkez.auth.exception.AuthErrorCode;
+import com.parkez.common.exception.ParkingEasyException;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -9,17 +12,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum OAuthProvider {
 
-	KAKAO("kakao"),
-	GOOGLE("google"),
-	NAVER("naver");
-
-	private final String description;
+	KAKAO,
+	GOOGLE,
+	NAVER;
 
 	public static OAuthProvider from(String providerName) {
 		return Arrays.stream(OAuthProvider.values())
-			.filter(oAuthProvider -> oAuthProvider.description.equalsIgnoreCase(providerName))
+			.filter(oAuthProvider -> oAuthProvider.name().equalsIgnoreCase(providerName))
 			.findFirst()
-			.orElseThrow(()->new IllegalArgumentException("Unknown OAuth Provider: " + providerName));
+			.orElseThrow(()->new ParkingEasyException(AuthErrorCode.INVALID_OAUTH_PROVIDER));
 	}
 
 }

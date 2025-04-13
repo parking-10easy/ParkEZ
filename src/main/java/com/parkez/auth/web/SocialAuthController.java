@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.parkez.auth.dto.request.SocialLoginCallbackRequest;
 import com.parkez.auth.dto.request.SocialOwnerProfileCompleteRequest;
 import com.parkez.auth.dto.request.SocialUserProfileCompleteRequest;
+import com.parkez.auth.dto.response.SocialSignupCompleteResponse;
 import com.parkez.auth.dto.response.TokenResponse;
+import com.parkez.auth.oauth.enums.OAuthProvider;
 import com.parkez.auth.service.SocialAuthService;
 import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
@@ -38,7 +40,7 @@ public class SocialAuthController {
 	@Secured({USER})
 	@Operation(summary = "소셜 일반 사용자 추가정보 입력", description = "소셜 로그인 후 추가정보를 입력하여 일반 사용자 회원가입을 완료합니다.")
 	@PostMapping("/v1/auth/signup/social/user/complete")
-	public Response<TokenResponse> completeUserSignup(
+	public Response<SocialSignupCompleteResponse> completeUserSignup(
 		@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
 		@Valid @RequestBody SocialUserProfileCompleteRequest request) {
 		return Response.of(socialAuthService.completeUserSignup(authUser, request));
@@ -47,7 +49,7 @@ public class SocialAuthController {
 	@Secured(value = OWNER)
 	@Operation(summary = "소셜 오너 추가정보 입력", description = "소셜 로그인 후 추가정보를 입력하여 오너 회원가입을 완료합니다.")
 	@PostMapping("/v1/auth/signup/social/owner/complete")
-	public Response<TokenResponse> completeOwnerSignup(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
+	public Response<SocialSignupCompleteResponse> completeOwnerSignup(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,
 		@Valid @RequestBody SocialOwnerProfileCompleteRequest request) {
 		return Response.of(socialAuthService.completeOwnerSignup(authUser, request));
 	}
@@ -56,7 +58,7 @@ public class SocialAuthController {
 	@Operation(summary = "소셜 로그인 콜백", description = "소셜 로그인 후 인가 코드를 받아 토큰을 발급받습니다.")
 	@GetMapping("/v1/auth/{provider}/callback")
 	public Response<TokenResponse> socialLoginUser(
-		@PathVariable("provider") String provider,
+		@PathVariable("provider") OAuthProvider provider,
 		@Valid @ParameterObject SocialLoginCallbackRequest request) {
 		return Response.of(socialAuthService.login(provider, request.getCode(), request.getState()));
 	}

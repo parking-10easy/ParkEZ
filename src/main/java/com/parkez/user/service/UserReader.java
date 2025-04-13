@@ -1,5 +1,7 @@
 package com.parkez.user.service;
 
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
@@ -34,6 +36,10 @@ public class UserReader {
 			() -> new ParkingEasyException(UserErrorCode.USER_NOT_FOUND)
 		);
 
+	}
+
+	public Optional<User> findActiveUser(String email, UserRole role, LoginType loginType) {
+		return userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(email, role,loginType);
 	}
 
 }

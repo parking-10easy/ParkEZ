@@ -1,5 +1,8 @@
 package com.parkez.auth.oauth.client;
 
+import static com.parkez.auth.authentication.jwt.JwtProvider.*;
+import static org.springframework.http.MediaType.*;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -7,14 +10,19 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.parkez.auth.authentication.jwt.JwtProvider;
+import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.auth.oauth.config.KakaoProperties;
 import com.parkez.auth.oauth.dto.response.KakaoTokenResponse;
 import com.parkez.auth.oauth.dto.response.KakaoUserInfoResponse;
 import com.parkez.auth.oauth.dto.response.OAuthUserInfo;
 import com.parkez.auth.oauth.enums.OAuthProvider;
+import com.parkez.common.exception.ParkingEasyException;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class KakaoClient implements OAuthClient {
@@ -29,15 +37,15 @@ public class KakaoClient implements OAuthClient {
 
 
 	@Override
-	public boolean supports(String providerName) {
-		return OAuthProvider.from(providerName) == OAuthProvider.KAKAO;
+	public boolean supports(OAuthProvider provider) {
+		return provider == OAuthProvider.KAKAO;
 	}
 
 	private String getAccessToken(String code) {
 		// TODO 리팩토링 예정
 		return webClient.post()
-			.uri("https://kauth.kakao.com/oauth/token")
-			.header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded;charset=utf-8")
+			.uri(kakaoProperties.getTokenUri())
+			.header(HttpHeaders.CONTENT_TYPE, APPLICATION_FORM_URLENCODED_VALUE)
 			.body(
 				BodyInserters.fromFormData("grant_type", kakaoProperties.getAuthorizationGrantType())
 					.with("client_id", kakaoProperties.getClientId())
@@ -49,31 +57,38 @@ public class KakaoClient implements OAuthClient {
 			.onStatus(
 				httpStatus -> httpStatus.is4xxClientError() || httpStatus.is5xxServerError(),
 				clientResponse -> clientResponse.bodyToMono(String.class)
-					.map(errorBody -> new IllegalStateException("카카오 토큰 발급 실패: " + errorBody))
+					.flatMap(errorBody ->  {
+						log.error("카카오 OAuth 토큰 발급 실패. 서버 응답: {}", errorBody);
+						return Mono.error(new ParkingEasyException(AuthErrorCode.OAUTH_ACCESS_TOKEN_FAILED));
+					})
 			)
 			.bodyToMono(KakaoTokenResponse.class)
 			.blockOptional()
 			.map(KakaoTokenResponse::getAccessToken)
-			.orElseThrow(() -> new IllegalStateException("카카오 토큰 발급 실패"));
+			.orElseThrow(() -> new ParkingEasyException(AuthErrorCode.OAUTH_ACCESS_TOKEN_FAILED));
 	}
 
 	private OAuthUserInfo getUserInfo(String accessToken) {
+		String authorizationHeader = String.format("%s%s", BEARER_PREFIX, accessToken);
 
 		KakaoUserInfoResponse kakaoUserInfoResponse = webClient.post()
-			.uri("https://kapi.kakao.com/v2/user/me")
-			.header(HttpHeaders.AUTHORIZATION, JwtProvider.BEARER_PREFIX + accessToken)
+			.uri(kakaoProperties.getUserInfoUri())
+			.header(HttpHeaders.AUTHORIZATION, authorizationHeader)
 			.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
 			.retrieve()
 			.onStatus(
 				httpStatus -> httpStatus.is4xxClientError() || httpStatus.is5xxServerError(),
 				clientResponse -> clientResponse.bodyToMono(String.class)
-					.map(errorBody -> new IllegalStateException("카카오 토큰 발급 실패: " + errorBody))
+					.flatMap(errorBody -> {
+						log.error("카카오 OAuth 유저 정보 요청 실패. 서버 응답: {}", errorBody);
+						return Mono.error(new ParkingEasyException(AuthErrorCode.OAUTH_USERINFO_FAILED));
+					})
 			)
 			.bodyToMono(KakaoUserInfoResponse.class)
 			.blockOptional()
-			.orElseThrow(() -> new IllegalStateException("카카오 사용자 정보 요청 실패"));
+			.orElseThrow(() -> new ParkingEasyException(AuthErrorCode.OAUTH_USERINFO_FAILED));
 
-		return OAuthUserInfo.of(kakaoUserInfoResponse, kakaoProperties.getClientName());
+		return OAuthUserInfo.of(kakaoUserInfoResponse,OAuthProvider.KAKAO);
 	}
 
 }

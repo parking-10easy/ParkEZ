@@ -12,18 +12,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum LoginType {
 
-	NORMAL("normal","일반"),
-	GOOGLE("google","구글"),
-	KAKAO("kakao","카카오"),
-	NAVER("naver","네이버")
+	NORMAL,
+	GOOGLE,
+	KAKAO,
+	NAVER
 	;
 
-	private final String providerName;
-	private final String description;
-
-	public static LoginType of(String providerName) {
+	public static LoginType from(String providerName) {
 		return Arrays.stream(values())
-			.filter(loginType -> loginType.providerName.equalsIgnoreCase(providerName))
+			.filter(loginType -> loginType.name().equalsIgnoreCase(providerName))
 			.findFirst()
 			.orElseThrow(() -> new ParkingEasyException(AuthErrorCode.INVALID_LOGIN_TYPE));
 	}
