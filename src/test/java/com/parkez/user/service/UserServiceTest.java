@@ -347,7 +347,7 @@ class UserServiceTest {
 				.newPassword(newPassword)
 				.build();
 			//when & then
-			Assertions.assertThatThrownBy(()->userService.changePassword(userId, request))
+			Assertions.assertThatThrownBy(() -> userService.changePassword(userId, request))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessage(AuthErrorCode.INVALID_PASSWORD.getDefaultMessage());
 		}
@@ -370,7 +370,7 @@ class UserServiceTest {
 				.newPassword(newPassword)
 				.build();
 			//when & then
-			Assertions.assertThatThrownBy(()->userService.changePassword(userId, request))
+			Assertions.assertThatThrownBy(() -> userService.changePassword(userId, request))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessage(UserErrorCode.USER_PASSWORD_SAME_AS_OLD.getDefaultMessage());
 		}
