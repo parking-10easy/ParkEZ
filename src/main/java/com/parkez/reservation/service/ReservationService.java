@@ -40,19 +40,19 @@ public class ReservationService implements ReservationLockService {
     public MyReservationResponse createReservation(AuthUser authUser, ReservationRequest request) {
 
         User user = userReader.getActiveById(authUser.getId());
-        ParkingZone parkingZone = parkingZoneReader.findById(request.getParkingZoneId());
+        ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
 
         // 요금 계산
         long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
         if (hours <= 0) {
             throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
         }
-        BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+        BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
         Reservation reservation = reservationWriter.createReservation(
                 user,
                 parkingZone,
-                parkingZone.extractParkingLotName(),
+                parkingZone.getParkingLotName(),
                 request.getStartDateTime(),
                 request.getEndDateTime(),
                 price
@@ -86,13 +86,8 @@ public class ReservationService implements ReservationLockService {
 
     public Page<OwnerReservationResponse> getOwnerReservations(AuthUser authUser, Long parkingZoneId, int page, int size) {
 
-        // 조회하려는 주차공간이 없는 주차공간일 경우 예외
-        if (!parkingZoneReader.existsById(parkingZoneId)) {
-            throw new ParkingEasyException(ReservationErrorCode.NOT_FOUND_PARKING_ZONE);
-        }
-
+        ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         // 조회하려는 주차공간이 본인 소유의 주차공간이 아닐 경우 예외
-        ParkingZone parkingZone = parkingZoneReader.findById(parkingZoneId);
         if (!parkingZone.getParkingLot().isOwned(authUser.getId())) {
             throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
         }

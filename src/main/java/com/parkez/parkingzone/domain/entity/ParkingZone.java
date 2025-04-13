@@ -1,6 +1,6 @@
 package com.parkez.parkingzone.domain.entity;
 
-import com.parkez.common.entity.BaseEntity;
+import com.parkez.common.entity.BaseDeleteEntity;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import jakarta.persistence.*;
@@ -10,13 +10,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Table(name = "parking_zone")
-public class ParkingZone extends BaseEntity {
+public class ParkingZone extends BaseDeleteEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,6 +24,7 @@ public class ParkingZone extends BaseEntity {
     @JoinColumn(name = "parking_lot_id", nullable = false)
     private ParkingLot parkingLot;
 
+    @Column(nullable = false)
     private String name;
 
     private String imageUrl;
@@ -34,25 +34,38 @@ public class ParkingZone extends BaseEntity {
 
     private int reviewCount;
 
-    private LocalDateTime deletedAt;
-
     @Builder
     private ParkingZone(ParkingLot parkingLot,
                         String name,
-                        String imageUrl,
-                        ParkingZoneStatus status) {
+                        String imageUrl) {
         this.parkingLot = parkingLot;
         this.name = name;
         this.imageUrl = imageUrl;
-        this.status = status;
+        this.status = ParkingZoneStatus.AVAILABLE;
         this.reviewCount = 0;
     }
 
-    public String extractParkingLotName() {
+    public void updateParkingZoneName(String name) {
+        this.name = name;
+    }
+
+    public void updateParkingZoneStatus(ParkingZoneStatus status) {
+        this.status = status;
+    }
+
+    public void updateParkingZoneImage(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public Long getParkingLotId() {
+        return parkingLot.getId();
+    }
+
+    public String getParkingLotName() {
         return this.parkingLot.getName();
     }
 
-    public BigDecimal extractParkingLotPricePerHour() {
+    public BigDecimal getParkingLotPricePerHour() {
         return this.parkingLot.getPricePerHour();
     }
 }

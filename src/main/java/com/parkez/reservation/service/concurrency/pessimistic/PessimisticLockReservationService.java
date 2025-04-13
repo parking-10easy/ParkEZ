@@ -38,12 +38,12 @@ public class PessimisticLockReservationService implements ReservationLockService
         if (hours <= 0) {
             throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
         }
-        BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+        BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
         Reservation reservation = pessimisticLockReservationWriter.createPessimisticLockReservation(
                 user,
                 parkingZone,
-                parkingZone.extractParkingLotName(),
+                parkingZone.getParkingLotName(),
                 request.getStartDateTime(),
                 request.getEndDateTime(),
                 price

@@ -86,7 +86,7 @@ class PessimisticLockReservationServiceTest {
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
-                .parkingLotName(parkingZone.extractParkingLotName())
+                .parkingLotName(parkingZone.getParkingLotName())
                 .startDateTime(request.getStartDateTime())
                 .endDateTime(request.getEndDateTime())
                 .price(price)
@@ -127,7 +127,7 @@ class PessimisticLockReservationServiceTest {
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
             long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
-            BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+            BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
             Reservation reservation = createReservation(reservationId, user, parkingZone, request, price);
 
