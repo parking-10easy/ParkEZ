@@ -1,5 +1,8 @@
 package com.parkez.parkingzone.domain.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -12,4 +15,13 @@ public enum ParkingZoneStatus {
 
     private final String description;
 
+    @JsonCreator
+    public static ParkingZoneStatus from(String value) {
+        for (ParkingZoneStatus status : values()) {
+            if (status.name().equalsIgnoreCase(value)) {
+                return status;
+            }
+        }
+        throw new ParkingEasyException(ParkingZoneErrorCode.INVALID_PARKING_ZONE_STATUS);
+    }
 }

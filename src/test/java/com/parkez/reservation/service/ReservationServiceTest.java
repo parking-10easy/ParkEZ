@@ -5,6 +5,7 @@ import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
@@ -109,7 +110,7 @@ class ReservationServiceTest {
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
-                .parkingLotName(parkingZone.extractParkingLotName())
+                .parkingLotName(parkingZone.getParkingLotName())
                 .startDateTime(request.getStartDateTime())
                 .endDateTime(request.getEndDateTime())
                 .price(price)
@@ -122,7 +123,7 @@ class ReservationServiceTest {
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
-                .parkingLotName(parkingZone.extractParkingLotName())
+                .parkingLotName(parkingZone.getParkingLotName())
                 .build();
         ReflectionTestUtils.setField(reservation, "id", id);
         return reservation;
@@ -160,12 +161,12 @@ class ReservationServiceTest {
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
             long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
-            BigDecimal price = parkingZone.extractParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+            BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
             Reservation reservation = createReservation(reservationId, user, parkingZone, request, price);
 
             given(userReader.getActiveById(anyLong())).willReturn(user);
-            given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
             given(reservationWriter.createReservation(any(User.class), any(ParkingZone.class), anyString(), any(LocalDateTime.class), any(LocalDateTime.class), any(BigDecimal.class)))
                     .willReturn(reservation);
 
@@ -202,7 +203,7 @@ class ReservationServiceTest {
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
             given(userReader.getActiveById(anyLong())).willReturn(user);
-            given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
@@ -374,8 +375,7 @@ class ReservationServiceTest {
 
                 Page<Reservation> pageMyReservations = new PageImpl<>(List.of(reservation));
 
-                given(parkingZoneReader.existsById(anyLong())).willReturn(true);
-                given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
+                given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
                 given(reservationReader.findOwnerReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
 
                 // when
@@ -414,8 +414,7 @@ class ReservationServiceTest {
 
                 Page<Reservation> pageMyReservations = new PageImpl<>(List.of(reservation));
 
-                given(parkingZoneReader.existsById(anyLong())).willReturn(true);
-                given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
+                given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
                 given(reservationReader.findOwnerReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
 
                 // when
@@ -431,7 +430,7 @@ class ReservationServiceTest {
             }
 
             @Test
-            void 특정_주차공간에_대한_예약_내역_조회_시_주차공간이_없을_경우_NOT_FOUND_PARKING_ZONE_예외_처리() {
+            void 특정_주차공간에_대한_예약_내역_조회_시_주차공간이_없을_경우_PARKING_ZONE_NOT_FOUND_예외_처리() {
                 // given
                 Long ownerId = 1L;
                 Long parkingZoneId = -1L;
@@ -440,12 +439,12 @@ class ReservationServiceTest {
 
                 AuthUser authOwner = createAuthOwner(ownerId);
 
-                given(parkingZoneReader.existsById(anyLong())).willReturn(false);
+                given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willThrow(new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND));
 
                 // when & then
                 ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                         () -> reservationService.getOwnerReservations(authOwner, parkingZoneId, page, size));
-                assertEquals(ReservationErrorCode.NOT_FOUND_PARKING_ZONE, exception.getErrorCode());
+                assertEquals(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND, exception.getErrorCode());
             }
 
             @Test
@@ -466,8 +465,7 @@ class ReservationServiceTest {
 
                 ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
-                given(parkingZoneReader.existsById(anyLong())).willReturn(true);
-                given(parkingZoneReader.findById(anyLong())).willReturn(parkingZone);
+                given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
 
                 // when & then
                 ParkingEasyException exception = assertThrows(ParkingEasyException.class,

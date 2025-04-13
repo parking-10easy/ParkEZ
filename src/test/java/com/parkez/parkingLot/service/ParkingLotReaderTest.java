@@ -1,4 +1,4 @@
-package com.parkez.parkingLot;
+package com.parkez.parkinglot.service;
 
 import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.exception.ParkingEasyException;
@@ -7,7 +7,6 @@ import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
-import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import org.junit.jupiter.api.Nested;
@@ -26,9 +25,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +51,16 @@ public class ParkingLotReaderTest {
                 .build();
         ReflectionTestUtils.setField(ownerUser, "id", 1L);
         return ownerUser;
+    }
+
+    private User getOwnerUser2() {
+        User owner2 = User.builder()
+                .email("owner2@test.com")
+                .nickname("테스트 소유자2")
+                .role(UserRole.ROLE_OWNER)
+                .build();
+        ReflectionTestUtils.setField(owner2, "id", 2L);
+        return owner2;
     }
 
     private ParkingLot getParkingLot1() {
@@ -296,8 +306,47 @@ public class ParkingLotReaderTest {
             // then
             assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
         }
+
+        @Test
+        void 특정_주차장의_소유자_본인이_아니면_NOT_PARKING_LOT_OWNER_예외가_발생한다() {
+            // given
+            User nonOwner = getOwnerUser2();
+            ParkingLot parkingLot = mock(ParkingLot.class);
+
+            when(parkingLotRepository.findByIdAndDeletedAtIsNull(anyLong()))
+                    .thenReturn(Optional.of(parkingLot));
+            when(parkingLot.isOwned(anyLong())).thenReturn(false);
+
+            // when & then
+            assertThatThrownBy(() -> parkingLotReader.getOwnedParkingLot(nonOwner.getId(), parkingLot.getId()))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasMessage(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER.getDefaultMessage());
+        }
     }
 
-    // TODO getActiveParkingLot 테스트
-    // TODO validateExistence 테스트
+    @Nested
+    class ValidateExistence {
+        @Test
+        void 특정_주차장이_존재하면_예외가_발생하지_않는다() {
+            // given
+            Long validParkingLotId = 1L;
+            when(parkingLotRepository.existsByIdAndDeletedAtIsNull(anyLong())).thenReturn(true);
+
+            // when & then
+            assertThatCode(() -> parkingLotReader.validateExistence(validParkingLotId))
+                    .doesNotThrowAnyException();
+        }
+
+        @Test
+        void 특정_주차장이_존재하지_않으면_NOT_FOUND_예외가_발생한다() {
+            // given
+            Long invalidParkingLotId = -1L;
+            when(parkingLotRepository.existsByIdAndDeletedAtIsNull(anyLong())).thenReturn(false);
+
+            // when & then
+            assertThatThrownBy(() -> parkingLotReader.validateExistence(invalidParkingLotId))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasMessage(ParkingLotErrorCode.NOT_FOUND.getDefaultMessage());
+        }
+    }
 }
