@@ -29,9 +29,6 @@ class UserRepositoryTest {
 	@Autowired
 	private UserRepository userRepository;
 
-	@Autowired
-	private EntityManager em;
-
 
 	@Nested
 	class ExistsByEmailAndRoleAndLoginType {
@@ -161,10 +158,9 @@ class UserRepositoryTest {
 				.loginType(LoginType.NORMAL)
 				.status(UserStatus.COMPLETED)
 				.build();
+			user.softDelete("탈퇴한_유저", LocalDateTime.now());
 			User savedUser = userRepository.save(user);
-			savedUser.softDelete("탈퇴한_유저", LocalDateTime.now());
-			em.flush();
-			em.clear();
+
 			// when
 			Optional<User> result = userRepository.findByIdAndDeletedAtIsNull(savedUser.getId());
 
@@ -174,8 +170,11 @@ class UserRepositoryTest {
 
 		@Test
 		void 아이디로_삭제되지_않은_유저_조회_존재하지_않으면_empty를_반환한다() {
+			//given
+			Long userId = -1L;
+
 			// when
-			Optional<User> result = userRepository.findByIdAndDeletedAtIsNull(-1L);
+			Optional<User> result = userRepository.findByIdAndDeletedAtIsNull(userId);
 
 			// then
 			assertThat(result).isNotPresent();
