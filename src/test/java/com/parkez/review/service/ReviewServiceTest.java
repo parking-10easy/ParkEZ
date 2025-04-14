@@ -138,7 +138,7 @@ class ReviewServiceTest {
             Review review = getReview();
             ReviewCreateRequest createRequest = getCreateRequest();
 
-            when(reservationReader.findReservation(anyLong(),anyLong())).thenReturn(reservation);
+            when(reservationReader.findMyReservation(anyLong(),anyLong())).thenReturn(reservation);
             when(reviewReader.isReviewWritten(anyLong())).thenReturn(false);
             when(reviewWriter.createReview(any(Reservation.class), anyInt(), anyString())).thenReturn(review);
 
@@ -157,7 +157,7 @@ class ReviewServiceTest {
             ReviewCreateRequest createRequest = getCreateRequest();
             Reservation reservation = getReservation();
 
-            given(reservationReader.findReservation(anyLong(), anyLong())).willReturn(reservation);
+            given(reservationReader.findMyReservation(anyLong(), anyLong())).willReturn(reservation);
             given(reviewReader.isReviewWritten(anyLong())).willReturn(true);
 
             // when & then

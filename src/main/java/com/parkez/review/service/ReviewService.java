@@ -27,7 +27,7 @@ public class ReviewService {
     private final ParkingLotReader parkingLotReader;
 
     public ReviewResponse createReview(AuthUser authUser, ReviewCreateRequest request) {
-        Reservation reservation = reservationReader.findReservation(authUser.getId(), request.getReservationId());
+        Reservation reservation = reservationReader.findMyReservation(authUser.getId(), request.getReservationId());
 
         boolean reviewWritten = reviewReader.isReviewWritten(request.getReservationId());
         validateReviewWritten(reviewWritten);
