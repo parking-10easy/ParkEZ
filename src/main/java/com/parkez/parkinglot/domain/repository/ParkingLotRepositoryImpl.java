@@ -31,7 +31,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     private final JPAQueryFactory jpaQueryFactory;
 
     // 다건 조회
-    //TODO : 리뷰 카운트 + 평점
+    //TODO : 리뷰 카운트 + 평점 + 정렬 기준
     @Override
     public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(String name, String address,
                                                                         Double userLatitude, Double userLongitude, Integer radiusInMeters, Pageable pageable) {
@@ -99,7 +99,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     }
 
     // 소유한 주차장 조회
-    // TODO : 리뷰 카운트
+    // TODO : 리뷰 카운트 + 정렬 기준
     @Override
     public Page<ParkingLot> findMyParkingLots(Long userId, Pageable pageable) {
         BooleanBuilder builder = new BooleanBuilder();
