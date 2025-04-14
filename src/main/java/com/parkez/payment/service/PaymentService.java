@@ -1,6 +1,5 @@
 package com.parkez.payment.service;
 
-import com.parkez.common.config.WebClientConfig;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.payment.domain.entity.Payment;
@@ -9,6 +8,7 @@ import com.parkez.payment.dto.request.PaymentCreateRequest;
 import com.parkez.payment.dto.response.PaymentConfirmResponse;
 import com.parkez.payment.dto.response.PaymentCreateResponse;
 import com.parkez.payment.dto.response.PaymentInfoResponse;
+import com.parkez.payment.dto.response.PaymentResponse;
 import com.parkez.payment.exception.PaymentErrorCode;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.service.ReservationReader;
@@ -34,7 +34,6 @@ public class PaymentService {
     private final UserReader userReader;
     private final ReservationReader reservationReader;
     private final WebClient tossWebClient;
-    private final WebClientConfig webClientConfig;
 
     public PaymentCreateResponse createPayment(AuthUser authUser, PaymentCreateRequest request) {
         User user = userReader.getActiveById(authUser.getId());
@@ -91,5 +90,16 @@ public class PaymentService {
 
     public PaymentInfoResponse getPaymentInfo(String orderId) {
         return paymentReader.getPaymentInfo(orderId);
+    }
+
+    public PaymentResponse getMyPayment(AuthUser authUser, Long reservationId) {
+
+        Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
+
+        Payment payment = paymentReader.findByReservation(reservation).orElseThrow(
+                () -> new ParkingEasyException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+
+        return PaymentResponse.from(payment);
+
     }
 }

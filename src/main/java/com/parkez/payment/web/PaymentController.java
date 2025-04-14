@@ -9,6 +9,7 @@ import com.parkez.payment.dto.request.PaymentCreateRequest;
 import com.parkez.payment.dto.response.PaymentConfirmResponse;
 import com.parkez.payment.dto.response.PaymentCreateResponse;
 import com.parkez.payment.dto.response.PaymentInfoResponse;
+import com.parkez.payment.dto.response.PaymentResponse;
 import com.parkez.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,6 +45,14 @@ public class PaymentController { //todo : 각 api에 사용자 권한 추가하�
     @GetMapping("/api/v1/paymentInfo")
     public Response<PaymentInfoResponse> getPaymentInfo(@RequestParam String orderId){
         return Response.of(paymentService.getPaymentInfo(orderId));
+    }
+
+    @GetMapping("/api/v1/{reservationId}/payment")
+    public Response<PaymentResponse> getMyPayment(
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
+            @PathVariable Long reservationId
+    ){
+        return Response.of(paymentService.getMyPayment(authUser, reservationId));
     }
 
 }
