@@ -4,50 +4,46 @@ package com.parkez.payment.web;
 import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
-import com.parkez.payment.dto.request.PaymentConfirmRequest;
 import com.parkez.payment.dto.request.PaymentCreateRequest;
-import com.parkez.payment.dto.response.PaymentConfirmResponse;
 import com.parkez.payment.dto.response.PaymentCreateResponse;
 import com.parkez.payment.dto.response.PaymentInfoResponse;
 import com.parkez.payment.dto.response.PaymentResponse;
 import com.parkez.payment.service.PaymentService;
+import com.parkez.user.domain.enums.UserRole;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Tag(name = "결제 API", description = "결제 요청 생성, 결제 승인, 결제 내역 조회 기능입니다.")
-public class PaymentController { //todo : 각 api에 사용자 권한 추가하기
+public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @PostMapping("/api/v1/payment")
+    @Secured(UserRole.Authority.USER)
+    @PostMapping("/payment")
     public Response<PaymentCreateResponse> create(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
-            @RequestBody PaymentCreateRequest request
+            @Valid @RequestBody PaymentCreateRequest request
     ){
         return Response.of(paymentService.createPayment(authUser, request));
     }
 
-    // todo - 6 : response로 응답에 URL을 포함해볼까? 오 좋은생각일지도
-
-    @PostMapping("/confirm") //todo : 수정하기, 프론트 url도 수정
-    public Response<PaymentConfirmResponse> confirm(@RequestBody PaymentConfirmRequest request){
-        log.info("Confirm payment request: {}, {}, {}", request.getPaymentKey(), request.getOrderId(), request.getAmount());
-        return Response.of(paymentService.confirmPayment(request));
-    }
-
-    @GetMapping("/api/v1/paymentInfo")
+    @Secured(UserRole.Authority.USER)
+    @GetMapping("/payment-info")
     public Response<PaymentInfoResponse> getPaymentInfo(@RequestParam String orderId){
         return Response.of(paymentService.getPaymentInfo(orderId));
     }
 
-    @GetMapping("/api/v1/{reservationId}/payment")
+    @Secured(UserRole.Authority.USER)
+    @GetMapping("/{reservationId}/payment")
     public Response<PaymentResponse> getMyPayment(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long reservationId

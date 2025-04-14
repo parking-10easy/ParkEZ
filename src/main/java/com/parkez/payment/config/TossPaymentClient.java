@@ -1,6 +1,5 @@
-package com.parkez.common.config;
+package com.parkez.payment.config;
 
-import com.parkez.payment.config.PaymentProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -17,14 +16,14 @@ import java.util.Base64;
 @Configuration
 @RequiredArgsConstructor
 @EnableConfigurationProperties(PaymentProperties.class)
-public class WebClientConfig {
+public class TossPaymentClient {
+
     private static final String AUTH_HEADER_PREFIX = "Basic ";
 
-    public String createPaymentAuthHeader(PaymentProperties paymentProperties) {
+    private String createPaymentAuthHeader(PaymentProperties paymentProperties) {
         return AUTH_HEADER_PREFIX + Base64.getEncoder().encodeToString((paymentProperties.getSecretKey() + ":").getBytes(StandardCharsets.UTF_8));
     }
 
-    //todo : PaymentClient 로 이동하여 리팩토링 예정
     @Bean
     public WebClient tossWebClient(PaymentProperties paymentProperties) {
         String authHeader = createPaymentAuthHeader(paymentProperties);

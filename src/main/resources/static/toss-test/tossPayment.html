@@ -27,18 +27,19 @@
         const clientKey = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm";
         const tossPayments = TossPayments(clientKey);
 
-        // ------ 회원 식별 키 ------ //todo : 이거뭔지? 꼭 필요한건지 찾아보기
-        const customerKey = "RLZmy_27uXSCJQsIDPM2V";
-        const widgets = tossPayments.widgets({ customerKey });
 
         // 서버에서 결제 정보를 받아오기
         const paymentInfo = await getPaymentInfo(orderId);
 
         console.log('💬 paymentInfo:', paymentInfo);
 
-        const amount = paymentInfo.data.totalPrice
+        // ------ 회원 식별 키 ------
+        const customerKey = paymentInfo.data.customerKey
+        const widgets = tossPayments.widgets({ customerKey });
 
         // 결제 금액 설정
+        const amount = paymentInfo.data.totalPrice
+
         await widgets.setAmount({
             currency: "KRW",
             value: amount,
@@ -73,11 +74,12 @@
 
     async function getPaymentInfo(orderId) {
 
-        const response = await fetch(`/api/v1/paymentInfo?orderId=${orderId}`, {
+        const response = await fetch(`/api/v1/payment-info?orderId=${orderId}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-            },
+                "Authorization" : "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1IiwiZW1haWwiOiJ1c2VyMkBleGFtcGxlLmNvbSIsInVzZXJSb2xlIjoiUk9MRV9VU0VSIiwibmlja25hbWUiOiJ1c2VyIiwiZXhwIjoxNzQ0NjU0MDE3LCJpYXQiOjE3NDQ2NTA0MTd9.PXVIsVutdovxhDMz7Kk52A8jXWer1C8dkkm4u_zXJyU5xeGXzGNf1uXCTMroW3bhocCqJdF0IjwnuJ3-sBk1Hw"
+            }, //todo 하드코딩 말고 할수있는법 -> 흠..
         });
 
         const data = await response.json();

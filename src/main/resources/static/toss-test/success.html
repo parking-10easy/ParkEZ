@@ -26,20 +26,23 @@
         };
         console.log("보내는 데이터", requestData);
 
-        const response = await fetch("/confirm", {
+        const response = await fetch("/api/v1/payment-confirm", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "Authorization" : "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1IiwiZW1haWwiOiJ1c2VyMkBleGFtcGxlLmNvbSIsInVzZXJSb2xlIjoiUk9MRV9VU0VSIiwibmlja25hbWUiOiJ1c2VyIiwiZXhwIjoxNzQ0NjU0MDE3LCJpYXQiOjE3NDQ2NTA0MTd9.PXVIsVutdovxhDMz7Kk52A8jXWer1C8dkkm4u_zXJyU5xeGXzGNf1uXCTMroW3bhocCqJdF0IjwnuJ3-sBk1Hw"
+
             },
             body: JSON.stringify(requestData),
         });
 
         const json = await response.json();
-        console.log("응답 데이터", json); //todo - 5 : 응답데이터 amount 안 뜨는 이유 찾아보기, (콘솔에서만 안 뜨는거 보니까 뭔가 파싱문제같음)
+        console.log("응답 데이터", json); //todo : 응답데이터 amount 안 뜨는 이유 찾아보기, (콘솔에서만 안 뜨는거 보니까 뭔가 파싱문제같음)
+
 
         if (!response.ok) {
             // 결제 실패 비즈니스 로직을 구현하세요.
-            window.location.href = `/fail?message=${json.message}&code=${json.code}`; //todo : Url 수정하기
+            window.location.href = `/toss-test/fail.html?message=${json.message}&code=${json.code}`;
 
         }
 

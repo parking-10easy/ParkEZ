@@ -19,12 +19,11 @@ public class PaymentWriter {
     private final PaymentRepository paymentRepository;
 
     // 결제 요청 생성 저장
-    public Payment createPayment(User user, Reservation reservation, String orderId, PaymentCreateRequest request) {
+    public Payment createPayment(User user, Reservation reservation, String orderId) {
 
         Payment payment = Payment.builder()
                 .user(user)
                 .reservation(reservation)
-                .totalPrice(reservation.getPrice())
                 .paymentStatus(PaymentStatus.PENDING)
                 .orderId(orderId)
                 .paymentKey("")

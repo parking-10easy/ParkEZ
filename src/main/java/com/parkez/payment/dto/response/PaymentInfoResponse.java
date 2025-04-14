@@ -14,13 +14,15 @@ public class PaymentInfoResponse {
     private String customerName;
     private String customerMobilePhone;
     private BigDecimal totalPrice;
+    private String customerKey;
 
 
     @Builder
-    public PaymentInfoResponse(String customerEmail, String customerName, String customerMobilePhone, BigDecimal totalPrice) {
+    public PaymentInfoResponse(String customerEmail, String customerName, String customerMobilePhone, BigDecimal totalPrice, String customerKey) {
         this.customerEmail = customerEmail;
         this.customerName = customerName;
         this.customerMobilePhone = customerMobilePhone;
         this.totalPrice = totalPrice;
+        this.customerKey = customerKey;
     }
 }

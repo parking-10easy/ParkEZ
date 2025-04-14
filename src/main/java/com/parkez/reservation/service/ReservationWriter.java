@@ -57,4 +57,12 @@ public class ReservationWriter {
     public void cancel(Reservation reservation) {
         reservation.cancel();
     }
+
+    public void updateStatusConfirm(Reservation reservation){
+        reservation.updateStatusConfirm();
+    }
+
+    public void updateStatusCancel(Reservation reservation) {
+        reservation.updateStatusCancel();
+    }
 }

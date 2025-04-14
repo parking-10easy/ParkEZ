@@ -83,4 +83,12 @@ public class Reservation extends BaseEntity {
     public Long extractParkingZoneId() {
         return this.parkingZone.getId();
     }
+
+    public void updateStatusConfirm(){
+        this.status = ReservationStatus.CONFIRMED;
+    }
+
+    public void updateStatusCancel(){
+        this.status = ReservationStatus.CANCELED;
+    }
 }

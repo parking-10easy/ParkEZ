@@ -27,8 +27,8 @@ public class PaymentResponse {
     public static PaymentResponse from(Payment payment) {
         return PaymentResponse.builder()
                 .id(payment.getId())
-                .userId(payment.getUser().getId())
-                .reservationId(payment.getReservation().getId())
+                .userId(payment.getUserId()) 
+                .reservationId(payment.getReservationId())
                 .totalPrice(payment.getTotalPrice())
                 .paymentType(payment.getPaymentType())
                 .paymentStatus(payment.getPaymentStatus())

@@ -10,14 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class PaymentReader {
-    // todo : 메서드명 확인하기 (find of get)
 
     private final PaymentRepository paymentRepository;
 
@@ -32,10 +30,11 @@ public class PaymentReader {
                 () -> new ParkingEasyException(PaymentErrorCode.PAYMENT_NOT_FOUND));
 
         return PaymentInfoResponse.builder()
-                .customerEmail(payment.getUser().getEmail())
-                .customerName(payment.getUser().getNickname())
-                .customerMobilePhone(payment.getUser().getPhone())
+                .customerEmail(payment.getUserEmail())
+                .customerName(payment.getUserNickName())
+                .customerMobilePhone(payment.getUserPhone())
                 .totalPrice(payment.getTotalPrice())
+                .customerKey("user_" + payment.getUserId())
                 .build();
     }
 
@@ -43,4 +42,7 @@ public class PaymentReader {
         return paymentRepository.findByReservation(reservation);
     }
 
+    public boolean existsPayment(Reservation reservation) {
+        return paymentRepository.existsById(reservation.getId());
+    }
 }

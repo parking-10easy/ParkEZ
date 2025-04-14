@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 @Entity
 @Getter
@@ -52,12 +53,12 @@ public class Payment extends BaseEntity {
     private LocalDateTime approvedAt;
 
     @Builder
-    public Payment(User user, Reservation reservation, BigDecimal totalPrice,
+    public Payment(User user, Reservation reservation,
                    PaymentType paymentType, PaymentStatus paymentStatus,
                    String paymentKey, String orderId, int cardFee, LocalDateTime approvedAt) {
         this.user = user;
         this.reservation = reservation;
-        this.totalPrice = totalPrice;
+        this.totalPrice = reservation.getPrice();
         this.paymentType = paymentType;
         this.paymentStatus = paymentStatus;
         this.paymentKey = paymentKey;
@@ -74,6 +75,26 @@ public class Payment extends BaseEntity {
         this.approvedAt = OffsetDateTime.parse(approvedAt).toLocalDateTime();
         this.paymentType = PaymentType.from(type);
 
+    }
+
+    public String getUserEmail() {
+        return Objects.nonNull(user) ? user.getEmail() : null;
+    }
+
+    public String getUserPhone() {
+        return Objects.nonNull(user) ? user.getPhone() : null;
+    }
+
+    public Long getUserId() {
+        return Objects.nonNull(user) ? user.getId() : null;
+    }
+
+    public String getUserNickName(){
+        return Objects.nonNull(user) ? user.getNickname() : null;
+    }
+
+    public Long getReservationId() {
+        return Objects.nonNull(reservation) ? reservation.getId() : null;
     }
 
 
