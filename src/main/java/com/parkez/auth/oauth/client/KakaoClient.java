@@ -42,7 +42,6 @@ public class KakaoClient implements OAuthClient {
 	}
 
 	private String getAccessToken(String code) {
-		// TODO 리팩토링 예정
 		return webClient.post()
 			.uri(kakaoProperties.getTokenUri())
 			.header(HttpHeaders.CONTENT_TYPE, APPLICATION_FORM_URLENCODED_VALUE)
