@@ -33,9 +33,9 @@ public class ReservationController {
     private final ReservationService reservationService;
     private final Map<String, ReservationLockService> reservationLockServiceMap;
 
-    // 락 사용 x OR 낙관적 락 OR 비관적 락을 통한 예약 생성
+    // 락 사용 x OR 분산락을 통한 예약 생성
     @PostMapping("/v1/reservations/{strategy}")
-    @Operation(summary = "예약 생성", description = "락 사용 x OR 낙관적 락 OR 비관적 락을 통한 예약 생성 기능입니다.")
+    @Operation(summary = "예약 생성", description = "락 사용 x OR 분산락을 통한 예약 생성 기능입니다.")
     public Response<MyReservationResponse> createReservation(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @Parameter(description = "동시성 제어 전략", example = "default")
