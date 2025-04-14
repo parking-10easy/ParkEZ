@@ -58,7 +58,7 @@ class UserReaderTest {
 	class GetActiveUser {
 
 		@Test
-		public void 이메일_역할_로그인타입이_일치하고_삭제되지_않은_유저가_존재하면_유저를_반환한다() {
+		public void 이메일_역할_로그인타입이_일치하고_유저가_존재하면_유저를_반환한다() {
 			//given
 			String email = "test@example.com";
 			UserRole role = UserRole.ROLE_USER;
@@ -78,7 +78,7 @@ class UserReaderTest {
 		}
 
 		@Test
-		public void 이메일_역할_로그인타입이_일치하고_삭제되지_않은_유저가_존재하지_않으면_EMAIL_NOT_FOUND_예외() {
+		public void 이메일_역할_로그인타입이_일치하고_유저가_존재하지_않으면_EMAIL_NOT_FOUND_예외() {
 			//given
 			String email = "test@example.com";
 			UserRole role = UserRole.ROLE_USER;
@@ -109,7 +109,7 @@ class UserReaderTest {
 	class GetActiveUserById {
 
 		@Test
-		public void 아이디로_탈퇴하지_않은_유저를_조회하면_유저를_반환한다() {
+		public void 아이디로_유저를_조회하면_유저를_반환한다() {
 			//given
 			Long id = 1L;
 			User user = User.builder()
@@ -125,7 +125,7 @@ class UserReaderTest {
 		}
 
 		@Test
-		public void 아이디로_탈퇴하지_않은_유저를_조회_탈퇴했거나_존재하지_않으면_USER_NOT_FOUND_예외발생() {
+		public void 아이디로_유저를_조회_탈퇴했거나_존재하지_않으면_USER_NOT_FOUND_예외발생() {
 			//given
 			Long id = 1L;
 			given(userRepository.findByIdAndDeletedAtIsNull(anyLong())).willReturn(Optional.empty());

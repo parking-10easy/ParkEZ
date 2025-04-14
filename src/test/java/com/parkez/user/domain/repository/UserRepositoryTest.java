@@ -106,7 +106,7 @@ class UserRepositoryTest {
 			);
 
 			// then
-			assertThat(foundUser).isNotPresent();
+			assertThat(foundUser).isEmpty();
 		}
 
 	}
@@ -115,7 +115,7 @@ class UserRepositoryTest {
 	class FindByIdAndDeletedAtIsNull {
 
 		@Test
-		public void 아디로_삭제되지_않은_유저를_조회할_수_있다() {
+		public void 아이디로_유저를_조회할_수_있다() {
 			//given
 			User user = User.builder()
 				.email("test4@example.com")
@@ -169,7 +169,7 @@ class UserRepositoryTest {
 		}
 
 		@Test
-		void 아이디로_삭제되지_않은_유저_조회_존재하지_않으면_empty를_반환한다() {
+		void 아이디로_유저_조회시_존재하지_않으면_empty를_반환한다() {
 			//given
 			Long userId = -1L;
 
@@ -177,7 +177,7 @@ class UserRepositoryTest {
 			Optional<User> result = userRepository.findByIdAndDeletedAtIsNull(userId);
 
 			// then
-			assertThat(result).isNotPresent();
+			assertThat(result).isEmpty();
 		}
 
 	}

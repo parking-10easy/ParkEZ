@@ -118,7 +118,7 @@ class UserWriterTest {
 	@Nested
 	class CompleteSocialUserProfile {
 		@Test
-		public void 소셜_로그인_일반사용자가_추가정보를_입력하면_상태_COMPLETED로_변경된다() {
+		public void 소셜_로그인_유저가_추가정보를_입력하면_상태_COMPLETED로_변경된다() {
 			//given
 			String email = "test@test.com";
 			String nickname = "test";
