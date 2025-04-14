@@ -47,8 +47,8 @@ public class OwnerReservationResponse {
     public static OwnerReservationResponse from(Reservation reservation) {
         return new OwnerReservationResponse(
                 reservation.getId(),
-                reservation.extractUserId(),
-                reservation.extractParkingZoneId(),
+                reservation.getUserId(),
+                reservation.getParkingZoneId(),
                 reservation.getParkingLotName(),
                 reservation.getStartDateTime(),
                 reservation.getEndDateTime(),
