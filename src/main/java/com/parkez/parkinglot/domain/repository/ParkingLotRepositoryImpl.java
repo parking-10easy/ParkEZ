@@ -1,7 +1,9 @@
 package com.parkez.parkinglot.domain.repository;
 
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
+import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -18,7 +20,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.parkez.parkinglot.domain.entity.QParkingLot.parkingLot;
@@ -76,14 +77,14 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     // 단건 조회
     // TODO : 리뷰 카운트 + 평점
     @Override
-    public Optional<ParkingLotSearchResponse> searchParkingLotById(Long parkingLotId) {
+    public ParkingLotSearchResponse searchParkingLotById(Long parkingLotId) {
         ParkingLot parkingLotEntity = jpaQueryFactory.selectFrom(parkingLot)
                 .where(parkingLot.id.eq(parkingLotId)
                         .and(notDeleted()))
                 .fetchOne();
 
         if (parkingLotEntity == null) {
-            return Optional.empty();
+            throw new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND);
         }
 
         // 조회한 엔티티를 Dto로 반환
@@ -95,7 +96,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
         // DTO 후처리
         responseDto.updateAvailableQuantity(availableQuantity);
 
-        return Optional.of(responseDto);
+        return responseDto;
     }
 
     // 소유한 주차장 조회
@@ -150,7 +151,6 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     private BooleanExpression notDeleted() {
         return parkingLot.deletedAt.isNull();
     }
-
 
     // (다건 조회) availableQuantity 계산
     private Map<Long, Long> countAvailableQuantity(List<ParkingLot> parkingLots) {
