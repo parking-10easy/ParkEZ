@@ -36,4 +36,5 @@ public class ParkingZoneReader {
     public boolean isOwnedParkingZone(Long parkingZoneId, Long ownerId) {
         return parkingZoneRepository.existsByIdAndOwnerId(parkingZoneId, ownerId);
     }
+
 }
