@@ -69,7 +69,7 @@ public class ParkingLotService {
 
     // 주차장 단건 조회
     public ParkingLotSearchResponse searchParkingLotById(Long parkingLotId) {
-        return ParkingLotSearchResponse.from(parkingLotReader.searchParkingLotById(parkingLotId));
+        return parkingLotReader.searchParkingLotById(parkingLotId);
     }
 
     // 본인이 소유한 주차장 조회

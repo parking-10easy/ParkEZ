@@ -23,12 +23,11 @@ public class ParkingLotReader {
     // 주차장 다건 조회 (이름, 주소)
     public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(String name, String address, Double userLatitude, Double userLongitude, Integer radiusInMeters, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        Page<ParkingLot> parkingLots = parkingLotRepository.searchParkingLotsByConditions(name, address, userLatitude, userLongitude, radiusInMeters, pageable);
-        return parkingLots.map(ParkingLotSearchResponse::from);
+        return parkingLotRepository.searchParkingLotsByConditions(name, address, userLatitude, userLongitude, radiusInMeters, pageable);
     }
 
     // 주차장 단건 조회
-    public ParkingLot searchParkingLotById(Long parkingLotId) {
+    public ParkingLotSearchResponse searchParkingLotById(Long parkingLotId) {
         return parkingLotRepository.searchParkingLotById(parkingLotId).orElseThrow(
                 () -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
     }
