@@ -21,19 +21,30 @@ public class Reservation extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne(fetch = FetchType.LAZY)
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-    @ManyToOne(fetch = FetchType.LAZY)
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "parking_zone_id", nullable = false)
     private ParkingZone parkingZone;
+
+    @Column(nullable = false)
     private String parkingLotName;
+
+    @Column(nullable = false)
     private LocalDateTime startDateTime;
+
+    @Column(nullable = false)
     private LocalDateTime endDateTime;
+
+    @Column(nullable = false)
     private BigDecimal price;
+
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ReservationStatus status;
-    private LocalDateTime deletedAt;
 
     @Builder
     private Reservation(
@@ -51,5 +62,25 @@ public class Reservation extends BaseEntity {
         this.endDateTime = endDateTime;
         this.price = price;
         this.status = ReservationStatus.PENDING;
+    }
+
+    public void complete() {
+        this.status = ReservationStatus.COMPLETED;
+    }
+
+    public void cancel() {
+        this.status = ReservationStatus.CANCELED;
+    }
+
+    public Long extractUserId() {
+        return this.user.getId();
+    }
+
+    public boolean isOwnedBy(Long userId) {
+        return this.user.getId().equals(userId);
+    }
+
+    public Long extractParkingZoneId() {
+        return this.parkingZone.getId();
     }
 }

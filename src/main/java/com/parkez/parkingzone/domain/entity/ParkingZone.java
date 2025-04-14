@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
@@ -57,5 +59,13 @@ public class ParkingZone extends BaseDeleteEntity {
 
     public Long getParkingLotId() {
         return parkingLot.getId();
+    }
+
+    public String getParkingLotName() {
+        return this.parkingLot.getName();
+    }
+
+    public BigDecimal getParkingLotPricePerHour() {
+        return this.parkingLot.getPricePerHour();
     }
 }
