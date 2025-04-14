@@ -74,7 +74,7 @@ public class ParkingLotPublicDataService {
         }
     }
 
-    // 받아온 data를 엔티티로 변경
+    // 받아온 정보를 엔티티로 변경
     private ParkingLot convertToParkingLot(ParkingLotData data) {
         Double latitude = Double.valueOf(data.getLatitude());
         Double longitude = Double.valueOf(data.getLongitude());
@@ -99,7 +99,7 @@ public class ParkingLotPublicDataService {
         String chargeTypeStr = data.getChargeType();
         ChargeType chargeType = "무료".equals(chargeTypeStr) ? ChargeType.FREE : ChargeType.PAID;
 
-        // TODO : 소유주 - 수정이 필요할 듯 함
+        // TODO : 소유주 - 수정이 필요할 듯 함 (관리자로)
         User user = userReader.getActiveById(1L);
 
         ParkingLot parkingLot = ParkingLot.builder()
