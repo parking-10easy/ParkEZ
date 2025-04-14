@@ -26,7 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-@Service("default")
+@Service("DEFAULT")
 @RequiredArgsConstructor
 public class ReservationService implements ReservationLockService {
 
