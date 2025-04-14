@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+</head>
+<body>
+<h1>결제 성공</h1>
+<p>paymentKey: <span id="paymentKey"></span></p>
+<p>주문번호: <span id="orderId"></span></p>
+<p>결제 금액: <span id="amount"></span></p>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentKey = urlParams.get("paymentKey");
+    const orderId = urlParams.get("orderId");
+    const amountStr = urlParams.get("amount");
+    const amount = parseInt(amountStr);
+
+
+    async function confirm() {
+
+        const requestData = {
+            paymentKey: paymentKey,
+            orderId: orderId,
+            amount: amount,
+        };
+        console.log("보내는 데이터", requestData);
+
+        const response = await fetch("/confirm", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestData),
+        });
+
+        const json = await response.json();
+        console.log("응답 데이터", json); //todo - 5 : 응답데이터 amount 안 뜨는 이유 찾아보기, (콘솔에서만 안 뜨는거 보니까 뭔가 파싱문제같음)
+
+        if (!response.ok) {
+            // 결제 실패 비즈니스 로직을 구현하세요.
+            window.location.href = `/fail?message=${json.message}&code=${json.code}`; //todo : Url 수정하기
+
+        }
+
+    }
+    confirm();
+
+    const paymentKeyElement = document.getElementById("paymentKey");
+    const orderIdElement = document.getElementById("orderId");
+    const amountElement = document.getElementById("amount");
+
+    orderIdElement.textContent = orderId;
+    amountElement.textContent = amount;
+    paymentKeyElement.textContent = paymentKey;
+
+
+</script>
+</body>
+
+</html>
