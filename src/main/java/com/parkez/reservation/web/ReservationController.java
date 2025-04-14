@@ -39,10 +39,11 @@ public class ReservationController {
     public Response<MyReservationResponse> createReservation(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @Parameter(description = "동시성 제어 전략", example = "default")
-            @PathVariable LockStrategy strategy,
+            @PathVariable String strategy,
             @Valid @RequestBody ReservationRequest request
     ) {
-        ReservationLockService service = reservationLockServiceMap.get(strategy.name().toLowerCase());
+        LockStrategy lockStrategy = LockStrategy.from(strategy);
+        ReservationLockService service = reservationLockServiceMap.get(lockStrategy.name());
         try {
             return Response.of(service.createReservation(authUser, request));
 
