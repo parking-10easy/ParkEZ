@@ -19,17 +19,22 @@ public class KakaoGeocodeClient {
     @Value("${parking-lot.kakao-map.api-key}")
     private String kakaoMapApiKey;
 
+    private static final String baseUrl = "https://dapi.kakao.com";
+    private static final String pathUrl = "/v2/local/search/address.json";
+    private static final String kakaoAK = "KakaoAK ";
+    private static final String query = "query";
+
     private final WebClient webClient = WebClient.builder()
-            .baseUrl("https://dapi.kakao.com")
+            .baseUrl(baseUrl)
             .build();
 
     public Geocode getGeocode(String address) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/v2/local/search/address.json")
-                        .queryParam("query", address)
+                        .path(pathUrl)
+                        .queryParam(query, address)
                         .build())
-                .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoMapApiKey)
+                .header(HttpHeaders.AUTHORIZATION, kakaoAK + kakaoMapApiKey)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .retrieve()
                 .onStatus(httpStatus -> httpStatus.is4xxClientError() || httpStatus.is5xxServerError(),
@@ -43,10 +48,7 @@ public class KakaoGeocodeClient {
                 .bodyToMono(KakaoGeocodeResponse.class)
                 .blockOptional()
                 .filter(response -> response.getDocuments() != null && !response.getDocuments().isEmpty())
-                .map(response -> Geocode.builder()
-                        .longitude(Double.valueOf(response.getDocuments().get(0).getLongitude()))
-                        .latitude(Double.valueOf(response.getDocuments().get(0).getLatitude()))
-                        .build())
+                .map(Geocode::from)
                 .orElseThrow(() -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND_ADDRESS));
     }
 }

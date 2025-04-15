@@ -16,4 +16,11 @@ public class Geocode {
         this.latitude = latitude;
     }
 
+    public static Geocode from(KakaoGeocodeResponse response) {
+        KakaoGeocodeResponse.Document document = response.getDocuments().get(0);
+        return Geocode.builder()
+                .longitude(Double.valueOf(document.getLongitude()))
+                .latitude(Double.valueOf(document.getLatitude()))
+                .build();
+    }
 }
