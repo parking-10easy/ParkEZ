@@ -13,8 +13,10 @@ public enum PaymentErrorCode implements ErrorCode {
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT_001", "예약을 찾을 수 없습니다."),
 
     // 400 Bad Request
-    ALREADY_PAID_RESERVATION(HttpStatus.BAD_REQUEST, "PAYMENT_002", "이미 결제 승인/취소된 예약입니다. 새로운 예약을 생성해주세요."),
-    PAYMENT_TIME_OUT(HttpStatus.BAD_REQUEST, "PAYMENT_003", "예약 후 30분이 경과되어 결제가 불가능합니다.");
+    PAYMENT_TIME_OUT(HttpStatus.BAD_REQUEST, "PAYMENT_002", "예약 후 10분이 경과되어 결제가 불가능합니다."),
+    PAYMENT_IN_PROGRESS(HttpStatus.BAD_REQUEST, "PAYMENT_003", "해당 예약 건은 이미 진행 중인 결제가 존재합니다."),
+    PAYMENT_ALREADY_APPROVED(HttpStatus.BAD_REQUEST, "PAYMENT_004", "이미 결제 완료된 예약입니다."),
+    PAYMENT_CANCELED(HttpStatus.BAD_REQUEST, "PAYMENT_005", "결제 실패된 예약입니다. 새로운 예약을 생성해주세요.");
 
 
     private final HttpStatus httpStatus;

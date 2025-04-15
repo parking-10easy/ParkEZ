@@ -2,6 +2,7 @@ package com.parkez.payment.web;
 
 import com.parkez.common.dto.response.Response;
 import com.parkez.payment.dto.request.PaymentConfirmRequest;
+import com.parkez.payment.dto.request.PaymentFailRequest;
 import com.parkez.payment.dto.response.PaymentConfirmResponse;
 import com.parkez.payment.service.PaymentService;
 import com.parkez.user.domain.enums.UserRole;
@@ -30,5 +31,14 @@ public class PaymentNotiController {
             @Valid @RequestBody PaymentConfirmRequest request
     ){
         return Response.of(paymentService.confirmPayment(request));
+    }
+
+    @Hidden
+    @Secured(UserRole.Authority.USER)
+    @PostMapping("payment-fail")
+    public void fail(
+            @Valid @RequestBody PaymentFailRequest request
+    ){
+        paymentService.failPayment(request);
     }
 }

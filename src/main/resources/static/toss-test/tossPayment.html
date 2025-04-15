@@ -73,13 +73,16 @@
     }
 
     async function getPaymentInfo(orderId) {
+        const token = localStorage.getItem("accessToken");
+        console.log("로컬 스토리지 jwt : ", token);
 
         const response = await fetch(`/api/v1/payment-info?orderId=${orderId}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization" : "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1IiwiZW1haWwiOiJ1c2VyMkBleGFtcGxlLmNvbSIsInVzZXJSb2xlIjoiUk9MRV9VU0VSIiwibmlja25hbWUiOiJ1c2VyIiwiZXhwIjoxNzQ0NjU0MDE3LCJpYXQiOjE3NDQ2NTA0MTd9.PXVIsVutdovxhDMz7Kk52A8jXWer1C8dkkm4u_zXJyU5xeGXzGNf1uXCTMroW3bhocCqJdF0IjwnuJ3-sBk1Hw"
-            }, //todo 하드코딩 말고 할수있는법 -> 흠..
+                "Authorization": `Bearer ${token}`
+
+            },
         });
 
         const data = await response.json();

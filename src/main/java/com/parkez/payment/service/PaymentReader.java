@@ -42,7 +42,4 @@ public class PaymentReader {
         return paymentRepository.findByReservation(reservation);
     }
 
-    public boolean existsPayment(Reservation reservation) {
-        return paymentRepository.existsById(reservation.getId());
-    }
 }

@@ -5,6 +5,7 @@ import com.parkez.common.principal.AuthUser;
 import com.parkez.payment.domain.entity.Payment;
 import com.parkez.payment.dto.request.PaymentConfirmRequest;
 import com.parkez.payment.dto.request.PaymentCreateRequest;
+import com.parkez.payment.dto.request.PaymentFailRequest;
 import com.parkez.payment.dto.response.PaymentConfirmResponse;
 import com.parkez.payment.dto.response.PaymentCreateResponse;
 import com.parkez.payment.dto.response.PaymentInfoResponse;
@@ -38,23 +39,16 @@ public class PaymentService {
     private final ReservationWriter reservationWriter;
     private final WebClient tossWebClient;
 
-    private static final int TIME_OUT_MINUTE = 30;
+    private static final long TIME_OUT_MINUTE = 10;
 
     public PaymentCreateResponse createPayment(AuthUser authUser, PaymentCreateRequest request) {
-        User user = userReader.getActiveById(authUser.getId());
+        User user = userReader.getActiveUserById(authUser.getId());
 
         Reservation reservation = reservationReader.findMyReservation(authUser.getId(), request.getReservationId());
 
-        checkReservationTimeout(reservation);
+        checkReservationTimeout(reservation, LocalDateTime.now());
 
-        if(paymentReader.existsPayment(reservation)){
-            throw new ParkingEasyException(PaymentErrorCode.ALREADY_PAID_RESERVATION);
-        }
-        /* todo 여기서 에러코드를 구분하자
-              결제가 생성되어 있지만 payment Pending 상태라면 -> 결제 진행중입니다.
-              결제 취소된 내역에 대해서 재결제 불가능 , 예약 새로 생성해주세요
-              결제 승인된 내역에 대해서는 이미 결제된 예약입니다.
-        */
+        validatePaymentStatus(reservation);
 
         String orderId = UUID.randomUUID().toString().replace("-", "");
 
@@ -113,17 +107,42 @@ public class PaymentService {
 
     }
 
+    private void checkReservationTimeout(Reservation reservation, LocalDateTime now) {
+        long passedMinutes = Duration.between(reservation.getCreatedAt(), now).toMinutes();
+        log.info("CreatedAt: {}", reservation.getCreatedAt());
+        log.info("Now: {}", now);
+        log.info("Passed Minutes: {}", passedMinutes);
 
-    private void checkReservationTimeout(Reservation reservation) {
-        LocalDateTime createdAt = reservation.getCreatedAt();
-        LocalDateTime now = LocalDateTime.now();
-        Duration duration = Duration.between(createdAt, now);
-
-        if (duration.toMinutes() > TIME_OUT_MINUTE) {
+        if(reservation.isTimeout(now, TIME_OUT_MINUTE)) {
             reservationWriter.updateStatusCancel(reservation);
-
             throw new ParkingEasyException(PaymentErrorCode.PAYMENT_TIME_OUT);
-
         }
+
     }
+
+    private void validatePaymentStatus(Reservation reservation){
+        paymentReader.findByReservation(reservation)
+                .ifPresent(existingPayment -> {
+                    switch (existingPayment.getPaymentStatus()) {
+                        case PENDING:
+                            throw new ParkingEasyException(PaymentErrorCode.PAYMENT_IN_PROGRESS);
+                        case APPROVED:
+                            throw new ParkingEasyException(PaymentErrorCode.PAYMENT_ALREADY_APPROVED);
+                        case CANCELED:
+                            throw new ParkingEasyException(PaymentErrorCode.PAYMENT_CANCELED);
+                    }
+                });
+    }
+
+
+    public void failPayment(PaymentFailRequest request) {
+        Payment payment = paymentReader.getPayment(request.getOrderId());
+
+        paymentWriter.cancelPayment(payment);
+
+        Reservation reservation = reservationReader.findMyReservation(payment.getUserId(), payment.getReservationId());
+
+        reservationWriter.updateStatusCancel(reservation);
+    }
+
 }

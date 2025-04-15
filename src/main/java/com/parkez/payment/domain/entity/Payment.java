@@ -97,5 +97,9 @@ public class Payment extends BaseEntity {
         return Objects.nonNull(reservation) ? reservation.getId() : null;
     }
 
+    public void updateStatusCancel() {
+        this.paymentStatus = PaymentStatus.CANCELED;
+    }
+
 
 }
