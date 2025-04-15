@@ -1,5 +1,6 @@
 package com.parkez.review.web;
 
+import com.parkez.common.aop.CheckMemberStatus;
 import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Tag(name = "리뷰 API")
+@CheckMemberStatus
 public class ReviewController {
 
     private final ReviewService reviewService;
