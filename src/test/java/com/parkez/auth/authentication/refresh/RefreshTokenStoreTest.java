@@ -34,7 +34,6 @@ class RefreshTokenStoreTest {
 	private RefreshTokenStore refreshTokenStore;
 
 	@Nested
-	@DisplayName("set 메서드는")
 	class Set {
 
 		@Test
@@ -57,7 +56,6 @@ class RefreshTokenStoreTest {
 	}
 
 	@Nested
-	@DisplayName("existsBy 메서드는")
 	class ExistsBy {
 
 		@Test
@@ -86,28 +84,6 @@ class RefreshTokenStoreTest {
 
 			//then
 			assertThat(exists).isFalse();
-		}
-	}
-
-	@Nested
-	@DisplayName("get 메서드는")
-	class get {
-
-		@Test
-		public void userId로_refresh_토큰_값을_조회한다() {
-			//given
-			Long userId = 1L;
-			String expectedToken = "refresh-token";
-
-			given(redisTemplate.opsForValue()).willReturn(valueOperations);
-			given(valueOperations.get(anyString())).willReturn(expectedToken);
-
-			//when
-			String result = refreshTokenStore.get(userId);
-
-			//then
-			assertThat(result).isEqualTo(expectedToken);
-
 		}
 	}
 

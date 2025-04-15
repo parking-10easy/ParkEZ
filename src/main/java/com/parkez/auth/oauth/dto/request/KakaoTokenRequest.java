@@ -2,10 +2,8 @@ package com.parkez.auth.oauth.dto.request;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.ToString;
 
 @Getter
-@ToString
 public class KakaoTokenRequest {
 
 	private final String grantType;

@@ -147,7 +147,7 @@ class UserRepositoryTest {
 		}
 
 		@Test
-		void 삭제된_유저_는_조회할_수_없다() {
+		void 삭제된_유저는_조회할_수_없다() {
 			// given
 			User user = User.builder()
 				.email("test5@example.com")

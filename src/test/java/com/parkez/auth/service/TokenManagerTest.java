@@ -135,7 +135,7 @@ class TokenManagerTest {
 			given(refreshTokenStore.existsBy(userId)).willReturn(true);
 
 			//when & then
-			assertThatCode(() -> tokenManager.validateRefreshToken(userId))
+			assertThatCode(() -> tokenManager.validateRefreshTokenExists(userId))
 				.doesNotThrowAnyException();
 
 		}
@@ -147,7 +147,7 @@ class TokenManagerTest {
 			given(refreshTokenStore.existsBy(userId)).willReturn(false);
 
 			//when & then
-			assertThatThrownBy(() -> tokenManager.validateRefreshToken(userId))
+			assertThatThrownBy(() -> tokenManager.validateRefreshTokenExists(userId))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessage(AuthErrorCode.TOKEN_NOT_FOUND.getDefaultMessage());
 

@@ -138,22 +138,22 @@ class KakaoClientTest {
 			// accessToken은 정상 발급
 			mockWebServer.enqueue(new MockResponse()
 				.setBody("""
-                {
-                  "token_type": "Bearer",
-                  "access_token": "mock-access-token",
-                  "id_token": "mock-id-token",
-                  "expires_in": 3600,
-                  "refresh_token": "mock-refresh-token",
-                  "refresh_token_expires_in": "86400",
-                  "scope": "profile account_email"
-                }
-                """)
+					{
+					  "token_type": "Bearer",
+					  "access_token": "mock-access-token",
+					  "id_token": "mock-id-token",
+					  "expires_in": 3600,
+					  "refresh_token": "mock-refresh-token",
+					  "refresh_token_expires_in": "86400",
+					  "scope": "profile account_email"
+					}
+				""")
 				.addHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
 			);
 
 			// userInfo 요청 실패 응답
 			mockWebServer.enqueue(new MockResponse()
-				.setResponseCode(500) // ✅ 실패 응답
+				.setResponseCode(500)
 				.setBody("Internal Server Error")
 				.addHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
 			);

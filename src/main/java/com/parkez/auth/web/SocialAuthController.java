@@ -37,7 +37,7 @@ public class SocialAuthController {
 
 	private final SocialAuthService socialAuthService;
 
-	@Secured({USER})
+	@Secured(USER)
 	@Operation(summary = "소셜 일반 사용자 추가정보 입력", description = "소셜 로그인 후 추가정보를 입력하여 일반 사용자 회원가입을 완료합니다.")
 	@PostMapping("/v1/auth/signup/social/user/complete")
 	public Response<SocialSignupCompleteResponse> completeUserSignup(
@@ -46,7 +46,7 @@ public class SocialAuthController {
 		return Response.of(socialAuthService.completeUserSignup(authUser, request));
 	}
 
-	@Secured(value = OWNER)
+	@Secured(OWNER)
 	@Operation(summary = "소셜 오너 추가정보 입력", description = "소셜 로그인 후 추가정보를 입력하여 오너 회원가입을 완료합니다.")
 	@PostMapping("/v1/auth/signup/social/owner/complete")
 	public Response<SocialSignupCompleteResponse> completeOwnerSignup(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,

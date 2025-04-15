@@ -33,7 +33,7 @@ public class TokenManager {
 		return jwtProvider.extractUserId(refreshToken);
 	}
 
-	public void validateRefreshToken(Long userId) {
+	public void validateRefreshTokenExists(Long userId) {
 		if (!refreshTokenStore.existsBy(userId)) {
 			throw new ParkingEasyException(AuthErrorCode.TOKEN_NOT_FOUND);
 		}

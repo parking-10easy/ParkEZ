@@ -32,7 +32,7 @@ class UserReaderTest {
 	class ExistsUser {
 
 		@Test
-		public void 이메일_role_loginType이_일치하는_유저가_존재하면_True를_반환한다() {
+		public void 이메일_역할_로그인타입이_일치하는_유저가_존재하면_True를_반환한다() {
 			//given
 			String email = "test@example.com";
 			given(userRepository.existsByEmailAndRoleAndLoginType(anyString(), any(UserRole.class), any(LoginType.class))).willReturn(true);
@@ -43,7 +43,7 @@ class UserReaderTest {
 		}
 
 		@Test
-		public void 이메일_role_loginType이_일치하는_유저가_존재하지_않으면_False를_반환한다() {
+		public void 이메일_역할_로그인타입이_일치하는_유저가_존재하지_않으면_False를_반환한다() {
 			//given
 			String email = "test@example.com";
 			given(userRepository.existsByEmailAndRoleAndLoginType(anyString(), any(UserRole.class),any(LoginType.class))).willReturn(false);
