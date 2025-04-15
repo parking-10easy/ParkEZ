@@ -26,7 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-@Service("default")
+@Service("DEFAULT")
 @RequiredArgsConstructor
 public class ReservationService implements ReservationLockService {
 
@@ -87,6 +87,7 @@ public class ReservationService implements ReservationLockService {
     public Page<OwnerReservationResponse> getOwnerReservations(AuthUser authUser, Long parkingZoneId, int page, int size) {
 
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
+
         // 조회하려는 주차공간이 본인 소유의 주차공간이 아닐 경우 예외
         if (!parkingZone.getParkingLot().isOwned(authUser.getId())) {
             throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);

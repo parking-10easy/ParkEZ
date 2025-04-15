@@ -5,7 +5,6 @@ import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
-import com.parkez.reservation.exception.ReservationErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,10 +31,6 @@ public class ParkingZoneReader {
         return parkingZoneRepository.findByIdAndDeletedAtIsNull(parkingZoneId).orElseThrow(
                 () -> new ParkingEasyException(ParkingZoneErrorCode.PARKING_ZONE_NOT_FOUND)
         );
-    }
-
-    public boolean existsById(Long parkingZoneId) {
-        return parkingZoneRepository.existsById(parkingZoneId);
     }
 
     public boolean isOwnedParkingZone(Long parkingZoneId, Long ownerId) {

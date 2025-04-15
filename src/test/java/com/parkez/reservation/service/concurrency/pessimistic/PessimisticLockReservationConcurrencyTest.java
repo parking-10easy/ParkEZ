@@ -102,7 +102,6 @@ class PessimisticLockReservationConcurrencyTest {
 
         ParkingLot parkingLot = parkingLotRepository.save(createParkingLot(user));
         ParkingZone parkingZone = parkingZoneRepository.save(createParkingZone(parkingLot));
-        parkingZoneRepository.flush();
 
         LocalDateTime start = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         LocalDateTime end = start.plusHours(1);
@@ -115,6 +114,7 @@ class PessimisticLockReservationConcurrencyTest {
 
         AtomicInteger failCount = new AtomicInteger();
 
+        // when
         for (int i = 0; i < requestCount; i++) {
             executor.submit(() -> {
                 try {
@@ -138,7 +138,7 @@ class PessimisticLockReservationConcurrencyTest {
         // then
         List<Reservation> result = reservationRepository.findAll();
         assertThat(result).hasSize(1);
-        System.out.println("성공 요청 수 : " + result.size());
-        System.out.println("실패 요청 수 : " + failCount.get());
+        log.info("성공 요청 수: {}", result.size());
+        log.info("실패 요청 수: {}", failCount.get());
     }
 }

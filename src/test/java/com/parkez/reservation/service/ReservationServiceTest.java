@@ -430,7 +430,7 @@ class ReservationServiceTest {
             }
 
             @Test
-            void 특정_주차공간에_대한_예약_내역_조회_시_주차공간이_없을_경우_NOT_FOUND_PARKING_ZONE_예외_처리() {
+            void 특정_주차공간에_대한_예약_내역_조회_시_주차공간이_없을_경우_PARKING_ZONE_NOT_FOUND_예외_처리() {
                 // given
                 Long ownerId = 1L;
                 Long parkingZoneId = -1L;
