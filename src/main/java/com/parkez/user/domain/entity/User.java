@@ -1,20 +1,28 @@
 package com.parkez.user.domain.entity;
 
+import java.time.LocalDateTime;
+
+import org.springframework.util.StringUtils;
+
 import com.parkez.common.entity.BaseDeleteEntity;
 import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.domain.enums.UserStatus;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Pattern;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-
-import org.springframework.util.StringUtils;
 
 @Entity
 @Getter
@@ -34,6 +42,7 @@ public class User extends BaseDeleteEntity {
 	@Column(nullable = false)
 	private String email;
 
+	@Column(nullable = false)
 	private String password;
 
 	@Column(nullable = false)
@@ -105,9 +114,10 @@ public class User extends BaseDeleteEntity {
 			.build();
 	}
 
-	public static User createSocialUser(String email, String nickname, LoginType loginType, UserRole role) {
+	public static User createSocialUser(String email,String encodedPassword, String nickname, LoginType loginType, UserRole role) {
 		return User.builder()
 			.email(email)
+			.password(encodedPassword)
 			.nickname(nickname)
 			.role(role)
 			.loginType(loginType)

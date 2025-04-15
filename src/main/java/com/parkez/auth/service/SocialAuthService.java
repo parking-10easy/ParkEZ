@@ -1,5 +1,8 @@
 package com.parkez.auth.service;
 
+import java.util.UUID;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +34,7 @@ public class SocialAuthService {
 	private final UserReader userReader;
 	private final UserWriter userWriter;
 	private final TokenManager tokenManager;
+	private final PasswordEncoder passwordEncoder;
 
 	@Transactional
 	public TokenResponse login(OAuthProvider provider, String code, String state) {
@@ -41,8 +45,10 @@ public class SocialAuthService {
 		LoginType loginType = LoginType.from(provider.name());
 		User socialUser = userReader.findActiveUser(oAuthUserInfo.getEmail(), role, loginType)
 			.orElseGet(
-				() -> userWriter.createSocialUser(oAuthUserInfo.getEmail(), oAuthUserInfo.getNickname(), loginType,
-					role)
+				() -> {
+					String encodedPassword = generateEncodedRandomPassword();
+					return userWriter.createSocialUser(oAuthUserInfo.getEmail(),encodedPassword, oAuthUserInfo.getNickname(), loginType, role);
+				}
 			);
 
 		return tokenManager.issueTokens(socialUser);
@@ -77,6 +83,10 @@ public class SocialAuthService {
 		if (user.isSignupCompleted()) {
 			throw new ParkingEasyException(AuthErrorCode.ALREADY_COMPLETED);
 		}
+	}
+
+	private String generateEncodedRandomPassword() {
+		return passwordEncoder.encode(UUID.randomUUID().toString());
 	}
 
 }

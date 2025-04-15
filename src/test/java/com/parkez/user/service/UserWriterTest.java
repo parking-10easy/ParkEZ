@@ -1,6 +1,5 @@
 package com.parkez.user.service;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import org.assertj.core.api.Assertions;
@@ -38,13 +37,14 @@ class UserWriterTest {
 			String nickname = "소셜닉네임";
 			LoginType loginType = LoginType.KAKAO;
 			UserRole role = UserRole.ROLE_USER;
-			User socialUser = User.createSocialUser(email, nickname, loginType, role);
+			String password = "password";
+			User socialUser = User.createSocialUser(email, password, nickname, loginType, role);
 
 			given(userRepository.save(any(User.class))).willReturn(socialUser);
-			
+
 			//when
-			User result = userWriter.createSocialUser(email, nickname, loginType, role);
-			
+			User result = userWriter.createSocialUser(email, password, nickname, loginType, role);
+
 			//then
 			Assertions.assertThat(result)
 				.extracting("email", "nickname", "loginType", "role", "status")
@@ -69,12 +69,13 @@ class UserWriterTest {
 			given(userRepository.save(any(User.class))).willReturn(user);
 
 			//when
-			User result = userWriter.createUser(email,encodedPassword,nickname,phone,defaultProfileImageUrl);
+			User result = userWriter.createUser(email, encodedPassword, nickname, phone, defaultProfileImageUrl);
 
 			//then
 			Assertions.assertThat(result)
-				.extracting("email","password", "nickname","phone","profileImageUrl","role","loginType","status")
-				.containsExactly(email, encodedPassword,nickname,phone,defaultProfileImageUrl,UserRole.ROLE_USER,LoginType.NORMAL,
+				.extracting("email", "password", "nickname", "phone", "profileImageUrl", "role", "loginType", "status")
+				.containsExactly(email, encodedPassword, nickname, phone, defaultProfileImageUrl, UserRole.ROLE_USER,
+					LoginType.NORMAL,
 					UserStatus.COMPLETED);
 
 		}
@@ -95,12 +96,14 @@ class UserWriterTest {
 			String bankName = "신한은행";
 			String bankAccount = "110-9876-5432";
 			String defaultProfileImageUrl = "default.jpg";
-			User owner = User.createOwner(email, encodedPassword, nickname, phone, businessNumber,depositorName,bankName,bankAccount,defaultProfileImageUrl);
+			User owner = User.createOwner(email, encodedPassword, nickname, phone, businessNumber, depositorName,
+				bankName, bankAccount, defaultProfileImageUrl);
 
 			given(userRepository.save(any(User.class))).willReturn(owner);
 
 			//when
-			User result = userWriter.createOwner(email,encodedPassword,nickname,phone,businessNumber,depositorName,bankName,bankAccount,defaultProfileImageUrl);
+			User result = userWriter.createOwner(email, encodedPassword, nickname, phone, businessNumber, depositorName,
+				bankName, bankAccount, defaultProfileImageUrl);
 
 			//then
 			BusinessAccountInfo businessAccountInfo = result.getBusinessAccountInfo();
@@ -108,8 +111,9 @@ class UserWriterTest {
 				.extracting("businessNumber", "depositorName", "bankName", "bankAccount")
 				.containsExactly(businessNumber, depositorName, bankName, bankAccount);
 			Assertions.assertThat(result)
-				.extracting("email","password", "nickname","phone","profileImageUrl","role","loginType","status")
-				.containsExactly(email, encodedPassword,nickname,phone,defaultProfileImageUrl,UserRole.ROLE_OWNER,LoginType.NORMAL,
+				.extracting("email", "password", "nickname", "phone", "profileImageUrl", "role", "loginType", "status")
+				.containsExactly(email, encodedPassword, nickname, phone, defaultProfileImageUrl, UserRole.ROLE_OWNER,
+					LoginType.NORMAL,
 					UserStatus.COMPLETED);
 
 		}
@@ -157,11 +161,11 @@ class UserWriterTest {
 				.nickname(nickname)
 				.status(UserStatus.PENDING)
 				.loginType(LoginType.KAKAO)
-				.businessAccountInfo(BusinessAccountInfo.create(businessNumber,depositorName,bankName,bankAccount))
+				.businessAccountInfo(BusinessAccountInfo.create(businessNumber, depositorName, bankName, bankAccount))
 				.build();
 
 			//when
-			userWriter.completeSocialOwnerProfile(owner, phone, businessNumber,depositorName,bankName,bankAccount);
+			userWriter.completeSocialOwnerProfile(owner, phone, businessNumber, depositorName, bankName, bankAccount);
 
 			//then
 			Assertions.assertThat(owner)

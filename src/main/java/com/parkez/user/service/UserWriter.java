@@ -15,8 +15,8 @@ public class UserWriter {
 
 	private final UserRepository userRepository;
 
-	public User createSocialUser(String email, String nickname, LoginType loginType, UserRole role) {
-		User socialUser = User.createSocialUser(email, nickname, loginType, role);
+	public User createSocialUser(String email,String encodedPassword, String nickname, LoginType loginType, UserRole role) {
+		User socialUser = User.createSocialUser(email,encodedPassword, nickname, loginType, role);
 		return save(socialUser);
 	}
 

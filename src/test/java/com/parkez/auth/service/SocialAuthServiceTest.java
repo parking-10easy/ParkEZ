@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.parkez.auth.dto.request.SocialOwnerProfileCompleteRequest;
 import com.parkez.auth.dto.request.SocialUserProfileCompleteRequest;
@@ -50,6 +51,9 @@ class SocialAuthServiceTest {
 
 	@Mock
 	private OAuthClient oAuthClient;
+
+	@Mock
+	private PasswordEncoder passwordEncoder;
 
 	@InjectMocks
 	private SocialAuthService socialAuthService;
@@ -113,6 +117,7 @@ class SocialAuthServiceTest {
 			String code = "code";
 			String email = "test@kakao.com";
 			String nickname = "testuser";
+			String password = "password";
 			OAuthProvider provider = OAuthProvider.KAKAO;
 			UserRole role = UserRole.fromState(state);
 			LoginType loginType = LoginType.from(provider.name());
@@ -138,7 +143,8 @@ class SocialAuthServiceTest {
 			given(oAuthClient.requestUserInfo(anyString())).willReturn(oAuthUserInfo);
 			given(userReader.findActiveUser(anyString(), any(UserRole.class), any(LoginType.class))).willReturn(
 				Optional.empty());
-			given(userWriter.createSocialUser(email, nickname, loginType, role)).willReturn(newUser);
+			given(passwordEncoder.encode(anyString())).willReturn(password);
+			given(userWriter.createSocialUser(anyString(),anyString(),anyString(),any(LoginType.class),any(UserRole.class))).willReturn(newUser);
 			given(tokenManager.issueTokens(any(User.class))).willReturn(tokenResponse);
 
 			//when
@@ -200,7 +206,7 @@ class SocialAuthServiceTest {
 		}
 
 		@Test
-		public void 이미_가입_완료인_소설_유저는_예외를_던진다() {
+		public void 존재하지_않는_유저이면_USER_NOT_FOUND_예외를_던진다() {
 			//given
 
 			long userId = 1L;
@@ -229,10 +235,10 @@ class SocialAuthServiceTest {
 		}
 
 		@Test
-		public void 존재하지_않는_유저이면_예외를_던진다() {
+		public void 이미_가입_완료인_소설_유저는_ALREADY_COMPLETED_예외를_던진다() {
 			//given
 
-			long userId = 1L;
+			long userId = -1L;
 			String email = "test@example.com";
 			String nickname = "nickname";
 			String roleName = "ROLE_USER";
@@ -313,10 +319,10 @@ class SocialAuthServiceTest {
 		}
 
 		@Test
-		public void 이미_가입_완료인_소설_오너는_예외를_던진다() {
+		public void 존재하지_않는_유저이면_USER_NOT_FOUND_예외를_던진다() {
 			//given
 
-			long userId = 1L;
+			long userId = -1L;
 			String email = "test@example.com";
 			String nickname = "nickname";
 			String roleName = "ROLE_USER";
@@ -348,7 +354,7 @@ class SocialAuthServiceTest {
 		}
 
 		@Test
-		public void 존재하지_않는_유저이면_예외를_던진다() {
+		public void 이미_가입_완료인_소설_오너는_ALREADY_COMPLETED_예외를_던진다() {
 			//given
 
 			long userId = 1L;
