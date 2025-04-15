@@ -1,10 +1,35 @@
 package com.parkez.auth.authentication.refresh;
 
-public interface RefreshTokenStore {
+import java.time.Duration;
 
-	void replace(Long userId, String refreshTokenValue);
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
 
-	void save(Long userId, String refreshTokenValue);
+import com.parkez.auth.authentication.jwt.JwtProperties;
 
-	boolean existsByToken(String refreshToken);
+import lombok.RequiredArgsConstructor;
+
+@Component
+@RequiredArgsConstructor
+public class RefreshTokenStore {
+
+	private final StringRedisTemplate redisTemplate;
+	private final JwtProperties jwtProperties;
+	private static final String REFRESH_TOKEN_KEY_PREFIX = "refresh:";
+
+	public void set(Long userId, String refreshTokenValue) {
+		String key = getKey(userId);
+		redisTemplate.opsForValue().set(key, refreshTokenValue, Duration.ofSeconds(jwtProperties.getRefreshTokenExpiration()));
+	}
+
+	public boolean existsBy(Long userId) {
+		return redisTemplate.hasKey(getKey(userId));
+	}
+
+	private String getKey(Long userId) {
+		return REFRESH_TOKEN_KEY_PREFIX + userId;
+	}
+
+
+
 }

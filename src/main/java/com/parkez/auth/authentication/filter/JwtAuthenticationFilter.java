@@ -69,12 +69,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		String email = claims.get("email", String.class);
 		String roleName = claims.get("userRole", String.class);
 		String nickname = claims.get("nickname", String.class);
-
+		boolean isSignupCompleted = claims.get("isSignupCompleted", Boolean.class);
 		AuthUser authUser = AuthUser.builder()
 			.id(userId)
 			.email(email)
 			.roleName(roleName)
 			.nickname(nickname)
+			.signupCompleted(isSignupCompleted)
 			.build();
 		JwtAuthenticationToken authenticationToken = new JwtAuthenticationToken(authUser);
 		SecurityContextHolder.getContext().setAuthentication(authenticationToken);

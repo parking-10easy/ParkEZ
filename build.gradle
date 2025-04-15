@@ -68,6 +68,10 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
+    // redis & redisson
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.37.0'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
@@ -75,9 +79,11 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.31.2')
     implementation 'software.amazon.awssdk:s3'
 
-    // redis & redisson
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.redisson:redisson-spring-boot-starter:3.37.0'
+    // webclient 사용
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // webclient 테스트
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }
 
 clean {

@@ -164,7 +164,7 @@ class ReservationServiceTest {
 
             Reservation reservation = createReservation(reservationId, user, parkingZone, request, price);
 
-            given(userReader.getActiveById(anyLong())).willReturn(user);
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
             given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
             given(reservationWriter.create(any(User.class), any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(reservation);
@@ -201,7 +201,7 @@ class ReservationServiceTest {
 
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
-            given(userReader.getActiveById(anyLong())).willReturn(user);
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
             given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
 
             // when & then

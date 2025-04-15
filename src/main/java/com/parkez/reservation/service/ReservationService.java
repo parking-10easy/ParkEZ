@@ -38,7 +38,7 @@ public class ReservationService implements ReservationLockService {
     @Override
     public MyReservationResponse createReservation(AuthUser authUser, ReservationRequest request) {
 
-        User user = userReader.getActiveById(authUser.getId());
+        User user = userReader.getActiveUserById(authUser.getId());
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
 
         // 예약 날짜 및 시간 입력 오류 예외

@@ -87,4 +87,8 @@ public class Reservation extends BaseEntity {
     public Long getParkingZoneId() {
         return this.parkingZone.getId();
     }
+
+    public boolean isCompleted() {
+        return this.status == ReservationStatus.COMPLETED;
+    }
 }

@@ -12,16 +12,24 @@ import java.util.Arrays;
 @Getter
 @RequiredArgsConstructor
 public enum UserRole {
-    ROLE_OWNER(Authority.OWNER),
-    ROLE_USER(Authority.USER);
+    ROLE_OWNER(Authority.OWNER, "owner"),
+    ROLE_USER(Authority.USER, "user");
 
     private final String userRole;
+    private final String stateValue;
 
     public static UserRole of(String role) {
         return Arrays.stream(UserRole.values())
                 .filter(r -> r.name().equalsIgnoreCase(role))
                 .findFirst()
                 .orElseThrow(() -> new ParkingEasyException(UserErrorCode.INVALID_USER_ROLE));
+    }
+
+    public static UserRole fromState(String state) {
+        return Arrays.stream(values())
+            .filter(r -> r.stateValue.equalsIgnoreCase(state))
+            .findFirst()
+            .orElseThrow(() -> new ParkingEasyException(UserErrorCode.INVALID_USER_ROLE_STATE));
     }
 
     public static class Authority {

@@ -37,12 +37,14 @@ jobs:
           echo "$APPLICATION_JWT" > src/main/resources/application-jwt.yml
           echo "$APPLICATION_TEST" > src/main/resources/application-test.yml
           echo "$APPLICATION_AWS" > src/main/resources/application-aws.yml
+          echo "$APPLICATION_OAUTH" > src/main/resources/application-oauth.yml
         env:
           SPRING_PROFILES_ACTIVE: test
           APPLICATION_YML: ${{ secrets.APPLICATION_YML }}
           APPLICATION_JWT: ${{ secrets.APPLICATION_JWT }}
           APPLICATION_TEST: ${{ secrets.APPLICATION_TEST }}
           APPLICATION_AWS: ${{ secrets.APPLICATION_AWS }}
+          APPLICATION_OAUTH: ${{ secrets.APPLICATION_OAUTH }}
 
       - name: Docker Compose 실행
         run: docker compose up -d
