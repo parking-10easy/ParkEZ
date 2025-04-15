@@ -107,7 +107,29 @@ public class ParkingLotSearchResponse {
                 .build();
     }
 
-    public void updateAvailableQuantity(Long availableQuantity) {
-        this.availableQuantity = availableQuantity;
+    // 다건 + 단건 조회용 생성자
+    public ParkingLotSearchResponse(Long parkingLotId, String name, String address,
+                                    LocalTime openedAt, LocalTime closedAt, BigDecimal pricePerHour,
+                                    Integer totalQuantity, ChargeType chargeType, SourceType sourceType, ParkingLotStatus parkingLotStatus, Long availableQuantity) {
+        this(parkingLotId,
+                name,
+                address,
+                openedAt,
+                closedAt,
+                pricePerHour,
+                totalQuantity,
+                availableQuantity,
+                chargeType,
+                sourceType,
+                parkingLotStatus,
+                0L,
+                0.0,
+                List.of()
+        );
+    }
+
+    // 이미지
+    public void updateImage(List<String> images) {
+        this.images = images;
     }
 }

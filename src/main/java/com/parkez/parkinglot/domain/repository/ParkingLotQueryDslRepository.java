@@ -1,9 +1,11 @@
 package com.parkez.parkinglot.domain.repository;
 
-import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 public interface ParkingLotQueryDslRepository {
 
@@ -14,5 +16,8 @@ public interface ParkingLotQueryDslRepository {
     ParkingLotSearchResponse searchParkingLotById(Long parkingLotId);
 
     // 본인이 소유한 주차장 조회
-    Page<ParkingLot> findMyParkingLots(Long userId, Pageable pageable);
+    Page<MyParkingLotSearchResponse> findMyParkingLots(Long userId, Pageable pageable);
+
+    // 이미지 조회
+    List<String> findImageListByParkingLotId(Long parkingLotId);
 }

@@ -1,7 +1,5 @@
 package com.parkez.parkinglot.dto.response;
 
-import com.parkez.parkinglot.domain.entity.ParkingLot;
-import com.parkez.parkinglot.domain.entity.ParkingLotImage;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,23 +9,23 @@ import lombok.Getter;
 public class MyParkingLotSearchResponse {
 
     @Schema(description = "주차장 ID", example = "1")
-    private final Long parkingLotId;
+    private Long parkingLotId;
 
     @Schema(description = "주차장 이름", example = "한빛 주차장")
-    private final String name;
+    private String name;
 
     @Schema(description = "주차장 주소", example = "서울시 강남구 테헤란로 131")
-    private final String address;
+    private String address;
 
     @Schema(description = "리뷰 수", example = "10")
-    private final Integer reviewCount;
+    private Long reviewCount;
 
     @Schema(description = "썸네일 이미지", example = "parking-lot-default.jpg")
-    private final String thumbnailImage;
+    private String thumbnailImage;
 
     @Builder
     private MyParkingLotSearchResponse(Long parkingLotId, String name, String address,
-                                       Integer reviewCount, String thumbnailImage) {
+                                       Long reviewCount, String thumbnailImage) {
         this.parkingLotId = parkingLotId;
         this.name = name;
         this.address = address;
@@ -35,18 +33,9 @@ public class MyParkingLotSearchResponse {
         this.reviewCount = reviewCount;
     }
 
-    public static MyParkingLotSearchResponse from(ParkingLot parkingLot) {
-        String thumbnailImage = parkingLot.getImages().stream()
-                .findFirst()
-                .map(ParkingLotImage::getImageUrl)
-                .orElse(null);
-
-        return MyParkingLotSearchResponse.builder()
-                .parkingLotId(parkingLot.getId())
-                .name(parkingLot.getName())
-                .address(parkingLot.getAddress())
-                .thumbnailImage(thumbnailImage)
-//                .reviewCount(reviewCount) // 수정 필요
-                .build();
+    // 소유한 주차장 조회용 생성자
+    public MyParkingLotSearchResponse(Long parkingLotId, String name, String address, String thumbnailImage) {
+        this(parkingLotId, name, address, 0L, thumbnailImage);
     }
+
 }

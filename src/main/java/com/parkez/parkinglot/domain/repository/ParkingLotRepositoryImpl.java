@@ -1,14 +1,12 @@
 package com.parkez.parkinglot.domain.repository;
 
-import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
-import com.parkez.parkinglot.exception.ParkingLotErrorCode;
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +17,9 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.parkez.parkinglot.domain.entity.QParkingLot.parkingLot;
+import static com.parkez.parkinglot.domain.entity.QParkingLotImage.parkingLotImage;
 import static com.parkez.parkingzone.domain.entity.QParkingZone.parkingZone;
 
 @Repository
@@ -36,40 +33,48 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     @Override
     public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(String name, String address,
                                                                         Double userLatitude, Double userLongitude, Integer radiusInMeters, Pageable pageable) {
-        BooleanBuilder builder = new BooleanBuilder();
-        builder.and(nameContains(name));
-        builder.and(addressContains(address));
-        builder.and(withinRadius(userLatitude, userLongitude, radiusInMeters));
-        builder.and(parkingLot.address.isNotEmpty()); // TODO : 주소값이 비어있는 경우, 제외
-        builder.and(notDeleted());
 
-        // 조건에 맞는 엔티티 조회
-        List<ParkingLot> parkingLots = jpaQueryFactory
-                .selectFrom(parkingLot)
-                .where(builder)
+        List<ParkingLotSearchResponse> dtoList = jpaQueryFactory
+                .select(Projections.constructor(ParkingLotSearchResponse.class,
+                        parkingLot.id,
+                        parkingLot.name,
+                        parkingLot.address,
+                        parkingLot.openedAt,
+                        parkingLot.closedAt,
+                        parkingLot.pricePerHour,
+                        parkingLot.quantity.as("totalQuantity"),
+                        parkingLot.chargeType,
+                        parkingLot.sourceType,
+                        parkingLot.status.as("parkingLotStatus"),
+                        JPAExpressions
+                                .select(parkingZone.count())
+                                .from(parkingZone)
+                                .where(parkingZone.parkingLot.id.eq(parkingLot.id))
+                ))
+                .from(parkingLot)
+                .where(
+                        nameContains(name),
+                        addressContains(address),
+                        withinRadius(userLatitude, userLongitude, radiusInMeters),
+                        parkingLot.address.isNotEmpty(),
+                        notDeleted()
+                )
+                .groupBy(parkingLot.id)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
-
-        // 조회한 엔티티를 Dto로 반환
-        List<ParkingLotSearchResponse> dtoList = parkingLots.stream()
-                .map(ParkingLotSearchResponse::from)
-                .toList();
-
-        // availableQuantity 계산
-        Map<Long, Long> countZoneMap = countAvailableQuantity(parkingLots);
-
-        // DTO 후처리
-        for (ParkingLotSearchResponse dto : dtoList) {
-            Long availableQuantity = countZoneMap.getOrDefault(dto.getParkingLotId(), 0L);
-            dto.updateAvailableQuantity(availableQuantity);
-        }
 
         // page 쿼리
         JPAQuery<Long> countQuery = jpaQueryFactory
                 .select(parkingLot.count())
                 .from(parkingLot)
-                .where(builder);
+                .where(
+                        nameContains(name),
+                        addressContains(address),
+                        withinRadius(userLatitude, userLongitude, radiusInMeters),
+                        parkingLot.address.isNotEmpty(),
+                        notDeleted()
+                );
 
         return PageableExecutionUtils.getPage(dtoList, pageable, countQuery::fetchOne);
     }
@@ -78,48 +83,81 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     // TODO : 리뷰 카운트 + 평점
     @Override
     public ParkingLotSearchResponse searchParkingLotById(Long parkingLotId) {
-        ParkingLot parkingLotEntity = jpaQueryFactory.selectFrom(parkingLot)
-                .where(parkingLot.id.eq(parkingLotId)
-                        .and(notDeleted()))
+
+        return jpaQueryFactory
+                .select(Projections.constructor(ParkingLotSearchResponse.class,
+                        parkingLot.id,
+                        parkingLot.name,
+                        parkingLot.address,
+                        parkingLot.openedAt,
+                        parkingLot.closedAt,
+                        parkingLot.pricePerHour,
+                        parkingLot.quantity.as("totalQuantity"),
+                        parkingLot.chargeType,
+                        parkingLot.sourceType,
+                        parkingLot.status.as("parkingLotStatus"),
+                        JPAExpressions
+                                .select(parkingZone.count())
+                                .from(parkingZone)
+                                .where(parkingZone.parkingLot.id.eq(parkingLot.id))
+                ))
+                .from(parkingLot)
+                .where(
+                        parkingLot.id.eq(parkingLotId),
+                        parkingLot.address.isNotEmpty(),
+                        notDeleted()
+                )
+                .groupBy(parkingLot.id)
                 .fetchOne();
-
-        if (parkingLotEntity == null) {
-            throw new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND);
-        }
-
-        // 조회한 엔티티를 Dto로 반환
-        ParkingLotSearchResponse responseDto = ParkingLotSearchResponse.from(parkingLotEntity);
-
-        // availableQuantity 계산
-        Long availableQuantity = countAvailableQuantity(parkingLotId);
-
-        // DTO 후처리
-        responseDto.updateAvailableQuantity(availableQuantity);
-
-        return responseDto;
     }
 
     // 소유한 주차장 조회
     // TODO : 리뷰 카운트 + 정렬 기준
     @Override
-    public Page<ParkingLot> findMyParkingLots(Long userId, Pageable pageable) {
-        BooleanBuilder builder = new BooleanBuilder();
-        builder.and(parkingLot.owner.id.eq(userId));
-        builder.and(notDeleted());
+    public Page<MyParkingLotSearchResponse> findMyParkingLots(Long userId, Pageable pageable) {
 
-        List<ParkingLot> myParkingLots = jpaQueryFactory
-                .selectFrom(parkingLot)
-                .where(builder)
+        List<MyParkingLotSearchResponse> myParkingLots = jpaQueryFactory
+                .select(Projections.constructor(MyParkingLotSearchResponse.class,
+                        parkingLot.id,
+                        parkingLot.name,
+                        parkingLot.address,
+                        JPAExpressions
+                                .select(parkingLotImage.imageUrl)
+                                .from(parkingLotImage)
+                                .where(parkingLotImage.parkingLot.id.eq(parkingLot.id))
+                                .limit(1)
+
+                ))
+                .from(parkingLot)
+                .where(
+                        parkingLot.owner.id.eq(userId),
+                        notDeleted()
+                )
+                .groupBy(parkingLot.id)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
+        // page 쿼리
         JPAQuery<Long> countQuery = jpaQueryFactory
                 .select(parkingLot.count())
                 .from(parkingLot)
-                .where(builder);
+                .where(
+                        parkingLot.owner.id.eq(userId),
+                        notDeleted()
+                );
 
         return PageableExecutionUtils.getPage(myParkingLots, pageable, countQuery::fetchOne);
+    }
+
+    // 이미지 리스트 찾기
+    @Override
+    public List<String> findImageListByParkingLotId(Long parkingLotId) {
+        return jpaQueryFactory
+                .select(parkingLotImage.imageUrl)
+                .from(parkingLotImage)
+                .where(parkingLotImage.parkingLot.id.eq(parkingLotId))
+                .fetch();
     }
 
     // 이름 조건
@@ -150,38 +188,6 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     // 삭제x 조건
     private BooleanExpression notDeleted() {
         return parkingLot.deletedAt.isNull();
-    }
-
-    // (다건 조회) availableQuantity 계산
-    private Map<Long, Long> countAvailableQuantity(List<ParkingLot> parkingLots) {
-        List<Long> parkingLotIds = parkingLots.stream()
-                .map(ParkingLot::getId)
-                .toList();
-
-        List<Tuple> countZoneTuples = jpaQueryFactory
-                .select(parkingZone.parkingLot.id, parkingZone.count())
-                .from(parkingZone)
-                .where(parkingZone.parkingLot.id.in(parkingLotIds)
-                        .and(parkingZone.deletedAt.isNull()))
-                .groupBy(parkingZone.parkingLot.id)
-                .fetch();
-
-        return countZoneTuples.stream()
-                .collect(Collectors.toMap(
-                        tuple -> tuple.get(parkingZone.parkingLot.id),
-                        tuple -> tuple.get(parkingZone.count())
-                ));
-    }
-
-    // (단건 조회) availableQuantity 계산
-    private Long countAvailableQuantity(Long parkingLotId) {
-        Long count = jpaQueryFactory.select(parkingZone.count())
-                .from(parkingZone)
-                .where(
-                        parkingZone.parkingLot.id.eq(parkingLotId)
-                                .and(parkingZone.deletedAt.isNull()))
-                .fetchOne();
-        return count != null ? count : 0L;
     }
 
 }

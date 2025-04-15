@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -23,19 +25,37 @@ public class ParkingLotReader {
     // 주차장 다건 조회 (이름, 주소)
     public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(String name, String address, Double userLatitude, Double userLongitude, Integer radiusInMeters, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        return parkingLotRepository.searchParkingLotsByConditions(name, address, userLatitude, userLongitude, radiusInMeters, pageable);
+
+        Page<ParkingLotSearchResponse> dtoPage = parkingLotRepository.searchParkingLotsByConditions(
+                name, address, userLatitude, userLongitude, radiusInMeters, pageable);
+
+        for (ParkingLotSearchResponse dto : dtoPage.getContent()) {
+            // 이미지 목록 업데이트
+            List<String> imageList = parkingLotRepository.findImageListByParkingLotId(dto.getParkingLotId());
+            dto.updateImage(imageList);
+        }
+        return dtoPage;
     }
 
     // 주차장 단건 조회
     public ParkingLotSearchResponse searchParkingLotById(Long parkingLotId) {
-        return parkingLotRepository.searchParkingLotById(parkingLotId);
+        ParkingLotSearchResponse dto = parkingLotRepository.searchParkingLotById(parkingLotId);
+
+        if (dto == null) {
+            throw new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND);
+        }
+
+        // 이미지 목록 업데이트
+        List<String> imageList = parkingLotRepository.findImageListByParkingLotId(dto.getParkingLotId());
+        dto.updateImage(imageList);
+
+        return dto;
     }
 
     // 본인이 소유한 주차장 조회
     public Page<MyParkingLotSearchResponse> getMyParkingLots(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        Page<ParkingLot> parkingLots = parkingLotRepository.findMyParkingLots(userId, pageable);
-        return parkingLots.map(MyParkingLotSearchResponse::from);
+        return parkingLotRepository.findMyParkingLots(userId, pageable);
     }
 
     //  soft delete 제외 + null 처리하여 아이디로 단건 조회 + authUser 본인확인
