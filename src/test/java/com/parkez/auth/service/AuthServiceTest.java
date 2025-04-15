@@ -25,7 +25,6 @@ import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.exception.UserErrorCode;
 import com.parkez.user.service.UserReader;
-import com.parkez.user.service.UserValidator;
 import com.parkez.user.service.UserWriter;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,9 +35,6 @@ class AuthServiceTest {
 
 	@Mock
 	private UserWriter userWriter;
-
-	@Mock
-	private UserValidator userValidator;
 
 	@Mock
 	private BCryptPasswordEncoder bCryptPasswordEncoder;
@@ -66,9 +62,7 @@ class AuthServiceTest {
 			String nickname = "user";
 			String phone = "010-1234-5678";
 			SignupUserRequest request = createSignupUserRequest(email, password, nickname, phone);
-			doThrow(new ParkingEasyException(AuthErrorCode.DUPLICATED_EMAIL))
-				.when(userValidator)
-				.validateDuplicateUser(anyString(), eq(UserRole.ROLE_USER), eq(LoginType.NORMAL));
+			given(userReader.existsUser(anyString(), any(UserRole.class), any(LoginType.class))).willReturn(true);
 
 			//when & then
 			assertThatThrownBy(() -> authService.signupUser(request)).isInstanceOf(ParkingEasyException.class)
@@ -91,10 +85,10 @@ class AuthServiceTest {
 			String refreshToken = "mockRefresh";
 			String encodedPassword = "password";
 			TokenResponse tokenResponse = TokenResponse.of(accessToken, refreshToken);
-			doNothing().when(userValidator)
-				.validateDuplicateUser(anyString(), eq(UserRole.ROLE_USER), eq(LoginType.NORMAL));
+			given(userReader.existsUser(anyString(), any(UserRole.class), any(LoginType.class))).willReturn(false);
 			given(bCryptPasswordEncoder.encode(anyString())).willReturn(encodedPassword);
-			given(userWriter.createUser(anyString(), anyString(), anyString(), anyString(), anyString())).willReturn(user);
+			given(userWriter.createUser(anyString(), anyString(), anyString(), anyString(), anyString())).willReturn(
+				user);
 			given(tokenManager.issueTokens(any(User.class))).willReturn(tokenResponse);
 
 			//when
@@ -243,7 +237,8 @@ class AuthServiceTest {
 
 			given(userReader.existsUser(anyString(), eq(UserRole.ROLE_OWNER), eq(LoginType.NORMAL))).willReturn(false);
 			given(bCryptPasswordEncoder.encode(anyString())).willReturn(encodedPassword);
-			given(userWriter.createOwner(anyString(),anyString(),anyString(),anyString(),anyString(),anyString(),anyString(),anyString(),anyString())).willReturn(owner);
+			given(userWriter.createOwner(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(),
+				anyString(), anyString(), anyString())).willReturn(owner);
 			given(tokenManager.issueTokens(any(User.class))).willReturn(tokenResponse);
 
 			//when
@@ -283,7 +278,8 @@ class AuthServiceTest {
 			User user = User.createOwner(email, password, nickname, phone, businessNumber, depositorName,
 				bankName, bankAccount, defaultProfileImageUrl);
 			ReflectionTestUtils.setField(user, "id", 1L);
-			given(userReader.getActiveUser(anyString(), eq(UserRole.ROLE_OWNER), eq(LoginType.NORMAL))).willReturn(user);
+			given(userReader.getActiveUser(anyString(), eq(UserRole.ROLE_OWNER), eq(LoginType.NORMAL))).willReturn(
+				user);
 			given(bCryptPasswordEncoder.matches(anyString(), anyString())).willReturn(false);
 
 			//when & then
@@ -329,10 +325,10 @@ class AuthServiceTest {
 			TokenResponse tokenResponse = TokenResponse.of(accessToken, refreshToken);
 			ReflectionTestUtils.setField(owner, "id", 1L);
 
-			given(userReader.getActiveUser(anyString(), eq(UserRole.ROLE_OWNER), eq(LoginType.NORMAL))).willReturn(owner);
+			given(userReader.getActiveUser(anyString(), eq(UserRole.ROLE_OWNER), eq(LoginType.NORMAL))).willReturn(
+				owner);
 			given(bCryptPasswordEncoder.matches(anyString(), anyString())).willReturn(true);
 			given(tokenManager.issueTokens(any(User.class))).willReturn(tokenResponse);
-
 
 			//when
 			TokenResponse result = authService.signinOwner(email, password);
@@ -352,20 +348,19 @@ class AuthServiceTest {
 	@Nested
 	class ReissueToken {
 
-
-
 		@Test
 		void 리프레시토큰으로_재발급_만료된_토큰이면_TOKEN_EXPIRED_예외발생() {
 			// given
 			String expiredRefreshToken = "expired-refresh-token";
 
-			given(tokenManager.extractUserId(anyString())).willThrow(new ParkingEasyException(AuthErrorCode.TOKEN_EXPIRED));
+			given(tokenManager.extractUserId(anyString())).willThrow(
+				new ParkingEasyException(AuthErrorCode.TOKEN_EXPIRED));
 
 			// when & then
 			assertThatThrownBy(() -> authService.reissueToken(expiredRefreshToken))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessageContaining(AuthErrorCode.TOKEN_EXPIRED.getDefaultMessage());
-			verify(tokenManager, never()).validateRefreshToken(anyLong());
+			verify(tokenManager, never()).validateRefreshTokenExists(anyLong());
 			verify(userReader, never()).getActiveUserById(anyLong());
 			verify(tokenManager, never()).reissueAccessToken(any(User.class));
 		}
@@ -375,14 +370,14 @@ class AuthServiceTest {
 			// given
 			String invalidRefreshToken = "invalid-refresh-token";
 
-
-			given(tokenManager.extractUserId(anyString())).willThrow(new ParkingEasyException(AuthErrorCode.INVALID_JWT_SIGNATURE));
+			given(tokenManager.extractUserId(anyString())).willThrow(
+				new ParkingEasyException(AuthErrorCode.INVALID_JWT_SIGNATURE));
 
 			// when & then
 			assertThatThrownBy(() -> authService.reissueToken(invalidRefreshToken))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessageContaining(AuthErrorCode.INVALID_JWT_SIGNATURE.getDefaultMessage());
-			verify(tokenManager, never()).validateRefreshToken(anyLong());
+			verify(tokenManager, never()).validateRefreshTokenExists(anyLong());
 			verify(userReader, never()).getActiveUserById(anyLong());
 			verify(tokenManager, never()).reissueAccessToken(any(User.class));
 		}
@@ -401,8 +396,7 @@ class AuthServiceTest {
 
 			given(tokenManager.extractUserId(anyString())).willReturn(userId);
 			doThrow(new ParkingEasyException(AuthErrorCode.TOKEN_NOT_FOUND))
-				.when(tokenManager).validateRefreshToken(anyLong());
-
+				.when(tokenManager).validateRefreshTokenExists(anyLong());
 
 			// when & then
 			Assertions.assertThatThrownBy(() -> authService.reissueToken(refreshToken))
@@ -419,11 +413,10 @@ class AuthServiceTest {
 			String refreshToken = "refresh-token";
 			Long userId = -1L;
 			given(tokenManager.extractUserId(anyString())).willReturn(userId);
-			doNothing().when(tokenManager).validateRefreshToken(anyLong());
+			doNothing().when(tokenManager).validateRefreshTokenExists(anyLong());
 			given(userReader.getActiveUserById(anyLong())).willThrow(
 				new ParkingEasyException(UserErrorCode.USER_NOT_FOUND)
 			);
-
 
 			// when & then
 			assertThatThrownBy(() -> authService.reissueToken(refreshToken))
@@ -447,7 +440,7 @@ class AuthServiceTest {
 			ReflectionTestUtils.setField(user, "id", 1L);
 
 			given(tokenManager.extractUserId(anyString())).willReturn(userId);
-			doNothing().when(tokenManager).validateRefreshToken(anyLong());
+			doNothing().when(tokenManager).validateRefreshTokenExists(anyLong());
 			given(userReader.getActiveUserById(anyLong())).willReturn(user);
 			given(tokenManager.reissueAccessToken(any(User.class))).willReturn(newAccessToken);
 

@@ -15,7 +15,6 @@ import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
-import com.parkez.user.service.UserValidator;
 import com.parkez.user.service.UserWriter;
 
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 public class AuthService {
 
 	private final UserReader userReader;
-	private final UserValidator userValidator;
 	private final UserWriter userWriter;
 	private final TokenManager tokenManager;
 	private final BCryptPasswordEncoder bCryptPasswordEncoder;
@@ -37,7 +35,7 @@ public class AuthService {
 	@Transactional
 	public SignupResponse signupUser(SignupUserRequest request) {
 
-		userValidator.validateDuplicateUser(request.getEmail(), UserRole.ROLE_USER, LoginType.NORMAL);
+		validateDuplicateUser(request.getEmail(), UserRole.ROLE_USER, LoginType.NORMAL);
 
 		String encodedPassword = bCryptPasswordEncoder.encode(request.getPassword());
 
@@ -64,9 +62,7 @@ public class AuthService {
 	@Transactional
 	public SignupResponse signupOwner(SignupOwnerRequest request) {
 
-		if (userReader.existsUser(request.getEmail(), UserRole.ROLE_OWNER, LoginType.NORMAL)) {
-			throw new ParkingEasyException(AuthErrorCode.DUPLICATED_EMAIL);
-		}
+		validateDuplicateUser(request.getEmail(), UserRole.ROLE_OWNER, LoginType.NORMAL);
 
 		String encodedPassword = bCryptPasswordEncoder.encode(request.getPassword());
 
@@ -94,7 +90,7 @@ public class AuthService {
 	public TokenResponse reissueToken(String refreshToken) {
 		Long userId = tokenManager.extractUserId(refreshToken);
 
-		tokenManager.validateRefreshToken(userId);
+		tokenManager.validateRefreshTokenExists(userId);
 
 		User user = userReader.getActiveUserById(userId);
 
@@ -107,6 +103,12 @@ public class AuthService {
 	private void validatePassword(String password, String encodedPassword) {
 		if (!bCryptPasswordEncoder.matches(password, encodedPassword)) {
 			throw new ParkingEasyException(AuthErrorCode.INVALID_PASSWORD);
+		}
+	}
+
+	private void validateDuplicateUser(String email, UserRole role, LoginType loginType) {
+		if (userReader.existsUser(email, role, loginType)) {
+			throw new ParkingEasyException(AuthErrorCode.DUPLICATED_EMAIL);
 		}
 	}
 
