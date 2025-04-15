@@ -1,5 +1,6 @@
 package com.parkez.parkingzone.web;
 
+import com.parkez.common.aop.CheckMemberStatus;
 import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
@@ -27,6 +28,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Secured(UserRole.Authority.OWNER)
 @Tag(name = "주차공간 API")
+@CheckMemberStatus
 public class ParkingZoneController {
 
     private final ParkingZoneService parkingZoneService;
