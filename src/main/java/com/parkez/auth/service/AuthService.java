@@ -1,27 +1,22 @@
 package com.parkez.auth.service;
 
-import java.util.function.BiConsumer;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.parkez.auth.authentication.jwt.JwtProvider;
-import com.parkez.auth.authentication.refresh.RefreshTokenStore;
 import com.parkez.auth.dto.request.SignupOwnerRequest;
 import com.parkez.auth.dto.request.SignupUserRequest;
 import com.parkez.auth.dto.response.SignupResponse;
 import com.parkez.auth.dto.response.TokenResponse;
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.user.domain.entity.BusinessAccountInfo;
 import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
 import com.parkez.user.service.UserWriter;
 
-import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -31,8 +26,7 @@ public class AuthService {
 
 	private final UserReader userReader;
 	private final UserWriter userWriter;
-	private final JwtProvider jwtProvider;
-	private final RefreshTokenStore refreshTokenStore;
+	private final TokenManager tokenManager;
 	private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
 	@Value("${user.default-profile-image-url}")
@@ -41,88 +35,66 @@ public class AuthService {
 	@Transactional
 	public SignupResponse signupUser(SignupUserRequest request) {
 
-		if (userReader.existByEmailAndRole(request.getEmail(), UserRole.ROLE_USER)) {
-			throw new ParkingEasyException(AuthErrorCode.DUPLICATED_EMAIL);
-		}
+		validateDuplicateUser(request.getEmail(), UserRole.ROLE_USER, LoginType.NORMAL);
 
 		String encodedPassword = bCryptPasswordEncoder.encode(request.getPassword());
 
-		User user = User.createUser(
-			request.getEmail(),
-			encodedPassword,
-			request.getNickname(),
-			request.getPhone(),
-			defaultProfileImageUrl
-		);
-		User savedUser = userWriter.create(user);
-		TokenResponse tokenResponse = issueTokenPair(savedUser, refreshTokenStore::save);
-		return SignupResponse.of(savedUser.getId(), savedUser.getEmail(), tokenResponse);
+		User user = userWriter.createUser(request.getEmail(), encodedPassword, request.getNickname(), request.getPhone(),
+			defaultProfileImageUrl);
+
+		TokenResponse tokenResponse = tokenManager.issueTokens(user);
+
+		return SignupResponse.of(user.getId(), user.getEmail(), tokenResponse);
 
 	}
 
 	@Transactional
 	public TokenResponse signinUser(String email, String password) {
-		User user = userReader.getActiveByEmailAndRole(email, UserRole.ROLE_USER);
+
+		User user = userReader.getActiveUser(email, UserRole.ROLE_USER, LoginType.NORMAL);
 
 		validatePassword(password, user.getPassword());
 
-		return issueTokenPair(user, refreshTokenStore::replace);
+		return tokenManager.issueTokens(user);
+
 	}
 
 	@Transactional
 	public SignupResponse signupOwner(SignupOwnerRequest request) {
 
-		if (userReader.existByEmailAndRole(request.getEmail(), UserRole.ROLE_OWNER)) {
-			throw new ParkingEasyException(AuthErrorCode.DUPLICATED_EMAIL);
-		}
+		validateDuplicateUser(request.getEmail(), UserRole.ROLE_OWNER, LoginType.NORMAL);
 
 		String encodedPassword = bCryptPasswordEncoder.encode(request.getPassword());
 
-		User user = User.createOwner(
-			request.getEmail(),
-			encodedPassword,
-			request.getNickname(),
-			request.getPhone(),
-			request.getBusinessNumber(),
-			request.getDepositorName(),
-			request.getBankName(),
-			request.getBankAccount(),
-			defaultProfileImageUrl
-		);
+		User user = userWriter.createOwner(request.getEmail(), encodedPassword, request.getNickname(),
+			request.getPhone(), request.getBusinessNumber(), request.getDepositorName(), request.getBankName(),
+			request.getBankAccount(), defaultProfileImageUrl);
 
-		User savedUser = userWriter.create(user);
-		TokenResponse tokenResponse = issueTokenPair(savedUser, refreshTokenStore::save);
-		return SignupResponse.of(savedUser.getId(), savedUser.getEmail(), tokenResponse);
+		TokenResponse tokenResponse = tokenManager.issueTokens(user);
+
+		return SignupResponse.of(user.getId(), user.getEmail(), tokenResponse);
 	}
 
 	@Transactional
 	public TokenResponse signinOwner(String email, String password) {
 
-		User user = userReader.getActiveByEmailAndRole(email, UserRole.ROLE_OWNER);
+		User user = userReader.getActiveUser(email, UserRole.ROLE_OWNER, LoginType.NORMAL);
 
 		validatePassword(password, user.getPassword());
 
-		return issueTokenPair(user, refreshTokenStore::replace);
+		return tokenManager.issueTokens(user);
 
 	}
 
 	@Transactional
 	public TokenResponse reissueToken(String refreshToken) {
+		Long userId = tokenManager.extractUserId(refreshToken);
 
-		if (!refreshTokenStore.existsByToken(refreshToken)) {
-			throw new ParkingEasyException(AuthErrorCode.TOKEN_NOT_FOUND);
-		}
+		tokenManager.validateRefreshTokenExists(userId);
 
-		if (jwtProvider.isTokenExpired(refreshToken)) {
-			throw new ParkingEasyException(AuthErrorCode.TOKEN_EXPIRED);
-		}
+		User user = userReader.getActiveUserById(userId);
 
-		Long userId = jwtProvider.extractUserId(refreshToken);
-
-		User user = userReader.getActiveById(userId);
-
-		String newAccessToken = jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getRoleName(),
-			user.getNickname());
+		String newAccessToken = tokenManager.reissueAccessToken(user);
 
 		return TokenResponse.of(newAccessToken, refreshToken);
 
@@ -134,12 +106,10 @@ public class AuthService {
 		}
 	}
 
-	private TokenResponse issueTokenPair(User savedUser, BiConsumer<Long, String> refreshTokenHandler) {
-		String accessToken = jwtProvider.createAccessToken(savedUser.getId(), savedUser.getEmail(),
-			savedUser.getRoleName(), savedUser.getNickname());
-		String refreshToken = jwtProvider.createRefreshToken(savedUser.getId());
-		refreshTokenHandler.accept(savedUser.getId(), refreshToken);
-		return TokenResponse.of(accessToken, refreshToken);
+	private void validateDuplicateUser(String email, UserRole role, LoginType loginType) {
+		if (userReader.existsUser(email, role, loginType)) {
+			throw new ParkingEasyException(AuthErrorCode.DUPLICATED_EMAIL);
+		}
 	}
 
 }

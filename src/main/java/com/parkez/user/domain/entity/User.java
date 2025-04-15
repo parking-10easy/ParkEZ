@@ -1,22 +1,35 @@
 package com.parkez.user.domain.entity;
 
+import java.time.LocalDateTime;
+
+import org.springframework.util.StringUtils;
+
 import com.parkez.common.entity.BaseDeleteEntity;
+import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
-import jakarta.persistence.*;
+import com.parkez.user.domain.enums.UserStatus;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.util.StringUtils;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Table(
 	name = "users",
 	uniqueConstraints = {
-		@UniqueConstraint(name = "uk_email_role", columnNames = {"email", "role"})
+		@UniqueConstraint(name = "uk_email_role_login_type", columnNames = {"email", "role", "login_type"})
 	}
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -35,7 +48,6 @@ public class User extends BaseDeleteEntity {
 	@Column(nullable = false)
 	private String nickname;
 
-	@Column(nullable = false)
 	private String phone;
 
 	@Embedded
@@ -43,14 +55,23 @@ public class User extends BaseDeleteEntity {
 
 	private String profileImageUrl;
 
+	@Column(nullable = false)
 	@Enumerated(EnumType.STRING)
 	private UserRole role;
+
+	@Column(nullable = false)
+	@Enumerated(EnumType.STRING)
+	private LoginType loginType;
+
+	@Column(nullable = false)
+	@Enumerated(EnumType.STRING)
+	private UserStatus status;
 
 	@Builder
 	private User(String email, String password, String nickname, String phone,
 		BusinessAccountInfo businessAccountInfo,
 		String profileImageUrl,
-		UserRole role) {
+		UserRole role, LoginType loginType, UserStatus status) {
 		this.email = email;
 		this.password = password;
 		this.nickname = nickname;
@@ -58,6 +79,8 @@ public class User extends BaseDeleteEntity {
 		this.businessAccountInfo = businessAccountInfo;
 		this.profileImageUrl = profileImageUrl;
 		this.role = role;
+		this.loginType = loginType;
+		this.status = status;
 	}
 
 	public static User createUser(String email, String encodedPassword, String nickname,
@@ -69,6 +92,8 @@ public class User extends BaseDeleteEntity {
 			.phone(phone)
 			.profileImageUrl(profileImageUrl)
 			.role(UserRole.ROLE_USER)
+			.loginType(LoginType.NORMAL)
+			.status(UserStatus.COMPLETED)
 			.build();
 	}
 
@@ -84,6 +109,19 @@ public class User extends BaseDeleteEntity {
 			.businessAccountInfo(BusinessAccountInfo.create(businessNumber, depositorName, bankName, bankAccount))
 			.profileImageUrl(profileImageUrl)
 			.role(UserRole.ROLE_OWNER)
+			.loginType(LoginType.NORMAL)
+			.status(UserStatus.COMPLETED)
+			.build();
+	}
+
+	public static User createSocialUser(String email,String encodedPassword, String nickname, LoginType loginType, UserRole role) {
+		return User.builder()
+			.email(email)
+			.password(encodedPassword)
+			.nickname(nickname)
+			.role(role)
+			.loginType(loginType)
+			.status(UserStatus.PENDING)
 			.build();
 	}
 
@@ -129,5 +167,22 @@ public class User extends BaseDeleteEntity {
 
 	public String getDepositorName() {
 		return businessAccountInfo != null ? businessAccountInfo.getDepositorName() : null;
+	}
+
+	public boolean isSignupCompleted() {
+		return this.status == UserStatus.COMPLETED;
+	}
+
+	public void completeUserProfile(String phone) {
+		this.phone =phone;
+		this.status = UserStatus.COMPLETED;
+	}
+
+	public void completeOwnerProfile(String phone, String businessNumber, String depositorName, String bankName,
+		String bankAccount) {
+		this.phone = phone;
+		this.businessAccountInfo = BusinessAccountInfo.create(businessNumber, depositorName, bankName, bankAccount);
+		this.status = UserStatus.COMPLETED;
+
 	}
 }
