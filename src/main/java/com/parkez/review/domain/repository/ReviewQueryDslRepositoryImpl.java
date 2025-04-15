@@ -3,11 +3,13 @@ package com.parkez.review.domain.repository;
 import com.parkez.review.domain.entity.Review;
 import com.parkez.review.enums.ReviewSortType;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -32,35 +34,29 @@ public class ReviewQueryDslRepositoryImpl implements ReviewQueryDslRepository{
                 .join(reservation.parkingZone, parkingZone)
                 .join(parkingZone.parkingLot, parkingLot)
                 .join(review.user, user).fetchJoin()
-                .where(
-                        parkingLot.id.eq(parkingLotId),
-                        parkingLot.deletedAt.isNull()
-                )
+                .where(isActiveParkingLot(parkingLotId))
                 .orderBy(getSortOrder(sortType))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        Long totalCount = queryFactory
+        JPAQuery<Long> countQuery = queryFactory
                 .select(review.count())
                 .from(review)
                 .join(review.reservation, reservation)
                 .join(reservation.parkingZone, parkingZone)
                 .join(parkingZone.parkingLot, parkingLot)
-                .where(
-                        parkingLot.id.eq(parkingLotId),
-                        parkingLot.deletedAt.isNull()
-                )
-                .fetchOne();
+                .where(isActiveParkingLot(parkingLotId));
 
-        return new PageImpl<>(content, pageable, totalCount != null ? totalCount : 0L);
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
+
+    private BooleanExpression isActiveParkingLot(Long id) {
+        return parkingLot.id.eq(id)
+                .and(parkingLot.deletedAt.isNull());
     }
 
     private OrderSpecifier<?> getSortOrder(ReviewSortType sortType) {
-
-        if (sortType == null) {
-            return review.createdAt.desc();
-        }
 
         return switch (sortType) {
             case RATING_DESC -> review.rating.desc();
