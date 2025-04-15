@@ -122,7 +122,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                         parkingLot.name,
                         parkingLot.address,
                         JPAExpressions
-                                .select(parkingLotImage.imageUrl)
+                                .select(parkingLotImage.imageUrl.min())
                                 .from(parkingLotImage)
                                 .where(parkingLotImage.parkingLot.id.eq(parkingLot.id))
                                 .limit(1)
