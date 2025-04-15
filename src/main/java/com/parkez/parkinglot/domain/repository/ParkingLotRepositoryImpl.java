@@ -2,6 +2,7 @@ package com.parkez.parkinglot.domain.repository;
 
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
+import com.parkez.review.domain.repository.ReviewRepository;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -21,12 +22,15 @@ import java.util.List;
 import static com.parkez.parkinglot.domain.entity.QParkingLot.parkingLot;
 import static com.parkez.parkinglot.domain.entity.QParkingLotImage.parkingLotImage;
 import static com.parkez.parkingzone.domain.entity.QParkingZone.parkingZone;
+import static com.parkez.reservation.domain.entity.QReservation.reservation;
+import static com.parkez.review.domain.entity.QReview.review;
 
 @Repository
 @RequiredArgsConstructor
 public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
 
     private final JPAQueryFactory jpaQueryFactory;
+    private final ReviewRepository reviewRepository;
 
     // 다건 조회
     //TODO : 리뷰 카운트 + 평점 + 정렬 기준
@@ -49,6 +53,16 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                         JPAExpressions
                                 .select(parkingZone.count())
                                 .from(parkingZone)
+                                .where(parkingZone.parkingLot.id.eq(parkingLot.id)),
+                        JPAExpressions
+                                .select(review.count())
+                                .from(review)
+                                .join(review.reservation, reservation)
+                                .where(parkingZone.parkingLot.id.eq(parkingLot.id)),
+                        JPAExpressions
+                                .select(review.rating.avg())
+                                .from(review)
+                                .join(review.reservation, reservation)
                                 .where(parkingZone.parkingLot.id.eq(parkingLot.id))
                 ))
                 .from(parkingLot)
@@ -99,6 +113,16 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                         JPAExpressions
                                 .select(parkingZone.count())
                                 .from(parkingZone)
+                                .where(parkingZone.parkingLot.id.eq(parkingLot.id)),
+                        JPAExpressions
+                                .select(review.count())
+                                .from(review)
+                                .join(review.reservation, reservation)
+                                .where(parkingZone.parkingLot.id.eq(parkingLot.id)),
+                        JPAExpressions
+                                .select(review.rating.avg())
+                                .from(review)
+                                .join(review.reservation, reservation)
                                 .where(parkingZone.parkingLot.id.eq(parkingLot.id))
                 ))
                 .from(parkingLot)

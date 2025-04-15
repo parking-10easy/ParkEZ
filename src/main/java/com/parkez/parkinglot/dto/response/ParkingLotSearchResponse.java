@@ -109,8 +109,12 @@ public class ParkingLotSearchResponse {
 
     // 다건 + 단건 조회용 생성자
     public ParkingLotSearchResponse(Long parkingLotId, String name, String address,
-                                    LocalTime openedAt, LocalTime closedAt, BigDecimal pricePerHour,
-                                    Integer totalQuantity, ChargeType chargeType, SourceType sourceType, ParkingLotStatus parkingLotStatus, Long availableQuantity) {
+                                    LocalTime openedAt, LocalTime closedAt,
+                                    BigDecimal pricePerHour, Integer totalQuantity,
+                                    ChargeType chargeType, SourceType sourceType,
+                                    ParkingLotStatus parkingLotStatus, Long availableQuantity,
+                                    Long reviewCount, Double averageRating
+    ) {
         this(parkingLotId,
                 name,
                 address,
@@ -122,8 +126,8 @@ public class ParkingLotSearchResponse {
                 chargeType,
                 sourceType,
                 parkingLotStatus,
-                0L,
-                0.0,
+                reviewCount,
+                averageRating,
                 List.of()
         );
     }
