@@ -9,9 +9,10 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ReviewErrorCode implements ErrorCode {
 
-    ALREADY_REVIEWED(HttpStatus.BAD_REQUEST, "REVIEW_001", "이미 작성한 리뷰입니다."),
+    ALREADY_REVIEWED(HttpStatus.CONFLICT, "REVIEW_001", "이미 작성한 리뷰입니다."),
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "REVIEW_002", "해당 리뷰를 찾을 수 없습니다."),
-    NOT_REVIEW_OWNER(HttpStatus.NOT_FOUND, "REVIEW_003", "리뷰의 작성자 본인이 아닙니다.");
+    NOT_REVIEW_OWNER(HttpStatus.FORBIDDEN, "REVIEW_003", "리뷰의 작성자 본인이 아닙니다."),
+    NOT_COMPLETED_RESERVATION(HttpStatus.BAD_REQUEST, "REVIEW_004", "완료된 예약이 아닙니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

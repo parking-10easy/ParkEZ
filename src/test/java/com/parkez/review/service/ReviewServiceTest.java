@@ -6,6 +6,7 @@ import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.reservation.domain.entity.Reservation;
+import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.service.ReservationReader;
 import com.parkez.review.domain.entity.Review;
 import com.parkez.review.dto.request.ReviewCreateRequest;
@@ -86,6 +87,16 @@ class ReviewServiceTest {
                 .parkingLotName("A 주차장")
                 .build();
         ReflectionTestUtils.setField(reservation, "id", 1L);
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.COMPLETED);
+        return reservation;
+    }
+
+    private Reservation getInCompltetedReservation() {
+        Reservation reservation = Reservation.builder()
+                .parkingLotName("B 주차장")
+                .build();
+        ReflectionTestUtils.setField(reservation, "id", 2L);
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
         return reservation;
     }
 
@@ -151,7 +162,22 @@ class ReviewServiceTest {
         }
 
         @Test
-        void 리뷰_생성_특정_예약에_대해_이미_작성한_리뷰를_생성하면_ReviewErrorCode_예외가_발생한다() {
+        void 리뷰_생성_완료되지_않은_예약에_대한_리뷰_생성_시_NOT_COMPLETED_RESERVATION_예외가_발생한다() {
+            // given
+            AuthUser authUser = getAuthUser();
+            ReviewCreateRequest createRequest = getCreateRequest();
+            Reservation reservation = getInCompltetedReservation();
+
+            given(reservationReader.findMyReservation(anyLong(), anyLong())).willReturn(reservation);
+
+            // when & then
+            assertThatThrownBy(() -> reviewService.createReview(authUser, createRequest))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasMessage(ReviewErrorCode.NOT_COMPLETED_RESERVATION.getDefaultMessage());
+        }
+
+        @Test
+        void 리뷰_생성_특정_예약에_대해_이미_작성한_리뷰를_생성하면_ALREADY_REVIEWED_예외가_발생한다() {
             // given
             AuthUser authUser = getAuthUser();
             ReviewCreateRequest createRequest = getCreateRequest();
@@ -208,7 +234,7 @@ class ReviewServiceTest {
     @Nested
     class GetReview {
         @Test
-        void 리뷰_단건조회_특정_리뷰를_정상적으로_단건조회할_수_있다() {
+        void 리뷰_단건조회_특정_리뷰를_정상적으로_조회할_수_있다() {
             // given
             Review review = getReview();
             given(reviewReader.getReviewById(anyLong())).willReturn(review);
@@ -237,8 +263,7 @@ class ReviewServiceTest {
             reviewService.updateReview(authUser,review.getId(),updateRequest);
 
             // then
-            assertThat(review.getRating()).isEqualTo(updateRequest.getRating());
-            assertThat(review.getContent()).isEqualTo(updateRequest.getContent());
+            verify(reviewWriter, times(1)).updateReview(review, updateRequest.getRating(), updateRequest.getContent());
         }
 
         @Test
@@ -259,7 +284,7 @@ class ReviewServiceTest {
         }
 
         @Test
-        void 리뷰_수정_소유자_본인이_아니면_NOT_REVIEW_OWNER_예외가_발생한다() {
+        void 리뷰_수정_본인이_작성한_리뷰가_아니면_NOT_REVIEW_OWNER_예외가_발생한다() {
             // given
             AuthUser nonOwner = getSecondAuthUser();
             Review review = getReview();
@@ -308,7 +333,7 @@ class ReviewServiceTest {
         }
 
         @Test
-        void 리뷰_삭제_소유자_본인이_아니면_NOT_REVIEW_OWNER_예외가_발생한다() {
+        void 리뷰_삭제_본인이_작성한_리뷰가_아니면_NOT_REVIEW_OWNER_예외가_발생한다() {
             // given
             AuthUser nonOwner = getSecondAuthUser();
             Review review = getReview();

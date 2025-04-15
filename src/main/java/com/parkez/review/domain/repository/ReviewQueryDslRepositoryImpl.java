@@ -57,17 +57,13 @@ public class ReviewQueryDslRepositoryImpl implements ReviewQueryDslRepository{
     private OrderSpecifier<?> getSortOrder(ReviewSortType sortType) {
 
         if (sortType == null) {
-            sortType = ReviewSortType.LATEST;
+            return review.createdAt.desc();
         }
 
-        switch (sortType) {
-            case RATING_DESC:
-                return review.rating.desc();
-            case RATING_ASC:
-                return review.rating.asc();
-            case LATEST:
-            default:
-                return review.createdAt.desc();
-        }
+        return switch (sortType) {
+            case RATING_DESC -> review.rating.desc();
+            case RATING_ASC -> review.rating.asc();
+            default -> review.createdAt.desc();
+        };
     }
 }

@@ -7,6 +7,7 @@ import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.review.domain.entity.Review;
 import com.parkez.review.domain.repository.ReviewRepository;
 import com.parkez.review.dto.request.ReviewCreateRequest;
+import com.parkez.review.dto.request.ReviewUpdateRequest;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import org.junit.jupiter.api.Nested;
@@ -30,15 +31,6 @@ class ReviewWriterTest {
 
     @InjectMocks
     private ReviewWriter reviewWriter;
-
-    private AuthUser getAuthUser() {
-        return AuthUser.builder()
-                .id(1L)
-                .email("user@test.com")
-                .roleName(UserRole.ROLE_USER.name())
-                .nickname("테스트 유저")
-                .build();
-    }
 
     private User getUser() {
         User user = User.builder()
@@ -110,6 +102,13 @@ class ReviewWriterTest {
                 .build();
     }
 
+    private ReviewUpdateRequest getUpdateRequest() {
+        return ReviewUpdateRequest.builder()
+                .rating(4)
+                .content("괜찮아요")
+                .build();
+    }
+
     @Nested
     class CreateReview {
         @Test
@@ -131,11 +130,27 @@ class ReviewWriterTest {
     }
 
     @Nested
+    class UpdateReview {
+        @Test
+        void 리뷰_수정_특정_리뷰를_정상적으로_수정할_수_있다() {
+            // given
+            Review review = getReview();
+            ReviewUpdateRequest updateRequest = getUpdateRequest();
+
+            // when
+            reviewWriter.updateReview(review,updateRequest.getRating(),updateRequest.getContent());
+
+            // then
+            assertThat(review.getRating()).isEqualTo(updateRequest.getRating());
+            assertThat(review.getContent()).isEqualTo(updateRequest.getContent());
+        }
+    }
+
+    @Nested
     class DeleteReview {
         @Test
         void 리뷰_삭제_특정_리뷰를_정상적으로_삭제할_수_있다() {
             // given
-            Reservation reservation = getReservation();
             Review review = getReview();
 
             doNothing().when(reviewRepository).deleteById(anyLong());

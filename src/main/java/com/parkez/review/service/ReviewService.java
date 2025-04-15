@@ -28,16 +28,10 @@ public class ReviewService {
 
     public ReviewResponse createReview(AuthUser authUser, ReviewCreateRequest request) {
         Reservation reservation = reservationReader.findMyReservation(authUser.getId(), request.getReservationId());
-
+        validateCompletedReservation(reservation);
         boolean reviewWritten = reviewReader.isReviewWritten(request.getReservationId());
         validateReviewWritten(reviewWritten);
         return ReviewResponse.from(reviewWriter.createReview(reservation, request.getRating(), request.getContent()));
-    }
-
-    private void validateReviewWritten(boolean reviewWritten) {
-        if (reviewWritten){
-            throw new ParkingEasyException(ReviewErrorCode.ALREADY_REVIEWED);
-        }
     }
 
     public Page<ReviewResponse> getReviews(Long parkingLotId, PageRequest pageRequest, ReviewSortType sortType) {
@@ -53,13 +47,25 @@ public class ReviewService {
     public void updateReview(AuthUser authUser, Long reviewId, ReviewUpdateRequest request) {
         Review review = reviewReader.getReviewById(reviewId);
         validateOwner(authUser.getId(), review);
-        review.update(request.getRating(), request.getContent());
+        reviewWriter.updateReview(review, request.getRating(),request.getContent());
     }
 
     public void deleteReview(AuthUser authUser, Long reviewId) {
         Review review = reviewReader.getReviewById(reviewId);
         validateOwner(authUser.getId(), review);
         reviewWriter.deleteReview(review);
+    }
+
+    private static void validateCompletedReservation(Reservation reservation) {
+        if (!reservation.isCompleted()) {
+            throw new ParkingEasyException(ReviewErrorCode.NOT_COMPLETED_RESERVATION);
+        }
+    }
+
+    private void validateReviewWritten(boolean reviewWritten) {
+        if (reviewWritten){
+            throw new ParkingEasyException(ReviewErrorCode.ALREADY_REVIEWED);
+        }
     }
 
     private void validateOwner(Long userId, Review review) {

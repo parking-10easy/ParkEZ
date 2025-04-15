@@ -140,7 +140,7 @@ class ReviewReaderTest {
     @Nested
     class GetReview {
         @Test
-        void 리뷰_단건조회_특정_리뷰를_정상적으로_단건조회할_수_있다() {
+        void 리뷰_단건조회_특정_리뷰를_정상적으로_조회할_수_있다() {
             // given
             Review review = getReview();
             when(reviewRepository.findActiveReviewById(anyLong())).thenReturn(Optional.of(review));

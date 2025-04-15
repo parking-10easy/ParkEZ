@@ -30,6 +30,10 @@ public class ReviewWriter {
         return reviewRepository.save(review);
     }
 
+    public void updateReview(Review review, Integer rating, String content) {
+        review.update(rating, content);
+    }
+
     public void deleteReview(Review review) {
         // 리뷰 수 감소
         Reservation reservation = review.getReservation();

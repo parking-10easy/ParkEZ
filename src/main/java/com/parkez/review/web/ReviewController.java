@@ -56,7 +56,7 @@ public class ReviewController {
     public Response<Void> updateReview(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @Parameter(description = "리뷰 ID (필수)", example = "1") @PathVariable Long reviewId,
-            @RequestBody ReviewUpdateRequest request
+            @Valid @RequestBody ReviewUpdateRequest request
     ) {
         reviewService.updateReview(authUser, reviewId, request);
         return Response.empty();
