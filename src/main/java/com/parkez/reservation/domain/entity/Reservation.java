@@ -85,6 +85,10 @@ public class Reservation extends BaseEntity {
         return this.parkingZone.getId();
     }
 
+    public boolean isCompleted() {
+        return this.status == ReservationStatus.COMPLETED;
+    }
+
     public void updateStatusConfirm(){
         this.status = ReservationStatus.CONFIRMED;
     }
