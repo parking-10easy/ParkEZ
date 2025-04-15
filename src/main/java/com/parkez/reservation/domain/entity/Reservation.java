@@ -72,6 +72,10 @@ public class Reservation extends BaseEntity {
         this.status = ReservationStatus.CANCELED;
     }
 
+    public void expire() {
+        this.status = ReservationStatus.PAYMENT_EXPIRED;
+    }
+
     public Long getUserId() {
         return this.user.getId();
     }

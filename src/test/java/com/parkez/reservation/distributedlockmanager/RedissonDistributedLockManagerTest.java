@@ -10,17 +10,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.http.HttpStatus;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -69,13 +66,13 @@ class RedissonDistributedLockManagerTest {
         given(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).willReturn(false);
 
         // when & then
-        ParkingEasyException result = assertThrows(ParkingEasyException.class,
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                 () -> redissonDistributedLockManager.executeWithLock(key, task));
-        assertThat(result.getErrorCode()).isEqualTo(ReservationErrorCode.RESERVATION_LOCK_FAILED);
+        assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.RESERVATION_LOCK_FAILED);
     }
 
     @Test
-    void InterruptedException_발생시_RESERVATION_LOCK_INTERRUPTED_예외() throws InterruptedException {
+    void Interrupt_발생시_RESERVATION_LOCK_INTERRUPTED_예외() throws InterruptedException {
         // given
         Long key = 1L;
         String expectedResult = "Success";
@@ -85,13 +82,31 @@ class RedissonDistributedLockManagerTest {
         given(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).willThrow(new InterruptedException());
 
         // when & then
-        ParkingEasyException result = assertThrows(ParkingEasyException.class,
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                 () -> redissonDistributedLockManager.executeWithLock(key, task));
-        assertThat(result.getErrorCode()).isEqualTo(ReservationErrorCode.RESERVATION_LOCK_INTERRUPTED);
+        assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.RESERVATION_LOCK_INTERRUPTED);
     }
 
     @Test
-    void task_내부_예외발생시_UNKNOWN_ERROR_예외() throws Exception {
+    void 예외_발생_시_해당_예외가_ParkingEasyException에서_처리하는_예외라면_ParkingEasyException_반환() throws InterruptedException {
+        // given
+        Long key = 1L;
+        ParkingEasyException expectedException = new ParkingEasyException(ReservationErrorCode.RESERVATION_LOCK_FAILED);
+        Callable<String> task = () -> {
+            throw expectedException;
+        };
+
+        given(redissonClient.getLock(anyString())).willReturn(lock);
+        given(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).willReturn(true);
+
+        // when & then
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                () -> redissonDistributedLockManager.executeWithLock(key, task));
+        assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.RESERVATION_LOCK_FAILED);
+    }
+
+    @Test
+    void Custom_Error_Response로_처리되지_않은_예외_발생_시_UNKNOWN_ERROR_예외() throws Exception {
         // given
         Long key = 1L;
         Callable<String> task = () -> {
@@ -102,8 +117,8 @@ class RedissonDistributedLockManagerTest {
         given(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).willReturn(true);
 
         // when & then
-        ParkingEasyException result = assertThrows(ParkingEasyException.class,
+        ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                 () -> redissonDistributedLockManager.executeWithLock(key, task));
-        assertThat(result.getErrorCode()).isEqualTo(ReservationErrorCode.UNKNOWN_ERROR);
+        assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.UNKNOWN_ERROR);
     }
 }

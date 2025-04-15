@@ -1,15 +1,13 @@
 package com.parkez.reservation.web;
 
 import com.parkez.common.dto.request.PageRequest;
-import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
-import com.parkez.common.dto.response.Response;
 import com.parkez.reservation.domain.enums.LockStrategy;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.OwnerReservationResponse;
-import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.reservation.service.ReservationService;
 import com.parkez.reservation.service.concurrency.ReservationLockService;
 import com.parkez.user.domain.enums.UserRole;
@@ -39,19 +37,11 @@ public class ReservationController {
     public Response<MyReservationResponse> createReservation(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @Parameter(description = "동시성 제어 전략", example = "default")
-            @PathVariable String strategy,
+            @PathVariable LockStrategy strategy,
             @Valid @RequestBody ReservationRequest request
     ) {
-        LockStrategy lockStrategy = LockStrategy.from(strategy);
-        ReservationLockService service = reservationLockServiceMap.get(lockStrategy.name());
-        try {
-            return Response.of(service.createReservation(authUser, request));
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // 인터럽트 상태 복구
-            throw new ParkingEasyException(ReservationErrorCode.RESERVATION_LOCK_INTERRUPTED);
-        }
-
+        ReservationLockService service = reservationLockServiceMap.get(strategy.getDescription());
+        return Response.of(service.createReservation(authUser, request));
     }
 
     // 나의 예약 내역 조회
@@ -66,6 +56,7 @@ public class ReservationController {
 
     // 나의 예약 단건 조회
     @GetMapping("/v1/reservations/me/{reservationId}")
+    @Operation(summary = "나의 예약 단건 조회", description = "나의 예약 단건 조회 기능입니다.")
     public Response<MyReservationResponse> getMyReservation(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long reservationId
@@ -75,6 +66,7 @@ public class ReservationController {
 
     // Owner 본인 소유 주차장의 예약 내역 리스트 조회
     @Secured(UserRole.Authority.OWNER)
+    @Operation(summary = "특정 주차공간에 대한 예약 내역 조회", description = "주차공간 소유주의 특정 주차공간에 대한 예약 내역 조회 기능입니다.")
     @GetMapping("/v1/users/me/parking-zones/{parkingZoneId}/reservations")
     public Response<OwnerReservationResponse> getOwnerReservations(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
@@ -86,6 +78,7 @@ public class ReservationController {
 
     // 주차공간 예약 사용 완료(이용 시간 만료)
     @PatchMapping("/v1/reservations/me/{reservationId}")
+    @Operation(summary = "예약 사용 완료", description = "사용 완료한 예약에 대한 완료 처리 기능입니다.")
     public Response<Void> completeReservation(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long reservationId
@@ -96,6 +89,7 @@ public class ReservationController {
 
     // 예약 취소
     @DeleteMapping("v1/reservations/me/{reservationId}")
+    @Operation(summary = "예약 취소", description = "사용하지 않은 예약에 대한 취소 기능입니다.")
     public Response<Void> cancelReservation(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long reservationId

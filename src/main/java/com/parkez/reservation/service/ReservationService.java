@@ -22,11 +22,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.util.List;
 
-@Service("DEFAULT")
+@Service("noneLockService")
 @RequiredArgsConstructor
 public class ReservationService implements ReservationLockService {
 
@@ -42,20 +41,23 @@ public class ReservationService implements ReservationLockService {
         User user = userReader.getActiveById(authUser.getId());
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
 
-        // 요금 계산
-        long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
-        if (hours <= 0) {
+        // 예약 날짜 및 시간 입력 오류 예외
+        if (request.getStartDateTime().isAfter(request.getEndDateTime())) {
             throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
         }
-        BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
-        Reservation reservation = reservationWriter.createReservation(
+        // 이미 해당 시간에 예약이 존재할 경우
+        List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
+        boolean existed = reservationReader.existsReservationByConditions(parkingZone, request.getStartDateTime(), request.getEndDateTime(), statusList);
+        if (existed) {
+            throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED);
+        }
+
+        Reservation reservation = reservationWriter.create(
                 user,
                 parkingZone,
-                parkingZone.getParkingLotName(),
                 request.getStartDateTime(),
-                request.getEndDateTime(),
-                price
+                request.getEndDateTime()
         );
 
         boolean reviewWritten = false;
@@ -65,7 +67,7 @@ public class ReservationService implements ReservationLockService {
 
     public Page<MyReservationResponse> getMyReservations(AuthUser authUser, int page, int size) {
 
-        int adjustedPage = (page > 0) ? page - 1 : 0;
+        int adjustedPage = page -1;
         PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by("createdAt").descending());
         Page<ReservationWithReviewDto> pageDto = reservationReader.findMyReservations(authUser.getId(), pageable);
 
@@ -93,7 +95,7 @@ public class ReservationService implements ReservationLockService {
             throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
         }
 
-        int adjustedPage = (page > 0) ? page - 1 : 0;
+        int adjustedPage = page -1;
         PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by("createdAt").descending());
         Page<Reservation> pageReservations = reservationReader.findOwnerReservations(parkingZoneId, pageable);
 
@@ -116,16 +118,13 @@ public class ReservationService implements ReservationLockService {
 
         Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
-        // 사용 완료 된 예약 또는 이미 취소된 예약은 취소 불가 예외
-        if (reservation.getStatus() == ReservationStatus.COMPLETED) {
-            throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_COMPLETED_RESERVATION);
-        }
-        if (reservation.getStatus() == ReservationStatus.CANCELED) {
-            throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_CANCELED_RESERVATION);
+        // 결제 대기 중 또는 결제 완료 된 예약만 취소할 수 있음
+        if (reservation.getStatus() != ReservationStatus.PENDING && reservation.getStatus() != ReservationStatus.CONFIRMED) {
+            throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_RESERVATION);
         }
 
         // 시작 시간 1시간 이내일 경우 취소 불가 예외
-        if (reservation.getStartDateTime().isBefore(LocalDateTime.now().plusHours(1))) {
+        if (LocalDateTime.now().isAfter(reservation.getStartDateTime().minusHours(1))) {
             throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
         }
 

@@ -6,5 +6,5 @@ import com.parkez.reservation.dto.response.MyReservationResponse;
 
 public interface ReservationLockService {
 
-    MyReservationResponse createReservation(AuthUser authUser, ReservationRequest request) throws InterruptedException;
+    MyReservationResponse createReservation(AuthUser authUser, ReservationRequest request);
 }

@@ -16,7 +16,11 @@ import java.util.List;
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
     @Query("""
-                SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
+                SELECT
+                    CASE
+                        WHEN COUNT(r) > 0 THEN true
+                        ELSE false
+                    END
                 FROM Reservation r
                 WHERE r.parkingZone = :parkingZone
                   AND r.status IN :statusList
@@ -33,7 +37,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     @Query("""
                 SELECT new com.parkez.reservation.dto.response.ReservationWithReviewDto(r,
-                    CASE WHEN rv.id IS NOT NULL THEN true ELSE false END)
+                    CASE
+                        WHEN rv.id IS NOT NULL THEN true
+                        ELSE false
+                    END)
                 FROM Reservation r
                 LEFT JOIN Review rv ON rv.reservation = r
                 WHERE r.user.id = :userId
@@ -43,4 +50,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     boolean existsByParkingZone_Id(Long parkingZoneId);
 
     Page<Reservation> findAllByParkingZone_Id(Long parkingZoneId, Pageable pageable);
+
+    @Query("""
+            SELECT r
+            FROM Reservation r
+            WHERE r.status = 'PENDING'
+              AND r.createdAt <= :expiredTime
+            """)
+    List<Reservation> findReservationsToExpire(@Param("expiredTime") LocalDateTime expiredTime);
 }

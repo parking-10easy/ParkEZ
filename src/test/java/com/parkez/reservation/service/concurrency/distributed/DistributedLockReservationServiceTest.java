@@ -10,6 +10,7 @@ import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.exception.ReservationErrorCode;
+import com.parkez.reservation.service.ReservationReader;
 import com.parkez.reservation.service.ReservationWriter;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
@@ -28,9 +29,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +45,8 @@ class DistributedLockReservationServiceTest {
     private ParkingZoneReader parkingZoneReader;
     @Mock
     private ReservationWriter reservationWriter;
+    @Mock
+    private ReservationReader reservationReader;
     @InjectMocks
     private DistributedLockReservationService distributedLockReservationService;
 
@@ -130,9 +133,7 @@ class DistributedLockReservationServiceTest {
 
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
-            long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
-            BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
-
+            BigDecimal price = BigDecimal.valueOf(2000);
             Reservation reservation = createReservation(reservationId, user, parkingZone, request, price);
 
             given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
@@ -141,7 +142,7 @@ class DistributedLockReservationServiceTest {
             });
             given(userReader.getActiveById(anyLong())).willReturn(user);
             given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
-            given(reservationWriter.createReservation(any(User.class), any(ParkingZone.class), anyString(), any(LocalDateTime.class), any(LocalDateTime.class), any(BigDecimal.class)))
+            given(reservationWriter.create(any(User.class), any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(reservation);
 
             // when
@@ -157,7 +158,7 @@ class DistributedLockReservationServiceTest {
         }
 
         @Test
-        void 특정_주차공간에_대한_예약_생성_시_request_입력_시간_오류의_경우_NOT_VALID_REQUEST_TIME_예외_처리() {
+        void 특정_주차공간에_대한_예약_생성_시_잘못된_예약날짜_및_시간_입력의_경우_NOT_VALID_REQUEST_TIME_예외_처리() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
@@ -186,7 +187,41 @@ class DistributedLockReservationServiceTest {
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                     () -> distributedLockReservationService.createReservation(authUser, request));
-            assertEquals(ReservationErrorCode.NOT_VALID_REQUEST_TIME, exception.getErrorCode());
+            assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
+        }
+
+        @Test
+        void 특정_주차공간에_대한_예약_생성_시_이미_해당_시간에_예약이_존재할_경우_ALREADY_RESERVED_예외_처리() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+
+            AuthUser authUser = createAuthUser(userId);
+
+            ReservationRequest request = createRequest(parkingZoneId);
+            ReflectionTestUtils.setField(request, "endDateTime", request.getStartDateTime().plusHours(1));
+
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<MyReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveById(anyLong())).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+            given(reservationReader.existsReservationByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList())).willReturn(true);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> distributedLockReservationService.createReservation(authUser, request));
+            assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.ALREADY_RESERVED);
         }
     }
 }
