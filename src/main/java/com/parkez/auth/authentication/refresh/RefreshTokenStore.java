@@ -26,11 +26,6 @@ public class RefreshTokenStore {
 		return redisTemplate.hasKey(getKey(userId));
 	}
 
-	public String get(Long userId) {
-		String key = getKey(userId);
-		return redisTemplate.opsForValue().get(key);
-	}
-
 	private String getKey(Long userId) {
 		return REFRESH_TOKEN_KEY_PREFIX + userId;
 	}
