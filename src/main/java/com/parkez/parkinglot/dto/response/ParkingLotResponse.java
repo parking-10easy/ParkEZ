@@ -26,7 +26,7 @@ public class ParkingLotResponse {
     @Schema(description = "주차장 이름", example = "한빛 주차장")
     private String name;
 
-    @Schema(description = "주차장 주소", example = "서울시 강남구 테헤란로 1111")
+    @Schema(description = "주차장 주소", example = "서울시 강남구 테헤란로 131")
     private String address;
 
     @Schema(description = "주차장 오픈 시간", example = "09:00")

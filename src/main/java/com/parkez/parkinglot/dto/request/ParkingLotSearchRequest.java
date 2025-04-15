@@ -11,7 +11,7 @@ public class ParkingLotSearchRequest {
     @Schema(description = "주차장 이름", example = "한빛")
     private String name;
 
-    @Schema(description = "주차장 이름", example = "강남")
+    @Schema(description = "주차장 주소", example = "강남")
     private String address;
 
     @Schema(description = "사용자 현재 위도", example = "35.4821524")

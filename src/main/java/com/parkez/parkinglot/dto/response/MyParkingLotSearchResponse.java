@@ -16,13 +16,13 @@ public class MyParkingLotSearchResponse {
     @Schema(description = "주차장 이름", example = "한빛 주차장")
     private final String name;
 
-    @Schema(description = "주차장 주소", example = "서울시 강남구 테헤란로 1111")
+    @Schema(description = "주차장 주소", example = "서울시 강남구 테헤란로 131")
     private final String address;
 
     @Schema(description = "리뷰 수", example = "10")
     private final Integer reviewCount;
 
-    @Schema(description = "썸네일 이미지", example = "https://example.com/image1.jpg")
+    @Schema(description = "썸네일 이미지", example = "parking-lot-default.jpg")
     private final String thumbnailImage;
 
     @Builder

@@ -10,7 +10,7 @@ import lombok.Getter;
 public class ParkingLotStatusRequest {
 
     @NotBlank(message = "상태는 필수 값 입니다.")
-    @Schema(description = "주차장 상태", example = "AVAILABLE")
+    @Schema(description = "주차장 상태", example = "OPEN")
     private String status;
 
     @Builder
