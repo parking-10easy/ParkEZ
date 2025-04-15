@@ -14,7 +14,7 @@ import lombok.Getter;
 public class MyProfileResponse {
 
 	@Schema(description = "유저 ID", example = "1")
-	private final long id;
+	private final Long id;
 
 	@Schema(description = "유저 이메일", example = "user@example.com")
 	private final String email;

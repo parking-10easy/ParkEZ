@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.user.domain.entity.BusinessAccountInfo;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.dto.request.UserChangePasswordRequest;
@@ -37,12 +36,12 @@ public class UserService {
 	private final UserReader userReader;
 
 	public MyProfileResponse getMyProfile(AuthUser authUser) {
-		User user = userReader.getActiveById(authUser.getId());
+		User user = userReader.getActiveUserById(authUser.getId());
 		return MyProfileResponse.from(user);
 	}
 
 	public UserResponse getUser(Long id) {
-		User user = userReader.getActiveById(id);
+		User user = userReader.getActiveUserById(id);
 		return UserResponse.from(user);
 	}
 
@@ -52,7 +51,7 @@ public class UserService {
 			validateBusinessInfo(request);
 		}
 
-		User user = userReader.getActiveById(authUser.getId());
+		User user = userReader.getActiveUserById(authUser.getId());
 
 		user.updateProfile(
 			request.getNickname(),
@@ -64,23 +63,17 @@ public class UserService {
 		);
 	}
 
-	private void validateBusinessInfo(UserProfileUpdateRequest request) {
-		if (!request.hasAllBusinessInfo()) {
-			throw new ParkingEasyException(UserErrorCode.BUSINESS_INFO_REQUIRED);
-		}
-	}
-
 	@Transactional
 	public void updateProfileImage(Long id, UserProfileImageUpdateRequest request) {
 
-		User user = userReader.getActiveById(id);
+		User user = userReader.getActiveUserById(id);
 
 		user.updateProfileImage(request.getProfileImageUrl(), defaultProfileImageUrl);
 	}
 
 	@Transactional
 	public void changePassword(Long id, UserChangePasswordRequest request) {
-		User user = userReader.getActiveById(id);
+		User user = userReader.getActiveUserById(id);
 		String userPassword = user.getPassword();
 
 		if (!bCryptPasswordEncoder.matches(request.getOldPassword(), userPassword)) {
@@ -98,7 +91,13 @@ public class UserService {
 
 	@Transactional
 	public void deleteUser(Long id) {
-		User user = userReader.getActiveById(id);
+		User user = userReader.getActiveUserById(id);
 		user.softDelete(WITHDRAWAL_NICKNAME, LocalDateTime.now());
+	}
+
+	private void validateBusinessInfo(UserProfileUpdateRequest request) {
+		if (!request.hasAllBusinessInfo()) {
+			throw new ParkingEasyException(UserErrorCode.BUSINESS_INFO_REQUIRED);
+		}
 	}
 }
