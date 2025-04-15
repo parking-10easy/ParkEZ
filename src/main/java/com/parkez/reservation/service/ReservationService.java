@@ -39,7 +39,7 @@ public class ReservationService implements ReservationLockService {
     @Override
     public MyReservationResponse createReservation(AuthUser authUser, ReservationRequest request) {
 
-        User user = userReader.getActiveById(authUser.getId());
+        User user = userReader.getActiveUserById(authUser.getId());
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
 
         // 요금 계산
