@@ -165,7 +165,7 @@ public class ParkingLotServiceTest {
             AuthUser authUser = getAuthUserOwner();
             User owner = getOwnerUser();
             ParkingLot parkingLot = getParkingLot();
-            when(userReader.getActiveById(authUser.getId())).thenReturn(owner);
+            when(userReader.getActiveUserById(authUser.getId())).thenReturn(owner);
             when(parkingLotWriter.createParkingLot(any(ParkingLot.class))).thenReturn(parkingLot);
 
             // when

@@ -1,5 +1,7 @@
 package com.parkez.user.service;
 
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
@@ -7,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.domain.repository.UserRepository;
 import com.parkez.user.exception.UserErrorCode;
@@ -18,31 +21,25 @@ public class UserReader {
 
 	private final UserRepository userRepository;
 
-	public boolean existByEmailAndRole(String email, UserRole role) {
-		return userRepository.existsByEmailAndRole(email,role);
+	public boolean existsUser(String email, UserRole role, LoginType loginType) {
+		return userRepository.existsByEmailAndRoleAndLoginType(email,role, loginType);
 	}
 
-	public User getActiveByEmailAndRole(String email, UserRole role) {
-		User user = userRepository.findByEmailAndRole(email, role).orElseThrow(
+	public User getActiveUser(String email, UserRole role, LoginType loginType) {
+		return userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(email, role, loginType).orElseThrow(
 			() -> new ParkingEasyException(UserErrorCode.EMAIL_NOT_FOUND)
 		);
-		validateActiveUser(user);
-		return user;
 	}
 
-	public User getActiveById(Long id) {
-		User user = userRepository.findById(id).orElseThrow(
+	public User getActiveUserById(Long id) {
+		return userRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(
 			() -> new ParkingEasyException(UserErrorCode.USER_NOT_FOUND)
 		);
-		validateActiveUser(user);
-		return user;
 
 	}
 
-	private static void validateActiveUser(User user) {
-		if (user.isDeleted()) {
-			throw new ParkingEasyException(UserErrorCode.USER_ALREADY_DELETED);
-		}
+	public Optional<User> findActiveUser(String email, UserRole role, LoginType loginType) {
+		return userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(email, role,loginType);
 	}
 
 }
