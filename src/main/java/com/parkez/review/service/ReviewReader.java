@@ -20,7 +20,7 @@ public class ReviewReader {
 
     private final ReviewRepository reviewRepository;
 
-    public Page<ReviewResponse> getReviews(Long parkingLotId, int page, int size, ReviewSortType sortType) {
+    public Page<ReviewResponse> getReviewsWithUser(Long parkingLotId, int page, int size, ReviewSortType sortType) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         Page<Review> reviews = reviewRepository.findAllByParkingLotIdWithSort(parkingLotId, pageable, sortType);
@@ -28,7 +28,7 @@ public class ReviewReader {
         return reviews.map(ReviewResponse::from);
     }
 
-    public Review getReviewById(Long reviewId) {
+    public Review getReviewWithUserById(Long reviewId) {
         return reviewRepository.findActiveReviewById(reviewId).orElseThrow(
                 () -> new ParkingEasyException(ReviewErrorCode.REVIEW_NOT_FOUND)
         );

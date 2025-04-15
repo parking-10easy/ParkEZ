@@ -203,7 +203,7 @@ class ReviewServiceTest {
             Page<ReviewResponse> reviewResponses = getReviewResponses();
 
             doNothing().when(parkingLotReader).validateExistence(parkingLotId);
-            when(reviewReader.getReviews(anyLong(),anyInt(),anyInt(),any())).thenReturn(reviewResponses);
+            when(reviewReader.getReviewsWithUser(anyLong(),anyInt(),anyInt(),any())).thenReturn(reviewResponses);
 
             // when
             PageRequest pageRequest = new PageRequest(1,10);
@@ -237,7 +237,7 @@ class ReviewServiceTest {
         void 리뷰_단건조회_특정_리뷰를_정상적으로_조회할_수_있다() {
             // given
             Review review = getReview();
-            given(reviewReader.getReviewById(anyLong())).willReturn(review);
+            given(reviewReader.getReviewWithUserById(anyLong())).willReturn(review);
 
             // when
             ReviewResponse result = reviewService.getReview(review.getId());
@@ -257,7 +257,7 @@ class ReviewServiceTest {
             Review review = getReview();
             ReviewUpdateRequest updateRequest = getUpdateRequest();
 
-            given(reviewReader.getReviewById(anyLong())).willReturn(review);
+            given(reviewReader.getReviewWithUserById(anyLong())).willReturn(review);
 
             // when
             reviewService.updateReview(authUser,review.getId(),updateRequest);
@@ -273,7 +273,7 @@ class ReviewServiceTest {
             Review review = getReview();
             ReviewUpdateRequest updateRequest = getUpdateRequest();
 
-            given(reviewReader.getReviewById(anyLong())).willThrow(
+            given(reviewReader.getReviewWithUserById(anyLong())).willThrow(
                     new ParkingEasyException(ReviewErrorCode.REVIEW_NOT_FOUND)
             );
 
@@ -290,7 +290,7 @@ class ReviewServiceTest {
             Review review = getReview();
             ReviewUpdateRequest updateRequest = getUpdateRequest();
 
-            given(reviewReader.getReviewById(anyLong())).willReturn(review);
+            given(reviewReader.getReviewWithUserById(anyLong())).willReturn(review);
 
             // when & then
             assertThatThrownBy(() -> reviewService.updateReview(nonOwner, review.getId(), updateRequest))
@@ -307,7 +307,7 @@ class ReviewServiceTest {
             AuthUser authUser = getAuthUser();
             Review review = getReview();
 
-            given(reviewReader.getReviewById(anyLong())).willReturn(review);
+            given(reviewReader.getReviewWithUserById(anyLong())).willReturn(review);
 
             // when
             reviewService.deleteReview(authUser, review.getId());
@@ -322,7 +322,7 @@ class ReviewServiceTest {
             AuthUser authUser = getAuthUser();
             Review review = getReview();
 
-            given(reviewReader.getReviewById(anyLong())).willThrow(
+            given(reviewReader.getReviewWithUserById(anyLong())).willThrow(
                     new ParkingEasyException(ReviewErrorCode.REVIEW_NOT_FOUND)
             );
 
@@ -338,7 +338,7 @@ class ReviewServiceTest {
             AuthUser nonOwner = getSecondAuthUser();
             Review review = getReview();
 
-            given(reviewReader.getReviewById(anyLong())).willReturn(review);
+            given(reviewReader.getReviewWithUserById(anyLong())).willReturn(review);
 
             // when & then
             assertThatThrownBy(() -> reviewService.deleteReview(nonOwner, review.getId()))

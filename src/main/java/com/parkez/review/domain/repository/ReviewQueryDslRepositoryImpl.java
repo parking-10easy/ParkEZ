@@ -16,6 +16,7 @@ import static com.parkez.parkinglot.domain.entity.QParkingLot.parkingLot;
 import static com.parkez.parkingzone.domain.entity.QParkingZone.parkingZone;
 import static com.parkez.reservation.domain.entity.QReservation.reservation;
 import static com.parkez.review.domain.entity.QReview.review;
+import static com.parkez.user.domain.entity.QUser.user;
 
 @Repository
 @RequiredArgsConstructor
@@ -30,6 +31,7 @@ public class ReviewQueryDslRepositoryImpl implements ReviewQueryDslRepository{
                 .join(review.reservation, reservation)
                 .join(reservation.parkingZone, parkingZone)
                 .join(parkingZone.parkingLot, parkingLot)
+                .join(review.user, user).fetchJoin()
                 .where(
                         parkingLot.id.eq(parkingLotId),
                         parkingLot.deletedAt.isNull()

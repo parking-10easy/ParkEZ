@@ -14,6 +14,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long>, ReviewQue
         JOIN FETCH rv.reservation r
         JOIN FETCH r.parkingZone pz
         JOIN FETCH pz.parkingLot pl
+        JOIN FETCH rv.user u
         WHERE rv.id = :reviewId
           AND pz.deletedAt IS NULL
           AND pl.deletedAt IS NULL

@@ -36,22 +36,22 @@ public class ReviewService {
 
     public Page<ReviewResponse> getReviews(Long parkingLotId, PageRequest pageRequest, ReviewSortType sortType) {
         parkingLotReader.validateExistence(parkingLotId);
-        return reviewReader.getReviews(parkingLotId, pageRequest.getPage(), pageRequest.getSize(), sortType);
+        return reviewReader.getReviewsWithUser(parkingLotId, pageRequest.getPage(), pageRequest.getSize(), sortType);
     }
 
     public ReviewResponse getReview(Long reviewId) {
-        return ReviewResponse.from(reviewReader.getReviewById(reviewId));
+        return ReviewResponse.from(reviewReader.getReviewWithUserById(reviewId));
     }
 
     @Transactional
     public void updateReview(AuthUser authUser, Long reviewId, ReviewUpdateRequest request) {
-        Review review = reviewReader.getReviewById(reviewId);
+        Review review = reviewReader.getReviewWithUserById(reviewId);
         validateOwner(authUser.getId(), review);
         reviewWriter.updateReview(review, request.getRating(),request.getContent());
     }
 
     public void deleteReview(AuthUser authUser, Long reviewId) {
-        Review review = reviewReader.getReviewById(reviewId);
+        Review review = reviewReader.getReviewWithUserById(reviewId);
         validateOwner(authUser.getId(), review);
         reviewWriter.deleteReview(review);
     }

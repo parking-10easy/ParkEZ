@@ -128,7 +128,7 @@ class ReviewReaderTest {
             when(reviewRepository.findAllByParkingLotIdWithSort(anyLong(),any(),any())).thenReturn(mockPage);
 
             // when
-            Page<ReviewResponse> result = reviewReader.getReviews(parkingLot.getId(),1,10,sortType);
+            Page<ReviewResponse> result = reviewReader.getReviewsWithUser(parkingLot.getId(),1,10,sortType);
 
             // then
             assertThat(result).extracting("id","reservationId","nickName","rating","content")
@@ -146,7 +146,7 @@ class ReviewReaderTest {
             when(reviewRepository.findActiveReviewById(anyLong())).thenReturn(Optional.of(review));
 
             // when
-            Review result = reviewReader.getReviewById(review.getId());
+            Review result = reviewReader.getReviewWithUserById(review.getId());
 
             // then
             assertThat(result).extracting("id","reservationId","rating","content")
@@ -160,7 +160,7 @@ class ReviewReaderTest {
             when(reviewRepository.findActiveReviewById(anyLong())).thenReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> reviewReader.getReviewById(reviewId))
+            assertThatThrownBy(() -> reviewReader.getReviewWithUserById(reviewId))
                     .isInstanceOf(ParkingEasyException.class)
                     .hasMessage(ReviewErrorCode.REVIEW_NOT_FOUND.getDefaultMessage());
         }
