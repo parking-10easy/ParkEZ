@@ -1,7 +1,10 @@
 package com.parkez.parkinglot.service;
 
+import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
+import com.parkez.parkinglot.client.kakaomap.geocode.Geocode;
+import com.parkez.parkinglot.client.kakaomap.geocode.KakaoGeocodeClient;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.entity.ParkingLotImage;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
@@ -16,7 +19,6 @@ import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
-import com.parkez.common.dto.request.PageRequest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +32,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,6 +52,9 @@ public class ParkingLotServiceTest {
 
     @Mock
     private ParkingLotReader parkingLotReader;
+
+    @Mock
+    private KakaoGeocodeClient kakaoGeocodeClient;
 
     @Mock
     private UserReader userReader;
@@ -77,14 +81,6 @@ public class ParkingLotServiceTest {
                 .build();
     }
 
-    private AuthUser getAuthUserNotParkingLotOwner() {
-        return AuthUser.builder()
-                .id(2L)
-                .email("authUserNotParkingLotOwner@example.com")
-                .roleName("ROLE_OWNER")
-                .build();
-    }
-
     private ParkingLot getParkingLot() {
         ParkingLotRequest request = getParkingLotRequest();
         User ownerUser = getOwnerUser();
@@ -99,7 +95,7 @@ public class ParkingLotServiceTest {
     private ParkingLotRequest getParkingLotRequest() {
         return ParkingLotRequest.builder()
                 .name("참쉬운주차장")
-                .address("서울시 강남구 테헤란로 123")
+                .address("서울시 강남구 테헤란로 131")
                 .build();
     }
 
@@ -111,21 +107,14 @@ public class ParkingLotServiceTest {
     private ParkingLotSearchResponse getParkingLotSearchResponse1() {
         return ParkingLotSearchResponse.builder()
                 .name("참쉬운주차장")
-                .address("서울시 강남구 테헤란로 123")
+                .address("서울시 강남구 테헤란로 131")
                 .build();
     }
 
     private ParkingLotSearchResponse getParkingLotSearchResponse2() {
         return ParkingLotSearchResponse.builder()
                 .name("어려운주차장")
-                .address("서울시 강남구 테헤란로 111")
-                .build();
-    }
-
-    private ParkingLotRequest getUpdatedParkingLot() {
-        return ParkingLotRequest.builder()
-                .name("수정된 주차장")
-                .address("수정된 주소")
+                .address("서울시 강남구 테헤란로 501")
                 .build();
     }
 
@@ -160,16 +149,19 @@ public class ParkingLotServiceTest {
     class CreateParkingLot {
 
         @Test
-        void 주차장을_생성한다() {
+        void owner가_주차장을_생성한다() {
             // given
             AuthUser authUser = getAuthUserOwner();
             User owner = getOwnerUser();
             ParkingLot parkingLot = getParkingLot();
+            ParkingLotRequest parkingLotRequest = getParkingLotRequest();
+            Geocode geocode = new Geocode(37.500066200, 127.032926912);
+
             when(userReader.getActiveUserById(authUser.getId())).thenReturn(owner);
+            when(kakaoGeocodeClient.getGeocode(parkingLotRequest.getAddress())).thenReturn(geocode);
             when(parkingLotWriter.createParkingLot(any(ParkingLot.class))).thenReturn(parkingLot);
 
             // when
-            ParkingLotRequest parkingLotRequest = getParkingLotRequest();
             ParkingLotResponse response = parkingLotService.createParkingLot(authUser, parkingLotRequest);
 
             // then
@@ -178,7 +170,9 @@ public class ParkingLotServiceTest {
             assertEquals(expectedResponse.getName(), response.getName());
 
             // 단순 호출 검증
+            verify(userReader).getActiveUserById(authUser.getId());
             verify(parkingLotWriter).createParkingLot(any(ParkingLot.class));
+            verify(kakaoGeocodeClient).getGeocode(parkingLotRequest.getAddress());
         }
     }
 
@@ -197,8 +191,16 @@ public class ParkingLotServiceTest {
             ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
                     .name(null)
                     .address(null)
+                    .userLatitude(null)
+                    .userLongitude(null)
+                    .radiusInMeters(null)
                     .build();
-            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
+
+            when(parkingLotReader.searchParkingLotsByConditions(
+                    searchRequest.getName(), searchRequest.getAddress(),
+                    searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
+                    searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
+            )).thenReturn(page);
 
             // when
             Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
@@ -212,7 +214,16 @@ public class ParkingLotServiceTest {
                             tuple(searchResponse1.getName(), searchResponse1.getAddress()),
                             tuple(searchResponse2.getName(), searchResponse2.getAddress())
                     );
-            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize());
+
+            verify(parkingLotReader).searchParkingLotsByConditions(
+                    searchRequest.getName(),
+                    searchRequest.getAddress(),
+                    searchRequest.getUserLatitude(),
+                    searchRequest.getUserLongitude(),
+                    searchRequest.getRadiusInMeters(),
+                    pageRequest.getPage(),
+                    pageRequest.getSize()
+            );
         }
 
         @Test
@@ -221,11 +232,20 @@ public class ParkingLotServiceTest {
             ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
             List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
             Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+
             ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
                     .name(searchResponse1.getName())
                     .address(null)
+                    .userLatitude(null)
+                    .userLongitude(null)
+                    .radiusInMeters(null)
                     .build();
-            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
+
+            when(parkingLotReader.searchParkingLotsByConditions(
+                    searchRequest.getName(), searchRequest.getAddress(),
+                    searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
+                    searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
+            )).thenReturn(page);
 
             // when
             Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
@@ -238,7 +258,15 @@ public class ParkingLotServiceTest {
                     .containsExactly(
                             tuple(searchResponse1.getName(), searchResponse1.getAddress())
                     );
-            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize());
+            verify(parkingLotReader).searchParkingLotsByConditions(
+                    searchRequest.getName(),
+                    searchRequest.getAddress(),
+                    searchRequest.getUserLatitude(),
+                    searchRequest.getUserLongitude(),
+                    searchRequest.getRadiusInMeters(),
+                    pageRequest.getPage(),
+                    pageRequest.getSize()
+            );
         }
 
         @Test
@@ -247,11 +275,20 @@ public class ParkingLotServiceTest {
             ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
             List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
             Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+
             ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
                     .name(null)
                     .address(searchResponse1.getAddress())
+                    .userLatitude(null)
+                    .userLongitude(null)
+                    .radiusInMeters(null)
                     .build();
-            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
+
+            when(parkingLotReader.searchParkingLotsByConditions(
+                    searchRequest.getName(), searchRequest.getAddress(),
+                    searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
+                    searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
+            )).thenReturn(page);
 
             // when
             Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
@@ -264,7 +301,15 @@ public class ParkingLotServiceTest {
                     .containsExactly(
                             tuple(searchResponse1.getName(), searchResponse1.getAddress())
                     );
-            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize());
+            verify(parkingLotReader).searchParkingLotsByConditions(
+                    searchRequest.getName(),
+                    searchRequest.getAddress(),
+                    searchRequest.getUserLatitude(),
+                    searchRequest.getUserLongitude(),
+                    searchRequest.getRadiusInMeters(),
+                    pageRequest.getPage(),
+                    pageRequest.getSize()
+            );
         }
 
         @Test
@@ -273,11 +318,20 @@ public class ParkingLotServiceTest {
             ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
             List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
             Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+
             ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
                     .name(searchResponse1.getName())
                     .address(searchResponse1.getAddress())
+                    .userLatitude(null)
+                    .userLongitude(null)
+                    .radiusInMeters(null)
                     .build();
-            when(parkingLotReader.searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
+
+            when(parkingLotReader.searchParkingLotsByConditions(
+                    searchRequest.getName(), searchRequest.getAddress(),
+                    searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
+                    searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
+            )).thenReturn(page);
 
             // when
             Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
@@ -290,7 +344,58 @@ public class ParkingLotServiceTest {
                     .containsExactly(
                             tuple(searchResponse1.getName(), searchResponse1.getAddress())
                     );
-            verify(parkingLotReader).searchParkingLotsByConditions(searchRequest.getName(), searchRequest.getAddress(), pageRequest.getPage(), pageRequest.getSize());
+            verify(parkingLotReader).searchParkingLotsByConditions(
+                    searchRequest.getName(),
+                    searchRequest.getAddress(),
+                    searchRequest.getUserLatitude(),
+                    searchRequest.getUserLongitude(),
+                    searchRequest.getRadiusInMeters(),
+                    pageRequest.getPage(),
+                    pageRequest.getSize()
+            );
+        }
+
+        @Test
+        void 이름과_주소_없이_사용자_위치로_주차장을_조회한다() {
+            // given
+            ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+            List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
+            Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+
+            ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                    .name(null)
+                    .address(null)
+                    .userLatitude(37.500066200)
+                    .userLongitude(127.032926912)
+                    .radiusInMeters(10000)
+                    .build();
+
+            when(parkingLotReader.searchParkingLotsByConditions(
+                    searchRequest.getName(), searchRequest.getAddress(),
+                    searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
+                    searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
+            )).thenReturn(page);
+
+            // when
+            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+
+            // then
+            assertNotNull(result);
+            assertEquals(1, result.getTotalElements());
+            assertThat(result.getContent())
+                    .extracting("name", "address")
+                    .containsExactly(
+                            tuple(searchResponse1.getName(), searchResponse1.getAddress())
+                    );
+            verify(parkingLotReader).searchParkingLotsByConditions(
+                    searchRequest.getName(),
+                    searchRequest.getAddress(),
+                    searchRequest.getUserLatitude(),
+                    searchRequest.getUserLongitude(),
+                    searchRequest.getRadiusInMeters(),
+                    pageRequest.getPage(),
+                    pageRequest.getSize()
+            );
         }
     }
 
@@ -301,7 +406,7 @@ public class ParkingLotServiceTest {
         void 아이디로_주차장을_단건_조회한다() {
             // given
             Long parkingLotId = 1L;
-            ParkingLot parkingLot = getParkingLot();
+            ParkingLotSearchResponse parkingLot = getParkingLotSearchResponse1();
             when(parkingLotReader.searchParkingLotById(parkingLotId)).thenReturn(parkingLot);
 
             // when
@@ -312,6 +417,19 @@ public class ParkingLotServiceTest {
             assertEquals(parkingLot.getName(), result.getName());
             verify(parkingLotReader).searchParkingLotById(parkingLotId);
         }
+
+        @Test
+        void 유효하지_않은_아이디로_주차장을_단건_조회에_실패한다() {
+
+            // given
+            Long parkingLotId = -1L;
+            when(parkingLotReader.searchParkingLotById(parkingLotId))
+                    .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+
+            // when & then
+            assertThrows(ParkingEasyException.class, () -> parkingLotService.searchParkingLotById(parkingLotId));
+
+        }
     }
 
     @Nested
@@ -319,6 +437,7 @@ public class ParkingLotServiceTest {
         @Test
         void 본인이_소유한_주차장을_조회한다() {
             // given
+            AuthUser authUser = getAuthUserOwner();
             Long userId = getAuthUserOwner().getId();
 
             MyParkingLotSearchResponse MyParkingResponse1 = getMyParkingLotResponse1();
@@ -330,7 +449,6 @@ public class ParkingLotServiceTest {
             when(parkingLotReader.getMyParkingLots(userId, pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
 
             // when
-            AuthUser authUser = getAuthUserOwner();
             Page<MyParkingLotSearchResponse> result = parkingLotService.getMyParkingLots(authUser, pageRequest);
 
             // then
@@ -347,19 +465,18 @@ public class ParkingLotServiceTest {
         @Test
         void 본인_소유가_아닌_주차장은_조회가_되지_않는다() {
             // given
-            Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
-            Page<MyParkingLotSearchResponse> page = new PageImpl<>(Collections.emptyList(), pageable, 0);
-            when(parkingLotReader.getMyParkingLots(userIdNotParkingOwner, pageRequest.getPage(), pageRequest.getSize())).thenReturn(page);
+            AuthUser authUserNotOwner = getAuthUserOwner();
+            Long nonParkingLotOwnerId = getAuthUserOwner().getId();
+            Page<MyParkingLotSearchResponse> emptyPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
+            when(parkingLotReader.getMyParkingLots(nonParkingLotOwnerId, pageRequest.getPage(), pageRequest.getSize())).thenReturn(emptyPage);
 
             // when
-            AuthUser authUserNotOwner = getAuthUserNotParkingLotOwner();
             Page<MyParkingLotSearchResponse> result = parkingLotService.getMyParkingLots(authUserNotOwner, pageRequest);
 
-            assertThat(result).isNotNull();
+            assertNotNull(result);
             assertEquals(0, result.getTotalElements());
         }
     }
-
 
     @Nested
     class updateParkingLot {
@@ -369,11 +486,11 @@ public class ParkingLotServiceTest {
             Long parkingLotId = 1L;
             Long userId = getAuthUserOwner().getId();
             ParkingLot parkingLot = getParkingLot();
+            AuthUser authUser = getAuthUserOwner();
+            ParkingLotRequest request = getParkingLotRequest();
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
 
             // when
-            AuthUser authUser = getAuthUserOwner();
-            ParkingLotRequest request = getParkingLotRequest();
             parkingLotService.updateParkingLot(authUser, parkingLotId, request);
 
             //then
@@ -388,15 +505,16 @@ public class ParkingLotServiceTest {
         void 소유자가_아니면_특정_주차장_수정에_실패한다() {
             // given
             Long parkingLotId = 1L;
-            Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
-            AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
-            when(parkingLotReader.getOwnedParkingLot(userIdNotParkingOwner, parkingLotId))
+            AuthUser authUserNotOwner = getAuthUserOwner();
+            ParkingLotRequest request = getParkingLotRequest();
+            Long nonParkingLotOwnerId = getAuthUserOwner().getId();
+
+            when(parkingLotReader.getOwnedParkingLot(nonParkingLotOwnerId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER));
 
             // when
-            ParkingLotRequest request = getParkingLotRequest();
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
-                    parkingLotService.updateParkingLot(authUserNotParkingOwner, parkingLotId, request)
+                    parkingLotService.updateParkingLot(authUserNotOwner, parkingLotId, request)
             );
 
             // then
@@ -408,12 +526,13 @@ public class ParkingLotServiceTest {
             // given
             Long parkingLotId = -1L;
             Long userId = getAuthUserOwner().getId();
+            AuthUser authUser = getAuthUserOwner();
+            ParkingLotRequest request = getParkingLotRequest();
+
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
 
             // when
-            AuthUser authUser = getAuthUserOwner();
-            ParkingLotRequest request = getParkingLotRequest();
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                     parkingLotService.updateParkingLot(authUser, parkingLotId, request)
             );
@@ -428,15 +547,17 @@ public class ParkingLotServiceTest {
         @Test
         void 특정_주차장의_상태를_변경한다() {
             // given
-            ParkingLot parkingLot = getParkingLot();
-            parkingLot.updateStatus(ParkingLotStatus.CLOSED);
+            AuthUser authUser = getAuthUserOwner();
             Long userId = getAuthUserOwner().getId();
             Long parkingLotId = 1L;
+            ParkingLotStatusRequest request = getParkingLotStatusRequest();
+
+            ParkingLot parkingLot = getParkingLot();
+            parkingLot.updateStatus(ParkingLotStatus.CLOSED);
+
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
 
             // when
-            AuthUser authUser = getAuthUserOwner();
-            ParkingLotStatusRequest request = getParkingLotStatusRequest();
             parkingLotService.updateParkingLotStatus(authUser, parkingLotId, request);
 
             // then
@@ -447,15 +568,16 @@ public class ParkingLotServiceTest {
         void 소유자가_아니면_주차장_상태_변경에_실패한다() {
             // given
             Long parkingLotId = 1L;
-            Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
-            AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
-            when(parkingLotReader.getOwnedParkingLot(userIdNotParkingOwner, parkingLotId))
+            AuthUser authUserNotOwner = getAuthUserOwner();
+            Long nonParkingLotOwnerId = getAuthUserOwner().getId();
+            ParkingLotStatusRequest request = getParkingLotStatusRequest();
+
+            when(parkingLotReader.getOwnedParkingLot(nonParkingLotOwnerId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER));
 
             // when
-            ParkingLotStatusRequest request = getParkingLotStatusRequest();
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
-                    parkingLotService.updateParkingLotStatus(authUserNotParkingOwner, parkingLotId, request)
+                    parkingLotService.updateParkingLotStatus(authUserNotOwner, parkingLotId, request)
             );
 
             // then
@@ -467,6 +589,7 @@ public class ParkingLotServiceTest {
             // given
             Long parkingLotId = -1L;
             Long userId = getAuthUserOwner().getId();
+
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
 
@@ -484,13 +607,13 @@ public class ParkingLotServiceTest {
         @Test
         void 잘못된_상태_값이_입력되면_예외를_발생한다() {
             // given
+            AuthUser authUser = getAuthUserOwner();
+            Long parkingLotId = 1L;
             ParkingLotStatusRequest invalidStatusRequest = ParkingLotStatusRequest.builder()
                     .status("invalidStatus")
                     .build();
 
             // when
-            AuthUser authUser = getAuthUserOwner();
-            Long parkingLotId = 1L;
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                     parkingLotService.updateParkingLotStatus(authUser, parkingLotId, invalidStatusRequest)
             );
@@ -509,6 +632,7 @@ public class ParkingLotServiceTest {
             Long parkingLotId = 1L;
             Long userId = getAuthUserOwner().getId();
             ParkingLot parkingLot = getParkingLot();
+
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
 
             // when
@@ -527,15 +651,16 @@ public class ParkingLotServiceTest {
         void 소유자가_아니면_주차장_이미지_수정을_실패한다() {
             // given
             Long parkingLotId = 1L;
-            Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
-            AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
-            when(parkingLotReader.getOwnedParkingLot(userIdNotParkingOwner, parkingLotId))
+            AuthUser authUserNotOwner = getAuthUserOwner();
+            Long nonParkingLotOwnerId = getAuthUserOwner().getId();
+
+            when(parkingLotReader.getOwnedParkingLot(nonParkingLotOwnerId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER));
 
             // when
             ParkingLotImagesRequest request = getParkingLotImagesRequest();
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
-                    parkingLotService.updateParkingLotImages(authUserNotParkingOwner, parkingLotId, request)
+                    parkingLotService.updateParkingLotImages(authUserNotOwner, parkingLotId, request)
             );
 
             // then
@@ -562,7 +687,6 @@ public class ParkingLotServiceTest {
         }
     }
 
-
     @Nested
     class deleteParkingLot {
         @Test
@@ -585,14 +709,15 @@ public class ParkingLotServiceTest {
         void 소유자가_아니면_주차장_삭제를_실패한다() {
             // given
             Long parkingLotId = 1L;
-            Long userIdNotParkingOwner = getAuthUserNotParkingLotOwner().getId();
-            AuthUser authUserNotParkingOwner = getAuthUserNotParkingLotOwner();
-            when(parkingLotReader.getOwnedParkingLot(userIdNotParkingOwner, parkingLotId))
+            AuthUser authUserNotOwner = getAuthUserOwner();
+            Long nonParkingLotOwnerId = getAuthUserOwner().getId();
+
+            when(parkingLotReader.getOwnedParkingLot(nonParkingLotOwnerId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER));
 
             // when
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
-                    parkingLotService.deleteParkingLot(authUserNotParkingOwner, parkingLotId)
+                    parkingLotService.deleteParkingLot(authUserNotOwner, parkingLotId)
             );
 
             // then

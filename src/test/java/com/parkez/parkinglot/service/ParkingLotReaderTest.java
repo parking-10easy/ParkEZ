@@ -43,16 +43,6 @@ public class ParkingLotReaderTest {
     private final PageRequest pageRequest = new PageRequest(1, 10);
     Pageable pageable = org.springframework.data.domain.PageRequest.of(pageRequest.getPage() - 1, pageRequest.getSize());
 
-    private User getOwnerUser() {
-        User ownerUser = User.builder()
-                .email("owner@example.com")
-                .nickname("Owner")
-                .role(UserRole.ROLE_OWNER)
-                .build();
-        ReflectionTestUtils.setField(ownerUser, "id", 1L);
-        return ownerUser;
-    }
-
     private User getOwnerUser2() {
         User owner2 = User.builder()
                 .email("owner2@test.com")
@@ -63,23 +53,51 @@ public class ParkingLotReaderTest {
         return owner2;
     }
 
-    private ParkingLot getParkingLot1() {
-        User ownerUser = getOwnerUser();
+    private ParkingLot getParkingLot() {
+        User ownerUser = User.builder()
+                .email("owner@example.com")
+                .nickname("Owner")
+                .role(UserRole.ROLE_OWNER)
+                .build();
+        ReflectionTestUtils.setField(ownerUser, "id", 1L);
+
         return ParkingLot.builder()
                 .owner(ownerUser)
                 .name("참쉬운주차장")
-                .address("서울시 강남구 테헤란로 123")
+                .address("서울시 강남구 테헤란로 131")
                 .images(new ArrayList<>())
                 .build();
     }
 
-    private ParkingLot getParkingLot2() {
-        User ownerUser = getOwnerUser();
-        return ParkingLot.builder()
-                .owner(ownerUser)
+    private ParkingLotSearchResponse getParkingLotResponse1() {
+        return ParkingLotSearchResponse.builder()
+                .parkingLotId(1L)
+                .name("참쉬운주차장")
+                .address("서울시 강남구 테헤란로 131")
+                .build();
+    }
+
+    private ParkingLotSearchResponse getParkingLotResponse2() {
+        return ParkingLotSearchResponse.builder()
+                .parkingLotId(2L)
                 .name("어려운주차장")
-                .address("서울시 강남구 테헤란로 111")
-                .images(new ArrayList<>())
+                .address("서울시 강남구 테헤란로 501")
+                .build();
+    }
+
+    private MyParkingLotSearchResponse getMyParkingLotResponse1() {
+        return MyParkingLotSearchResponse.builder()
+                .parkingLotId(1L)
+                .name("참쉬운주차장")
+                .address("서울시 강남구 테헤란로 131")
+                .build();
+    }
+
+    private MyParkingLotSearchResponse getMyParkingLotResponse2() {
+        return MyParkingLotSearchResponse.builder()
+                .parkingLotId(2L)
+                .name("어려운주차장")
+                .address("서울시 강남구 테헤란로 501")
                 .build();
     }
 
@@ -88,93 +106,172 @@ public class ParkingLotReaderTest {
         @Test
         void 검색_조건이_없을_때_주차장을_전체_조회한다() {
             // given
-            ParkingLot parkingLot1 = getParkingLot1();
-            ParkingLot parkingLot2 = getParkingLot2();
-            List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1, parkingLot2);
-            Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+            ParkingLotSearchResponse parkingLot1 = getParkingLotResponse1();
+            ParkingLotSearchResponse parkingLot2 = getParkingLotResponse2();
+            List<ParkingLotSearchResponse> parkingLotList = Arrays.asList(parkingLot1, parkingLot2);
+            Page<ParkingLotSearchResponse> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+
+            when(parkingLotRepository.searchParkingLotsByConditions(
+                    null, null, null, null, null, pageable
+            )).thenReturn(page);
+
+            when(parkingLotRepository.findImageListByParkingLotId(1L))
+                    .thenReturn(List.of("image1.jpg", "image2.jpg"));
+
+            when(parkingLotRepository.findImageListByParkingLotId(2L))
+                    .thenReturn(List.of("image3.jpg"));
 
             // when
-            when(parkingLotRepository.searchParkingLotsByConditions(null, null, pageable)).thenReturn(page);
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(
+                    null, null, null, null, null,
+                    pageRequest.getPage(), pageRequest.getSize()
+            );
 
             // then
-            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(null, null,  pageRequest.getPage(),pageRequest.getSize());
             assertNotNull(result);
             assertEquals(2, result.getTotalElements());
             assertThat(result.getContent())
-                    .extracting("name", "address")
+                    .extracting("name", "address", "images")
                     .containsExactly(
-                            tuple(parkingLot1.getName(), parkingLot1.getAddress()),
-                            tuple(parkingLot2.getName(), parkingLot2.getAddress())
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages()),
+                            tuple(parkingLot2.getName(), parkingLot2.getAddress(), parkingLot2.getImages())
                     );
         }
 
         @Test
         void 이름으로_주차장을_조회한다() {
             // given
-            ParkingLot parkingLot1 = getParkingLot1();
-            List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1);
-            Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+            ParkingLotSearchResponse parkingLot1 = getParkingLotResponse1();
+            List<ParkingLotSearchResponse> parkingLotList = Arrays.asList(parkingLot1);
+            Page<ParkingLotSearchResponse> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+
+            String name = parkingLot1.getName();
+
+            when(parkingLotRepository.searchParkingLotsByConditions(
+                    name, null, null, null, null, pageable
+            )).thenReturn(page);
+
+            when(parkingLotRepository.findImageListByParkingLotId(1L))
+                    .thenReturn(List.of("image1.jpg", "image2.jpg"));
 
             // when
-            String name = parkingLot1.getName();
-            when(parkingLotRepository.searchParkingLotsByConditions(name, null, pageable)).thenReturn(page);
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(
+                    name, null, null, null, null,
+                    pageRequest.getPage(), pageRequest.getSize()
+            );
 
             // then
-            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(name, null, pageRequest.getPage(),pageRequest.getSize());
             assertNotNull(result);
             assertEquals(1, result.getTotalElements());
             assertThat(result.getContent())
-                    .extracting("name", "address")
+                    .extracting("name", "address", "images")
                     .containsExactly(
-                            tuple(parkingLot1.getName(), parkingLot1.getAddress())
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages())
                     );
         }
 
         @Test
         void 주소로_주차장을_조회한다() {
             // given
-            ParkingLot parkingLot2 = getParkingLot2();
-            List<ParkingLot> parkingLotList = Arrays.asList(parkingLot2);
-            Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+            ParkingLotSearchResponse parkingLot1 = getParkingLotResponse1();
+            List<ParkingLotSearchResponse> parkingLotList = Arrays.asList(parkingLot1);
+            Page<ParkingLotSearchResponse> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+
+            String address = parkingLot1.getAddress();
+
+            when(parkingLotRepository.searchParkingLotsByConditions(
+                    null, address, null, null, null, pageable
+            )).thenReturn(page);
+
+            when(parkingLotRepository.findImageListByParkingLotId(1L))
+                    .thenReturn(List.of("image1.jpg", "image2.jpg"));
 
             // when
-            String address = parkingLot2.getAddress();
-            when(parkingLotRepository.searchParkingLotsByConditions(null, address, pageable)).thenReturn(page);
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(
+                    null, address, null, null, null,
+                    pageRequest.getPage(), pageRequest.getSize()
+            );
 
             // then
-            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(null, address,  pageRequest.getPage(),pageRequest.getSize());
             assertNotNull(result);
             assertEquals(1, result.getTotalElements());
             assertThat(result.getContent())
-                    .extracting("name", "address")
+                    .extracting("name", "address", "images")
                     .containsExactly(
-                            tuple(parkingLot2.getName(), parkingLot2.getAddress())
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages())
                     );
+
+
         }
 
         @Test
         void 이름과_주소로_주차장을_조회한다() {
             // given
-            ParkingLot parkingLot2 = getParkingLot2();
-            List<ParkingLot> parkingLotList = Arrays.asList(parkingLot2);
-            Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+            ParkingLotSearchResponse parkingLot1 = getParkingLotResponse1();
+            List<ParkingLotSearchResponse> parkingLotList = Arrays.asList(parkingLot1);
+            Page<ParkingLotSearchResponse> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+
+            String name = parkingLot1.getName();
+            String address = parkingLot1.getAddress();
+
+            when(parkingLotRepository.searchParkingLotsByConditions(
+                    name, address, null, null, null, pageable
+            )).thenReturn(page);
+
+            when(parkingLotRepository.findImageListByParkingLotId(1L))
+                    .thenReturn(List.of("image1.jpg", "image2.jpg"));
 
             // when
-            String name = parkingLot2.getName();
-            String address = parkingLot2.getAddress();
-            when(parkingLotRepository.searchParkingLotsByConditions(name, address, pageable)).thenReturn(page);
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(
+                    name, address, null, null, null,
+                    pageRequest.getPage(), pageRequest.getSize()
+            );
 
             // then
-
-            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(name, address,  pageRequest.getPage(),pageRequest.getSize());
             assertNotNull(result);
+            assertEquals(1, result.getTotalElements());
             assertThat(result.getContent())
-                    .extracting("name", "address")
+                    .extracting("name", "address", "images")
                     .containsExactly(
-                            tuple(parkingLot2.getName(), parkingLot2.getAddress())
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages())
                     );
+
         }
 
+        @Test
+        void 이름_주소_없이_사용자_위치로_인근_주차장을_조회한다() {
+            // given
+            ParkingLotSearchResponse parkingLot1 = getParkingLotResponse1();
+            List<ParkingLotSearchResponse> parkingLotList = Arrays.asList(parkingLot1);
+            Page<ParkingLotSearchResponse> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+
+            Double userLatitude = 37.500066200;
+            Double userLongitude = 127.032926912;
+            Integer radiusInMeters = 10000;
+
+            when(parkingLotRepository.searchParkingLotsByConditions(
+                    null, null, userLatitude, userLongitude, radiusInMeters, pageable
+            )).thenReturn(page);
+
+            when(parkingLotRepository.findImageListByParkingLotId(parkingLot1.getParkingLotId()))
+                    .thenReturn(List.of("img1.jpg", "img2.jpg"));
+
+            // when
+            Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(
+                    null, null, userLatitude, userLongitude, radiusInMeters,
+                    pageRequest.getPage(), pageRequest.getSize()
+            );
+
+            // then
+            assertNotNull(result);
+            assertEquals(1, result.getTotalElements());
+            assertThat(result.getContent())
+                    .extracting("name", "address", "images")
+                    .containsExactly(
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages())
+                    );
+
+        }
     }
 
     @Nested
@@ -183,22 +280,27 @@ public class ParkingLotReaderTest {
         void 아이디로_주차장을_단건_조회한다() {
             // given
             Long parkingLotId = 1L;
-            ParkingLot parkingLot1 = getParkingLot1();
-            when(parkingLotRepository.searchParkingLotById(parkingLotId)).thenReturn(Optional.ofNullable(parkingLot1));
+            ParkingLotSearchResponse parkingLot1 = getParkingLotResponse1();
+
+            when(parkingLotRepository.searchParkingLotById(parkingLotId)).thenReturn(parkingLot1);
+
+            when(parkingLotRepository.findImageListByParkingLotId(parkingLot1.getParkingLotId()))
+                    .thenReturn(List.of("img1.jpg", "img2.jpg"));
 
             // when
-            ParkingLot found = parkingLotReader.searchParkingLotById(parkingLotId);
+            ParkingLotSearchResponse result = parkingLotReader.searchParkingLotById(parkingLotId);
 
             // then
-            assertEquals("참쉬운주차장", found.getName());
-
+            assertNotNull(result);
+            assertEquals("참쉬운주차장", result.getName());
+            assertThat(result.getImages()).containsExactly("img1.jpg", "img2.jpg");
         }
 
         @Test
         void 유효하지_않은_아이디로_주차장_단건_조회에_실패한다() {
             // given
             Long parkingLotId = -1L;
-            when(parkingLotRepository.searchParkingLotById(parkingLotId)).thenReturn(Optional.empty());
+            when(parkingLotRepository.searchParkingLotById(parkingLotId)).thenReturn(null);
 
             // when
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () -> {
@@ -215,15 +317,15 @@ public class ParkingLotReaderTest {
         @Test
         void 본인이_소유한_주차장을_조회한다() {
             //given
-            ParkingLot parkingLot1 = getParkingLot1();
-            ParkingLot parkingLot2 = getParkingLot2();
-            List<ParkingLot> parkingLotList = Arrays.asList(parkingLot1, parkingLot2);
-            Page<ParkingLot> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
+            MyParkingLotSearchResponse parkingLot1 = getMyParkingLotResponse1();
+            MyParkingLotSearchResponse parkingLot2 = getMyParkingLotResponse2();
+            List<MyParkingLotSearchResponse> parkingLotList = Arrays.asList(parkingLot1, parkingLot2);
+            Page<MyParkingLotSearchResponse> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
             Long userId = 1L;
             when(parkingLotRepository.findMyParkingLots(userId, pageable)).thenReturn(page);
 
             // when
-            Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(userId,  pageRequest.getPage(),pageRequest.getSize());
+            Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(userId, pageRequest.getPage(), pageRequest.getSize());
 
             //then
             assertNotNull(result);
@@ -239,12 +341,12 @@ public class ParkingLotReaderTest {
         @Test
         void 본인이_등록하지_않은_주차장은_조회되지_않는다() {
             // given
-            Long nonParkingLotOwnerId = 2L;
-            Page<ParkingLot> emptyPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
+            Long nonParkingLotOwnerId = -1L;
+            Page<MyParkingLotSearchResponse> emptyPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
             when(parkingLotRepository.findMyParkingLots(nonParkingLotOwnerId, pageable)).thenReturn(emptyPage);
 
             // when
-            Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(nonParkingLotOwnerId,  pageRequest.getPage(),pageRequest.getSize());
+            Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(nonParkingLotOwnerId, pageRequest.getPage(), pageRequest.getSize());
 
             // then
             assertNotNull(result);
@@ -260,7 +362,7 @@ public class ParkingLotReaderTest {
         void 아이디로_주차장_엔티티를_조회한다() {
             // given
             Long parkingLotId = 1L;
-            ParkingLot parkingLot1 = getParkingLot1();
+            ParkingLot parkingLot1 = getParkingLot();
             when(parkingLotRepository.findByIdAndDeletedAtIsNull(parkingLotId))
                     .thenReturn(Optional.of(parkingLot1));
 
