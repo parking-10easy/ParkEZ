@@ -188,4 +188,21 @@ class TokenManagerTest {
 		}
 	}
 
+	@Nested
+	class DeleteRefreshToken {
+
+		@Test
+		public void userId로_refreshToken을_삭제할_수_있다() {
+			//given
+			Long userId = 1L;
+
+			//when
+			tokenManager.deleteRefreshToken(userId);
+
+			//then
+			verify(refreshTokenStore, times(1)).delete(anyLong());
+
+		}
+	}
+
 }

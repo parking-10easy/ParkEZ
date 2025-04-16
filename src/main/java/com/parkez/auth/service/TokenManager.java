@@ -44,4 +44,9 @@ public class TokenManager {
 		return jwtProvider.createAccessToken(user.getId(), user.getEmail(), user.getRoleName(),
 			user.getNickname(), user.isSignupCompleted());
 	}
+
+	public void deleteRefreshToken(Long userId) {
+
+		refreshTokenStore.delete(userId);
+	}
 }

@@ -87,4 +87,23 @@ class RefreshTokenStoreTest {
 		}
 	}
 
+	@Nested
+	class Delete {
+		@Test
+		public void userId로_생성된_리프레시_토큰_키로_삭제할_수_있다() {
+			//given
+			Long userId = 1L;
+			String expectedKey = "refresh:1";
+
+			given(redisTemplate.delete(anyString())).willReturn(true);
+
+			//when
+			refreshTokenStore.delete(userId);
+
+			//then
+			verify(redisTemplate, times(1)).delete(expectedKey);
+
+		}
+	}
+
 }
