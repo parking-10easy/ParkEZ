@@ -34,8 +34,19 @@ public class MyParkingLotSearchResponse {
     }
 
     // 소유한 주차장 조회용 생성자
-    public MyParkingLotSearchResponse(Long parkingLotId, String name, String address, String thumbnailImage) {
-        this(parkingLotId, name, address, 0L, thumbnailImage);
+    public MyParkingLotSearchResponse(Long parkingLotId, String name, String address) {
+        this.parkingLotId = parkingLotId;
+        this.name = name;
+        this.address = address;
     }
 
+    // 이미지
+    public void updateImage(String thumbnailImage) {
+        this.thumbnailImage = thumbnailImage;
+    }
+
+    // 집계 관련
+    public void updateAggregation(Long reviewCount) {
+        this.reviewCount = reviewCount;
+    }
 }
