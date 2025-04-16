@@ -101,8 +101,6 @@ public class ParkingLotSearchResponse {
                 .chargeType(parkingLot.getChargeType())
                 .sourceType(parkingLot.getSourceType())
                 .parkingLotStatus(parkingLot.getStatus())
-                //.reviewCount(reviewCount) // 추가 필요
-                //.averageRating(averageRating) // 추가 필요
                 .images(images)
                 .build();
     }

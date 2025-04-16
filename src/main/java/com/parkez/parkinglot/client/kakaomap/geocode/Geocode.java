@@ -11,7 +11,7 @@ public class Geocode {
     public Double latitude;
 
     @Builder
-    Geocode(Double longitude, Double latitude) {
+    private Geocode(Double longitude, Double latitude) {
         this.longitude = longitude;
         this.latitude = latitude;
     }
