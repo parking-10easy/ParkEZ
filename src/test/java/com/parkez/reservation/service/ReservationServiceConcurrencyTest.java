@@ -12,7 +12,9 @@ import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.repository.ReservationRepository;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
+import com.parkez.user.domain.enums.UserStatus;
 import com.parkez.user.domain.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +65,8 @@ class ReservationServiceConcurrencyTest {
                 .nickname("test")
                 .phone("010-1234-5678")
                 .role(UserRole.ROLE_OWNER)
+                .loginType(LoginType.NORMAL)
+                .status(UserStatus.COMPLETED)
                 .build());
 
         authUser = AuthUser.builder()
