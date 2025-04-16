@@ -47,13 +47,13 @@ public class MyReservationResponse {
     @Schema(description = "생성 일시", example = "2025.04.07T10:00:00")
     private final LocalDateTime createdAt;
 
-    public static MyReservationResponse of(Reservation reservation, boolean reviewWritten) {
+    public static MyReservationResponse from(Reservation reservation) {
         return new MyReservationResponse(
                 reservation.getId(),
                 reservation.getUserId(),
                 reservation.getParkingZoneId(),
                 reservation.getParkingLotName(),
-                reviewWritten,
+                reservation.isReviewWritten(),
                 reservation.getStartDateTime(),
                 reservation.getEndDateTime(),
                 reservation.getPrice(),

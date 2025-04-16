@@ -1,4 +1,4 @@
-package com.parkez.reservation.service.concurrency.distributed;
+package com.parkez.reservation.service;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @Slf4j
-class DistributedLockReservationServiceConcurrencyTest {
+class ReservationServiceConcurrencyTest {
 
     @Autowired
     private UserRepository userRepository;
@@ -48,7 +48,7 @@ class DistributedLockReservationServiceConcurrencyTest {
     @Autowired
     private ReservationRepository reservationRepository;
     @Autowired
-    private DistributedLockReservationService distributedLockReservationService;
+    private ReservationService reservationService;
 
     private User user;
     private ParkingZone parkingZone;
@@ -118,7 +118,7 @@ class DistributedLockReservationServiceConcurrencyTest {
         for (int i = 0; i < requestCount; i++) {
             executorService.submit(() -> {
                 try {
-                    distributedLockReservationService.createReservation(authUser, request);
+                    reservationService.createReservation(authUser, request);
                     successCount.incrementAndGet();
                 } catch (ParkingEasyException e) {
                     log.warn("실패한 요청: {}", e.getErrorCode());

@@ -4,12 +4,10 @@ import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
-import com.parkez.reservation.domain.enums.LockStrategy;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.OwnerReservationResponse;
 import com.parkez.reservation.service.ReservationService;
-import com.parkez.reservation.service.concurrency.ReservationLockService;
 import com.parkez.user.domain.enums.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,8 +18,6 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -30,19 +26,15 @@ import java.util.Map;
 public class ReservationController {
 
     private final ReservationService reservationService;
-    private final Map<String, ReservationLockService> reservationLockServiceMap;
 
     // 락 사용 x OR 분산락을 통한 예약 생성
-    @PostMapping("/v1/reservations/{strategy}")
-    @Operation(summary = "예약 생성", description = "락 사용 x OR 분산락을 통한 예약 생성 기능입니다.")
+    @PostMapping("/v1/reservations")
+    @Operation(summary = "예약 생성", description = "분산락을 통해 동시성 제어를 적용한 예약 생성 기능입니다.")
     public Response<MyReservationResponse> createReservation(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
-            @Parameter(description = "동시성 제어 전략", example = "default")
-            @PathVariable LockStrategy strategy,
             @Valid @RequestBody ReservationRequest request
     ) {
-        ReservationLockService service = reservationLockServiceMap.get(strategy.getDescription());
-        return Response.of(service.createReservation(authUser, request));
+        return Response.of(reservationService.createReservation(authUser, request));
     }
 
     // 나의 예약 내역 조회

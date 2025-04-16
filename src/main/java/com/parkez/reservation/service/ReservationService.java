@@ -5,6 +5,7 @@ import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.service.ParkingZoneReader;
+import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.dto.request.ReservationRequest;
@@ -12,7 +13,6 @@ import com.parkez.reservation.dto.response.MyReservationResponse;
 import com.parkez.reservation.dto.response.OwnerReservationResponse;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
-import com.parkez.reservation.service.concurrency.ReservationLockService;
 import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
@@ -25,44 +25,45 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Service("noneLockService")
+@Service
 @RequiredArgsConstructor
-public class ReservationService implements ReservationLockService {
+public class ReservationService {
 
+    private final DistributedLockManager distributedLockManager;
     private final ReservationReader reservationReader;
     private final ReservationWriter reservationWriter;
     private final UserReader userReader;
     private final ParkingZoneReader parkingZoneReader;
     private final ReviewReader reviewReader;
 
-    @Override
     public MyReservationResponse createReservation(AuthUser authUser, ReservationRequest request) {
 
-        User user = userReader.getActiveUserById(authUser.getId());
-        ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
+        return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> {
 
-        // 예약 날짜 및 시간 입력 오류 예외
-        if (request.getStartDateTime().isAfter(request.getEndDateTime())) {
-            throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
-        }
+            User user = userReader.getActiveUserById(authUser.getId());
+            ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
 
-        // 이미 해당 시간에 예약이 존재할 경우
-        List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
-        boolean existed = reservationReader.existsReservationByConditions(parkingZone, request.getStartDateTime(), request.getEndDateTime(), statusList);
-        if (existed) {
-            throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED);
-        }
+            // 예약 날짜 및 시간 입력 오류 예외
+            if (request.getStartDateTime().isAfter(request.getEndDateTime())) {
+                throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
+            }
 
-        Reservation reservation = reservationWriter.create(
-                user,
-                parkingZone,
-                request.getStartDateTime(),
-                request.getEndDateTime()
-        );
+            // 이미 해당 시간에 예약이 존재할 경우
+            List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
+            boolean existed = reservationReader.existsReservationByConditions(parkingZone, request.getStartDateTime(), request.getEndDateTime(), statusList);
+            if (existed) {
+                throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED);
+            }
 
-        boolean reviewWritten = false;
+            Reservation reservation = reservationWriter.create(
+                    user,
+                    parkingZone,
+                    request.getStartDateTime(),
+                    request.getEndDateTime()
+            );
 
-        return MyReservationResponse.of(reservation, reviewWritten);
+            return MyReservationResponse.from(reservation);
+        });
     }
 
     public Page<MyReservationResponse> getMyReservations(AuthUser authUser, int page, int size) {

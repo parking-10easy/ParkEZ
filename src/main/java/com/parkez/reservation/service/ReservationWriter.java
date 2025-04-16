@@ -1,10 +1,8 @@
 package com.parkez.reservation.service;
 
-import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.repository.ReservationRepository;
-import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;

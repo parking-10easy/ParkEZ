@@ -46,6 +46,9 @@ public class Reservation extends BaseEntity {
     @Column(nullable = false)
     private ReservationStatus status;
 
+    @Column(nullable = false)
+    private boolean reviewWritten;
+
     @Builder
     private Reservation(
             User user,
@@ -62,6 +65,7 @@ public class Reservation extends BaseEntity {
         this.endDateTime = endDateTime;
         this.price = price;
         this.status = ReservationStatus.PENDING;
+        this.reviewWritten = false;
     }
 
     public void complete() {
