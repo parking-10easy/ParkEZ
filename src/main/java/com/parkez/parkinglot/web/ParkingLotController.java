@@ -1,10 +1,10 @@
 package com.parkez.parkinglot.web;
 
+import com.parkez.common.aop.CheckMemberStatus;
 import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
-import com.parkez.parkinglot.client.kakaomap.geocode.KakaoGeocodeClient;
 import com.parkez.parkinglot.dto.request.ParkingLotImagesRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotRequest;
 import com.parkez.parkinglot.dto.request.ParkingLotSearchRequest;
@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Secured(UserRole.Authority.OWNER)
+@CheckMemberStatus
 @Tag(name = "주차장 관리 API", description = "주차장 관리 및 조회 API입니다.")
 public class ParkingLotController {
 
