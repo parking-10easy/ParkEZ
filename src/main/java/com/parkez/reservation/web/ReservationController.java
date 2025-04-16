@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,7 +50,7 @@ public class ReservationController {
     @Operation(summary = "나의 예약 다건 조회", description = "나의 예약 다건 조회 기능입니다.")
     public Response<MyReservationResponse> getMyReservations(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
-            @Parameter PageRequest pageRequest
+            @ParameterObject PageRequest pageRequest
             ) {
         return Response.fromPage(reservationService.getMyReservations(authUser, pageRequest.getPage(), pageRequest.getSize()));
     }
@@ -71,7 +72,7 @@ public class ReservationController {
     public Response<OwnerReservationResponse> getOwnerReservations(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long parkingZoneId,
-            @Parameter PageRequest pageRequest
+            @ParameterObject PageRequest pageRequest
     ) {
         return Response.fromPage(reservationService.getOwnerReservations(authUser, parkingZoneId, pageRequest.getPage(), pageRequest.getSize()));
     }

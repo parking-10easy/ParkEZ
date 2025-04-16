@@ -35,7 +35,7 @@ public class DistributedLockReservationService implements ReservationLockService
 
         return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> {
 
-            User user = userReader.getActiveById(authUser.getId());
+            User user = userReader.getActiveUserById(authUser.getId());
             ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
 
             // 예약 날짜 및 시간 입력 오류 예외
