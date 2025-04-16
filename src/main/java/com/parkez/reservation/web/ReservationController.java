@@ -1,12 +1,12 @@
 package com.parkez.reservation.web;
 
+import com.parkez.common.aop.CheckMemberStatus;
 import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.reservation.dto.request.ReservationRequest;
-import com.parkez.reservation.dto.response.MyReservationResponse;
-import com.parkez.reservation.dto.response.OwnerReservationResponse;
+import com.parkez.reservation.dto.response.ReservationResponse;
 import com.parkez.reservation.service.ReservationService;
 import com.parkez.user.domain.enums.UserRole;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "주차공간 예약 API", description = "주차공간에 대한 예약 API 입니다.")
 @Secured(UserRole.Authority.USER)
+@CheckMemberStatus
 public class ReservationController {
 
     private final ReservationService reservationService;
@@ -30,7 +31,7 @@ public class ReservationController {
     // 락 사용 x OR 분산락을 통한 예약 생성
     @PostMapping("/v1/reservations")
     @Operation(summary = "예약 생성", description = "분산락을 통해 동시성 제어를 적용한 예약 생성 기능입니다.")
-    public Response<MyReservationResponse> createReservation(
+    public Response<ReservationResponse> createReservation(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @Valid @RequestBody ReservationRequest request
     ) {
@@ -40,7 +41,7 @@ public class ReservationController {
     // 나의 예약 내역 조회
     @GetMapping("/v1/reservations/me")
     @Operation(summary = "나의 예약 다건 조회", description = "나의 예약 다건 조회 기능입니다.")
-    public Response<MyReservationResponse> getMyReservations(
+    public Response<ReservationResponse> getMyReservations(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @ParameterObject PageRequest pageRequest
             ) {
@@ -50,7 +51,7 @@ public class ReservationController {
     // 나의 예약 단건 조회
     @GetMapping("/v1/reservations/me/{reservationId}")
     @Operation(summary = "나의 예약 단건 조회", description = "나의 예약 단건 조회 기능입니다.")
-    public Response<MyReservationResponse> getMyReservation(
+    public Response<ReservationResponse> getMyReservation(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long reservationId
     ) {
@@ -61,7 +62,7 @@ public class ReservationController {
     @Secured(UserRole.Authority.OWNER)
     @Operation(summary = "특정 주차공간에 대한 예약 내역 조회", description = "주차공간 소유주의 특정 주차공간에 대한 예약 내역 조회 기능입니다.")
     @GetMapping("/v1/users/me/parking-zones/{parkingZoneId}/reservations")
-    public Response<OwnerReservationResponse> getOwnerReservations(
+    public Response<ReservationResponse> getOwnerReservations(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long parkingZoneId,
             @ParameterObject PageRequest pageRequest

@@ -7,11 +7,11 @@ import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import com.parkez.parkingzone.service.ParkingZoneReader;
+import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.dto.request.ReservationRequest;
-import com.parkez.reservation.dto.response.MyReservationResponse;
-import com.parkez.reservation.dto.response.OwnerReservationResponse;
+import com.parkez.reservation.dto.response.ReservationResponse;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.review.service.ReviewReader;
@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -54,6 +55,8 @@ class ReservationServiceTest {
     private ParkingZoneReader parkingZoneReader;
     @Mock
     private ReviewReader reviewReader;
+    @Mock
+    private DistributedLockManager distributedLockManager;
     @InjectMocks
     private ReservationService reservationService;
 
@@ -164,13 +167,17 @@ class ReservationServiceTest {
 
             Reservation reservation = createReservation(reservationId, user, parkingZone, request, price);
 
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+               Callable<ReservationResponse> task = invocation.getArgument(1);
+               return task.call();
+            });
             given(userReader.getActiveUserById(anyLong())).willReturn(user);
             given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
             given(reservationWriter.create(any(User.class), any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(reservation);
 
             // when
-            MyReservationResponse result = reservationService.createReservation(authUser, request);
+            ReservationResponse result = reservationService.createReservation(authUser, request);
 
             // then
             assertThat(result)
@@ -201,6 +208,10 @@ class ReservationServiceTest {
 
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
             given(userReader.getActiveUserById(anyLong())).willReturn(user);
             given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
 
@@ -230,7 +241,11 @@ class ReservationServiceTest {
 
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
-            given(userReader.getActiveById(anyLong())).willReturn(user);
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
             given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
             given(reservationReader.existsReservationByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList())).willReturn(true);
 
@@ -278,7 +293,7 @@ class ReservationServiceTest {
             given(reservationReader.findMyReservations(anyLong(), any(PageRequest.class))).willReturn(pageDto);
 
             // when
-            Page<MyReservationResponse> result = reservationService.getMyReservations(authUser, page, size);
+            Page<ReservationResponse> result = reservationService.getMyReservations(authUser, page, size);
 
             // then
             assertThat(result.getContent())
@@ -319,7 +334,7 @@ class ReservationServiceTest {
                 given(reviewReader.isReviewWritten(anyLong())).willReturn(isReviewWritten);
 
                 // when
-                MyReservationResponse result = reservationService.getMyReservation(authUser, reservationId);
+                ReservationResponse result = reservationService.getMyReservation(authUser, reservationId);
 
                 // then
                 assertThat(result)
@@ -362,7 +377,7 @@ class ReservationServiceTest {
                 given(reservationReader.findOwnerReservations(anyLong(), any(PageRequest.class))).willReturn(pageMyReservations);
 
                 // when
-                Page<OwnerReservationResponse> result = reservationService.getOwnerReservations(authOwner, parkingZoneId, page, size);
+                Page<ReservationResponse> result = reservationService.getOwnerReservations(authOwner, parkingZoneId, page, size);
 
                 // then
                 assertThat(result.getContent())
