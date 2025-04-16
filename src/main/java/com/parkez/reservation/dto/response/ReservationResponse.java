@@ -38,6 +38,10 @@ public class ReservationResponse {
     @Schema(description = "예약 종료 날짜 및 시간", example = "2025.04.07 10:00")
     private final LocalDateTime endDateTime;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd HH:mm")
+    @Schema(description = "예약 사용 완료 날짜 및 시간", example = "2025.04.07 10:00")
+    private final LocalDateTime useCompletionTime;
+
     @Schema(description = "예약 총 가격", example = "3000.00")
     private final BigDecimal price;
 
@@ -56,6 +60,7 @@ public class ReservationResponse {
                 reservation.isReviewWritten(),
                 reservation.getStartDateTime(),
                 reservation.getEndDateTime(),
+                reservation.getUseCompletionTime(),
                 reservation.getPrice(),
                 reservation.getStatus(),
                 reservation.getCreatedAt()
@@ -71,6 +76,7 @@ public class ReservationResponse {
                 reviewWritten,
                 reservation.getStartDateTime(),
                 reservation.getEndDateTime(),
+                reservation.getUseCompletionTime(),
                 reservation.getPrice(),
                 reservation.getStatus(),
                 reservation.getCreatedAt()

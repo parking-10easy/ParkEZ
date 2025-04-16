@@ -40,6 +40,9 @@ public class Reservation extends BaseEntity {
     private LocalDateTime endDateTime;
 
     @Column(nullable = false)
+    private LocalDateTime useCompletionTime;
+
+    @Column(nullable = false)
     private BigDecimal price;
 
     @Enumerated(EnumType.STRING)
@@ -63,6 +66,7 @@ public class Reservation extends BaseEntity {
         this.parkingLotName = parkingLotName;
         this.startDateTime = startDateTime;
         this.endDateTime = endDateTime;
+        this.useCompletionTime = null;
         this.price = price;
         this.status = ReservationStatus.PENDING;
         this.reviewWritten = false;
@@ -70,6 +74,7 @@ public class Reservation extends BaseEntity {
 
     public void complete() {
         this.status = ReservationStatus.COMPLETED;
+        this.useCompletionTime = LocalDateTime.now();
     }
 
     public void cancel() {
@@ -94,5 +99,9 @@ public class Reservation extends BaseEntity {
 
     public boolean isCompleted() {
         return this.status == ReservationStatus.COMPLETED;
+    }
+
+    public void writeReview() {
+        this.reviewWritten = true;
     }
 }

@@ -27,6 +27,9 @@ public class ReviewWriter {
         ParkingZone parkingZone = reservation.getParkingZone();
         parkingZone.incrementReviewCount();
 
+        // 예약 리뷰 작성 여부 수정
+        reservation.writeReview();
+
         return reviewRepository.save(review);
     }
 

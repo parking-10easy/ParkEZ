@@ -119,9 +119,9 @@ class ReservationWriterTest {
             // then
             assertThat(result)
                     .isNotNull()
-                    .extracting("id", "user", "parkingZone", "parkingLotName", "startDateTime", "endDateTime", "price", "status")
+                    .extracting("id", "user", "parkingZone", "parkingLotName", "startDateTime", "endDateTime", "price", "status", "reviewWritten")
                     .isEqualTo(
-                            List.of(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price, ReservationStatus.PENDING)
+                            List.of(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price, ReservationStatus.PENDING, false)
                     );
         }
     }
@@ -141,7 +141,8 @@ class ReservationWriterTest {
             reservationWriter.complete(reservation);
 
             // then
-            assertEquals(ReservationStatus.COMPLETED, reservation.getStatus());
+            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+            assertThat(reservation.getUseCompletionTime()).isNotNull();
         }
     }
 
@@ -160,7 +161,7 @@ class ReservationWriterTest {
             reservationWriter.cancel(reservation);
 
             // then
-            assertEquals(ReservationStatus.CANCELED, reservation.getStatus());
+            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELED);
         }
     }
 
