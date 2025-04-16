@@ -55,7 +55,7 @@ public class ParkingLotPublicDataService {
     private int currentPage = 1;
     private final int perPage = 10;
 
-
+    // TODO : jdbc template bulk insert 사용해보기
     @Scheduled(fixedRate = 300000, initialDelay = 10000)
     public void fetchAndSavePublicData() {
         try {
