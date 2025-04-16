@@ -107,31 +107,29 @@ public class ParkingLotSearchResponse {
 
     // 다건 + 단건 조회용 생성자
     public ParkingLotSearchResponse(Long parkingLotId, String name, String address,
-                                    LocalTime openedAt, LocalTime closedAt,
-                                    BigDecimal pricePerHour, Integer totalQuantity,
-                                    ChargeType chargeType, SourceType sourceType,
-                                    ParkingLotStatus parkingLotStatus, Long availableQuantity,
-                                    Long reviewCount, Double averageRating
-    ) {
-        this(parkingLotId,
-                name,
-                address,
-                openedAt,
-                closedAt,
-                pricePerHour,
-                totalQuantity,
-                availableQuantity,
-                chargeType,
-                sourceType,
-                parkingLotStatus,
-                reviewCount,
-                averageRating,
-                List.of()
-        );
+                                    LocalTime openedAt, LocalTime closedAt, BigDecimal pricePerHour, Integer totalQuantity,
+                                    ChargeType chargeType, SourceType sourceType, ParkingLotStatus parkingLotStatus) {
+        this.parkingLotId = parkingLotId;
+        this.name = name;
+        this.address = address;
+        this.openedAt = openedAt;
+        this.closedAt = closedAt;
+        this.pricePerHour = pricePerHour;
+        this.totalQuantity = totalQuantity;
+        this.chargeType = chargeType;
+        this.sourceType = sourceType;
+        this.parkingLotStatus = parkingLotStatus;
     }
 
     // 이미지
     public void updateImage(List<String> images) {
         this.images = images;
+    }
+
+    // 집계 관련
+    public void updateAggregation(Long parkingZoneCount, Long reviewCount, Double avgRating) {
+        this.availableQuantity = parkingZoneCount;
+        this.reviewCount = reviewCount;
+        this.averageRating = avgRating;
     }
 }

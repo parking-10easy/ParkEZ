@@ -3,6 +3,7 @@ package com.parkez.parkinglot.service;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
+import com.parkez.parkinglot.dto.aggregation.ParkingLotAggregation;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
@@ -33,6 +34,16 @@ public class ParkingLotReader {
             // 이미지 목록 업데이트
             List<String> imageList = parkingLotRepository.findImageListByParkingLotId(dto.getParkingLotId());
             dto.updateImage(imageList);
+
+            // 집계 목록 업데이트
+            ParkingLotAggregation aggregation = parkingLotRepository.getAggregationByParkingLotId(dto.getParkingLotId())
+                    .orElseThrow(() -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+
+            dto.updateAggregation(
+                    aggregation.getParkingZoneCount(),
+                    aggregation.getReviewCount(),
+                    aggregation.getAvgRating()
+            );
         }
         return dtoPage;
     }
@@ -49,13 +60,38 @@ public class ParkingLotReader {
         List<String> imageList = parkingLotRepository.findImageListByParkingLotId(dto.getParkingLotId());
         dto.updateImage(imageList);
 
+        // 집계 목록 업데이트
+        ParkingLotAggregation aggregation = parkingLotRepository.getAggregationByParkingLotId(dto.getParkingLotId())
+                .orElseThrow(() -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+        dto.updateAggregation(
+                aggregation.getParkingZoneCount(),
+                aggregation.getReviewCount(),
+                aggregation.getAvgRating()
+        );
+
         return dto;
     }
 
     // 본인이 소유한 주차장 조회
     public Page<MyParkingLotSearchResponse> getMyParkingLots(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        return parkingLotRepository.findMyParkingLots(userId, pageable);
+        Page<MyParkingLotSearchResponse> dtoPage = parkingLotRepository.findMyParkingLots(userId, pageable);
+
+        for (MyParkingLotSearchResponse dto : dtoPage.getContent()) {
+            // 이미지 목록 업데이트
+            String imageList = parkingLotRepository.findImageListByParkingLotId(dto.getParkingLotId()).get(0);
+            dto.updateImage(imageList);
+
+            // 집계 목록 업데이트
+            ParkingLotAggregation aggregation = parkingLotRepository.getAggregationByParkingLotId(dto.getParkingLotId())
+                    .orElseThrow(() -> new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
+
+            dto.updateAggregation(
+                    aggregation.getReviewCount()
+            );
+
+        }
+        return dtoPage;
     }
 
     //  soft delete 제외 + null 처리하여 아이디로 단건 조회 + authUser 본인확인

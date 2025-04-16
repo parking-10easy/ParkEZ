@@ -1,11 +1,13 @@
 package com.parkez.parkinglot.domain.repository;
 
+import com.parkez.parkinglot.dto.aggregation.ParkingLotAggregation;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ParkingLotQueryDslRepository {
 
@@ -20,4 +22,7 @@ public interface ParkingLotQueryDslRepository {
 
     // 이미지 조회
     List<String> findImageListByParkingLotId(Long parkingLotId);
+
+    // 조회에 필요한 집계
+    Optional<ParkingLotAggregation> getAggregationByParkingLotId(Long parkingLotId);
 }

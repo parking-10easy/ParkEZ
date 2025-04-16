@@ -1,5 +1,6 @@
 package com.parkez.parkinglot.domain.repository;
 
+import com.parkez.parkinglot.dto.aggregation.ParkingLotAggregation;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.review.domain.repository.ReviewRepository;
@@ -7,7 +8,6 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
-import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.parkez.parkinglot.domain.entity.QParkingLot.parkingLot;
 import static com.parkez.parkinglot.domain.entity.QParkingLotImage.parkingLotImage;
@@ -30,10 +31,8 @@ import static com.parkez.review.domain.entity.QReview.review;
 public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
 
     private final JPAQueryFactory jpaQueryFactory;
-    private final ReviewRepository reviewRepository;
 
     // 다건 조회
-    //TODO : 리뷰 카운트 + 평점 + 정렬 기준
     @Override
     public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(String name, String address,
                                                                         Double userLatitude, Double userLongitude, Integer radiusInMeters, Pageable pageable) {
@@ -49,21 +48,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                         parkingLot.quantity.as("totalQuantity"),
                         parkingLot.chargeType,
                         parkingLot.sourceType,
-                        parkingLot.status.as("parkingLotStatus"),
-                        JPAExpressions
-                                .select(parkingZone.count())
-                                .from(parkingZone)
-                                .where(parkingZone.parkingLot.id.eq(parkingLot.id)),
-                        JPAExpressions
-                                .select(review.count())
-                                .from(review)
-                                .join(review.reservation, reservation)
-                                .where(parkingZone.parkingLot.id.eq(parkingLot.id)),
-                        JPAExpressions
-                                .select(review.rating.avg())
-                                .from(review)
-                                .join(review.reservation, reservation)
-                                .where(parkingZone.parkingLot.id.eq(parkingLot.id))
+                        parkingLot.status.as("parkingLotStatus")
                 ))
                 .from(parkingLot)
                 .where(
@@ -94,7 +79,6 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     }
 
     // 단건 조회
-    // TODO : 리뷰 카운트 + 평점
     @Override
     public ParkingLotSearchResponse searchParkingLotById(Long parkingLotId) {
 
@@ -109,21 +93,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                         parkingLot.quantity.as("totalQuantity"),
                         parkingLot.chargeType,
                         parkingLot.sourceType,
-                        parkingLot.status.as("parkingLotStatus"),
-                        JPAExpressions
-                                .select(parkingZone.count())
-                                .from(parkingZone)
-                                .where(parkingZone.parkingLot.id.eq(parkingLot.id)),
-                        JPAExpressions
-                                .select(review.count())
-                                .from(review)
-                                .join(review.reservation, reservation)
-                                .where(parkingZone.parkingLot.id.eq(parkingLot.id)),
-                        JPAExpressions
-                                .select(review.rating.avg())
-                                .from(review)
-                                .join(review.reservation, reservation)
-                                .where(parkingZone.parkingLot.id.eq(parkingLot.id))
+                        parkingLot.status.as("parkingLotStatus")
                 ))
                 .from(parkingLot)
                 .where(
@@ -136,7 +106,6 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
     }
 
     // 소유한 주차장 조회
-    // TODO : 리뷰 카운트 + 정렬 기준
     @Override
     public Page<MyParkingLotSearchResponse> findMyParkingLots(Long userId, Pageable pageable) {
 
@@ -144,12 +113,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                 .select(Projections.constructor(MyParkingLotSearchResponse.class,
                         parkingLot.id,
                         parkingLot.name,
-                        parkingLot.address,
-                        JPAExpressions
-                                .select(parkingLotImage.imageUrl.min())
-                                .from(parkingLotImage)
-                                .where(parkingLotImage.parkingLot.id.eq(parkingLot.id))
-                                .limit(1)
+                        parkingLot.address
 
                 ))
                 .from(parkingLot)
@@ -182,6 +146,26 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                 .from(parkingLotImage)
                 .where(parkingLotImage.parkingLot.id.eq(parkingLotId))
                 .fetch();
+    }
+
+    // 주차장 조회시 필요한 집계 쿼리
+    @Override
+    public Optional<ParkingLotAggregation> getAggregationByParkingLotId(Long parkingLotId) {
+        return Optional.ofNullable(jpaQueryFactory.select(
+                        Projections.constructor(
+                                ParkingLotAggregation.class,
+                                parkingLot.id,
+                                parkingZone.countDistinct(),
+                                review.count(),
+                                review.rating.avg()
+                        ))
+                .from(parkingLot)
+                .leftJoin(parkingZone).on(parkingZone.parkingLot.id.eq(parkingLot.id))
+                .leftJoin(reservation).on(reservation.parkingZone.id.eq(parkingZone.id))
+                .leftJoin(review).on(review.reservation.id.eq(reservation.id))
+                .where(parkingLot.id.eq(parkingLotId))
+                .groupBy(parkingLot.id)
+                .fetchOne());
     }
 
     // 이름 조건
