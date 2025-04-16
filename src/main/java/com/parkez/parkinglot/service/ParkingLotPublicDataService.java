@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
@@ -25,6 +26,8 @@ import java.net.URI;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -49,14 +52,16 @@ public class ParkingLotPublicDataService {
     private final UserReader userReader;
 
     private static final String description = "공공데이터로 등록한 주차장입니다.";
+    private int currentPage = 1;
+    private final int perPage = 10;
 
-    // openAPI를 통해 데이터 가져온 후 DB에 저장하기
-    // TODO : 시간에 따라 데이터를 100개씩 저장하도록 설정 + 중복 데이터 처리 어떻게 할지
+
+    @Scheduled(fixedRate = 300000, initialDelay = 10000)
     public void fetchAndSavePublicData() {
         try {
             URI uri = UriComponentsBuilder.fromUriString(parkingLotPublicDataUrl)
-                    .queryParam("page", 1)
-                    .queryParam("perPage", 100)
+                    .queryParam("page", currentPage)
+                    .queryParam("perPage", perPage)
                     .queryParam("serviceKey", serviceKey)
                     .build()
                     .encode()
@@ -66,10 +71,63 @@ public class ParkingLotPublicDataService {
             ResponseEntity<ParkingLotDataResponse> responseEntity = restTemplate.getForEntity(uri, ParkingLotDataResponse.class);
             ParkingLotDataResponse dataResponse = responseEntity.getBody();
 
-            if (dataResponse != null && dataResponse.getData() != null) {
-                List<ParkingLot> parkingLotList = dataResponse.getData().stream().map(this::convertToParkingLot).toList();
-                parkingLotRepository.saveAll(parkingLotList);
-                log.info("DB에 저장한 데이터 수 : {}", parkingLotList.size());
+            if (dataResponse == null || dataResponse.getData() == null) {
+                currentPage = 1;
+                log.info("받은 데이터가 없으므로, 인덱스를 1로 초기화");
+                return;
+            }
+
+            // API로 받은 모든 주차장 데이터
+            List<ParkingLotData> dataList = dataResponse.getData();
+
+            // API로 받은 모든 주차장 데이터의 주차장 이름 리스트
+            List<String> names = dataList.stream()
+                    .map(ParkingLotData::getName)
+                    .toList();
+
+            // 이름 리스트에 해당하는 주차장 데이터 조회
+            List<ParkingLot> existingParkingLots = parkingLotRepository.findByNameIn(names);
+            Map<String, ParkingLot> existingMap = existingParkingLots.stream()
+                    .collect(Collectors.toMap(ParkingLot::getName, parkingLot -> parkingLot));
+
+            // 신규 데이터와 업데이트 해야할 데이터 분리
+            List<ParkingLot> newParkingLots = new ArrayList<>();
+            List<ParkingLot> updatedParkingLots = new ArrayList<>();
+
+            for (ParkingLotData data : dataResponse.getData()) {
+                ParkingLot newParkingLot = convertToParkingLot(data);
+                // 존재하는 데이터 -> 업데이트
+                if (existingMap.containsKey(newParkingLot.getName())) {
+                    ParkingLot existingParkingLot = existingMap.get(newParkingLot.getName());
+                    existingParkingLot.update(
+                            newParkingLot.getName(),
+                            newParkingLot.getAddress(),
+                            newParkingLot.getOpenedAt(),
+                            newParkingLot.getClosedAt(),
+                            newParkingLot.getPricePerHour(),
+                            newParkingLot.getDescription(),
+                            newParkingLot.getQuantity());
+                    updatedParkingLots.add(existingParkingLot);
+                    log.info("중복 데이터 업데이트: {}", existingParkingLot.getName());
+                } else { // 새로운 데이터 -> 저장
+                    newParkingLots.add(newParkingLot);
+                    log.info("새로운 주차장 저장: {}", newParkingLot.getName());
+                }
+            }
+
+            if (!newParkingLots.isEmpty()) {
+                parkingLotRepository.saveAll(newParkingLots);
+            }
+
+            if (!updatedParkingLots.isEmpty()) {
+                parkingLotRepository.saveAll(updatedParkingLots);
+            }
+
+            if (dataResponse.getData().size() < perPage) {
+                currentPage = 1;
+                log.info("전체 데이터 저장 완료, 인덱스를 1로 초기화");
+            } else {
+                currentPage++;
             }
 
         } catch (Exception e) {
