@@ -155,7 +155,10 @@ public class ParkingLotServiceTest {
             User owner = getOwnerUser();
             ParkingLot parkingLot = getParkingLot();
             ParkingLotRequest parkingLotRequest = getParkingLotRequest();
-            Geocode geocode = new Geocode(37.500066200, 127.032926912);
+            Geocode geocode = Geocode.builder()
+                    .latitude(37.500066200)
+                    .longitude(127.032926912)
+                    .build();
 
             when(userReader.getActiveUserById(authUser.getId())).thenReturn(owner);
             when(kakaoGeocodeClient.getGeocode(parkingLotRequest.getAddress())).thenReturn(geocode);

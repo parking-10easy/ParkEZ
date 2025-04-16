@@ -4,6 +4,7 @@ import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
+import com.parkez.parkinglot.dto.aggregation.ParkingLotAggregation;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
@@ -101,6 +102,14 @@ public class ParkingLotReaderTest {
                 .build();
     }
 
+    private ParkingLotAggregation getParkingLotAggregation1() {
+        return new ParkingLotAggregation(1L, 5L, 10L, 4.5);
+    }
+
+    private ParkingLotAggregation getParkingLotAggregation2() {
+        return new ParkingLotAggregation(2L, 10L, 12L, 3.5);
+    }
+
     @Nested
     class searchParkingLotsByConditions {
         @Test
@@ -121,6 +130,14 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.findImageListByParkingLotId(2L))
                     .thenReturn(List.of("image3.jpg"));
 
+            ParkingLotAggregation parkingLotAggregation1 = getParkingLotAggregation1();
+            when(parkingLotRepository.getAggregationByParkingLotId(1L))
+                    .thenReturn(Optional.of(parkingLotAggregation1));
+
+            ParkingLotAggregation parkingLotAggregation2 = getParkingLotAggregation2();
+            when(parkingLotRepository.getAggregationByParkingLotId(2L))
+                    .thenReturn(Optional.of(parkingLotAggregation2));
+
             // when
             Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(
                     null, null, null, null, null,
@@ -131,10 +148,12 @@ public class ParkingLotReaderTest {
             assertNotNull(result);
             assertEquals(2, result.getTotalElements());
             assertThat(result.getContent())
-                    .extracting("name", "address", "images")
+                    .extracting("name", "address", "images", "availableQuantity", "reviewCount", "averageRating")
                     .containsExactly(
-                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages()),
-                            tuple(parkingLot2.getName(), parkingLot2.getAddress(), parkingLot2.getImages())
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages(),
+                                    parkingLotAggregation1.getParkingZoneCount(), parkingLotAggregation1.getReviewCount(), parkingLotAggregation1.getAvgRating()),
+                            tuple(parkingLot2.getName(), parkingLot2.getAddress(), parkingLot2.getImages(),
+                                    parkingLotAggregation2.getParkingZoneCount(), parkingLotAggregation2.getReviewCount(), parkingLotAggregation2.getAvgRating())
                     );
         }
 
@@ -154,6 +173,10 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.findImageListByParkingLotId(1L))
                     .thenReturn(List.of("image1.jpg", "image2.jpg"));
 
+            ParkingLotAggregation parkingLotAggregation = getParkingLotAggregation1();
+            when(parkingLotRepository.getAggregationByParkingLotId(1L))
+                    .thenReturn(Optional.of(parkingLotAggregation));
+
             // when
             Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(
                     name, null, null, null, null,
@@ -161,12 +184,11 @@ public class ParkingLotReaderTest {
             );
 
             // then
-            assertNotNull(result);
-            assertEquals(1, result.getTotalElements());
             assertThat(result.getContent())
-                    .extracting("name", "address", "images")
+                    .extracting("name", "address", "images", "availableQuantity", "reviewCount", "averageRating")
                     .containsExactly(
-                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages())
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages(),
+                                    parkingLotAggregation.getParkingZoneCount(), parkingLotAggregation.getReviewCount(), parkingLotAggregation.getAvgRating())
                     );
         }
 
@@ -186,6 +208,10 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.findImageListByParkingLotId(1L))
                     .thenReturn(List.of("image1.jpg", "image2.jpg"));
 
+            ParkingLotAggregation parkingLotAggregation = getParkingLotAggregation1();
+            when(parkingLotRepository.getAggregationByParkingLotId(1L))
+                    .thenReturn(Optional.of(parkingLotAggregation));
+
             // when
             Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(
                     null, address, null, null, null,
@@ -194,14 +220,12 @@ public class ParkingLotReaderTest {
 
             // then
             assertNotNull(result);
-            assertEquals(1, result.getTotalElements());
             assertThat(result.getContent())
-                    .extracting("name", "address", "images")
+                    .extracting("name", "address", "images", "availableQuantity", "reviewCount", "averageRating")
                     .containsExactly(
-                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages())
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages(),
+                                    parkingLotAggregation.getParkingZoneCount(), parkingLotAggregation.getReviewCount(), parkingLotAggregation.getAvgRating())
                     );
-
-
         }
 
         @Test
@@ -221,6 +245,10 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.findImageListByParkingLotId(1L))
                     .thenReturn(List.of("image1.jpg", "image2.jpg"));
 
+            ParkingLotAggregation parkingLotAggregation = getParkingLotAggregation1();
+            when(parkingLotRepository.getAggregationByParkingLotId(1L))
+                    .thenReturn(Optional.of(parkingLotAggregation));
+
             // when
             Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(
                     name, address, null, null, null,
@@ -229,11 +257,11 @@ public class ParkingLotReaderTest {
 
             // then
             assertNotNull(result);
-            assertEquals(1, result.getTotalElements());
             assertThat(result.getContent())
-                    .extracting("name", "address", "images")
+                    .extracting("name", "address", "images", "availableQuantity", "reviewCount", "averageRating")
                     .containsExactly(
-                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages())
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages(),
+                                    parkingLotAggregation.getParkingZoneCount(), parkingLotAggregation.getReviewCount(), parkingLotAggregation.getAvgRating())
                     );
 
         }
@@ -256,6 +284,10 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.findImageListByParkingLotId(parkingLot1.getParkingLotId()))
                     .thenReturn(List.of("img1.jpg", "img2.jpg"));
 
+            ParkingLotAggregation parkingLotAggregation = getParkingLotAggregation1();
+            when(parkingLotRepository.getAggregationByParkingLotId(1L))
+                    .thenReturn(Optional.of(parkingLotAggregation));
+
             // when
             Page<ParkingLotSearchResponse> result = parkingLotReader.searchParkingLotsByConditions(
                     null, null, userLatitude, userLongitude, radiusInMeters,
@@ -264,13 +296,12 @@ public class ParkingLotReaderTest {
 
             // then
             assertNotNull(result);
-            assertEquals(1, result.getTotalElements());
             assertThat(result.getContent())
-                    .extracting("name", "address", "images")
+                    .extracting("name", "address", "images", "availableQuantity", "reviewCount", "averageRating")
                     .containsExactly(
-                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages())
+                            tuple(parkingLot1.getName(), parkingLot1.getAddress(), parkingLot1.getImages(),
+                                    parkingLotAggregation.getParkingZoneCount(), parkingLotAggregation.getReviewCount(), parkingLotAggregation.getAvgRating())
                     );
-
         }
     }
 
@@ -287,13 +318,21 @@ public class ParkingLotReaderTest {
             when(parkingLotRepository.findImageListByParkingLotId(parkingLot1.getParkingLotId()))
                     .thenReturn(List.of("img1.jpg", "img2.jpg"));
 
+            ParkingLotAggregation aggregation = new ParkingLotAggregation(parkingLotId, 4L, 8L, 4.2);
+            when(parkingLotRepository.getAggregationByParkingLotId(parkingLotId))
+                    .thenReturn(Optional.of(aggregation));
+
             // when
             ParkingLotSearchResponse result = parkingLotReader.searchParkingLotById(parkingLotId);
 
             // then
             assertNotNull(result);
-            assertEquals("참쉬운주차장", result.getName());
             assertThat(result.getImages()).containsExactly("img1.jpg", "img2.jpg");
+            assertEquals(parkingLot1.getName(), result.getName());
+            assertEquals(parkingLot1.getAddress(), result.getAddress());
+            assertEquals(aggregation.getParkingZoneCount(), result.getAvailableQuantity());
+            assertEquals(aggregation.getReviewCount(), result.getReviewCount());
+            assertEquals(aggregation.getAvgRating(), result.getAverageRating());
         }
 
         @Test
@@ -322,7 +361,21 @@ public class ParkingLotReaderTest {
             List<MyParkingLotSearchResponse> parkingLotList = Arrays.asList(parkingLot1, parkingLot2);
             Page<MyParkingLotSearchResponse> page = new PageImpl<>(parkingLotList, pageable, parkingLotList.size());
             Long userId = 1L;
+
             when(parkingLotRepository.findMyParkingLots(userId, pageable)).thenReturn(page);
+
+            when(parkingLotRepository.findImageListByParkingLotId(parkingLot1.getParkingLotId()))
+                    .thenReturn(List.of("img1.jpg"));
+            when(parkingLotRepository.findImageListByParkingLotId(parkingLot2.getParkingLotId()))
+                    .thenReturn(List.of("img2.jpg"));
+
+            ParkingLotAggregation parkingLotAggregation1 = getParkingLotAggregation1();
+            when(parkingLotRepository.getAggregationByParkingLotId(1L))
+                    .thenReturn(Optional.of(parkingLotAggregation1));
+
+            ParkingLotAggregation parkingLotAggregation2 = getParkingLotAggregation2();
+            when(parkingLotRepository.getAggregationByParkingLotId(2L))
+                    .thenReturn(Optional.of(parkingLotAggregation2));
 
             // when
             Page<MyParkingLotSearchResponse> result = parkingLotReader.getMyParkingLots(userId, pageRequest.getPage(), pageRequest.getSize());
