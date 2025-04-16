@@ -25,19 +25,6 @@ public class PaymentReader {
 
     }
 
-    public PaymentInfoResponse getPaymentInfo(String orderId) {
-        Payment payment = paymentRepository.findByOrderId(orderId).orElseThrow(
-                () -> new ParkingEasyException(PaymentErrorCode.PAYMENT_NOT_FOUND));
-
-        return PaymentInfoResponse.builder()
-                .customerEmail(payment.getUserEmail())
-                .customerName(payment.getUserNickName())
-                .customerMobilePhone(payment.getUserPhone())
-                .totalPrice(payment.getTotalPrice())
-                .customerKey("user_" + payment.getUserId())
-                .build();
-    }
-
     public Optional<Payment> findByReservation(Reservation reservation) {
         return paymentRepository.findByReservation(reservation);
     }

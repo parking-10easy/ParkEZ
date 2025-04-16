@@ -59,10 +59,8 @@ public class ReservationWriter {
     }
 
     public void updateStatusConfirm(Reservation reservation){
-        reservation.updateStatusConfirm();
+        reservation.confirm();
     }
 
-    public void updateStatusCancel(Reservation reservation) {
-        reservation.updateStatusCancel();
-    }
+
 }

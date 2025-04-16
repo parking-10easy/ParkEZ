@@ -18,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1")
@@ -33,7 +35,8 @@ public class PaymentController {
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @Valid @RequestBody PaymentCreateRequest request
     ){
-        return Response.of(paymentService.createPayment(authUser, request));
+        String orderId = UUID.randomUUID().toString().replace("-", "");
+        return Response.of(paymentService.createPayment(authUser, request, orderId));
     }
 
     @Secured(UserRole.Authority.USER)

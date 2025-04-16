@@ -1,5 +1,6 @@
 package com.parkez.payment.dto.response;
 
+import com.parkez.payment.domain.enums.PaymentType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -14,12 +15,9 @@ public class PaymentConfirmResponse {
 
     private Integer amount;
 
-    private String method;
-
-    private String status;
-
     private String approvedAt;
 
-    private String type;
+    private PaymentType type;
+
 }
 

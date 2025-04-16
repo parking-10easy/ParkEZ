@@ -15,17 +15,17 @@ import java.util.Base64;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties(PaymentProperties.class)
+@EnableConfigurationProperties(TossPaymentProperties.class)
 public class TossPaymentClient {
 
     private static final String AUTH_HEADER_PREFIX = "Basic ";
 
-    private String createPaymentAuthHeader(PaymentProperties paymentProperties) {
+    private String createPaymentAuthHeader(TossPaymentProperties paymentProperties) {
         return AUTH_HEADER_PREFIX + Base64.getEncoder().encodeToString((paymentProperties.getSecretKey() + ":").getBytes(StandardCharsets.UTF_8));
     }
 
     @Bean
-    public WebClient tossWebClient(PaymentProperties paymentProperties) {
+    public WebClient tossWebClient(TossPaymentProperties paymentProperties) {
         String authHeader = createPaymentAuthHeader(paymentProperties);
 
         return WebClient.builder()
@@ -33,12 +33,12 @@ public class TossPaymentClient {
                 .defaultHeader(HttpHeaders.AUTHORIZATION, authHeader)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .filter((request, next) -> {
-                    log.info("====== WebClient 요청 로그 ======");
-                    log.info("요청 메서드: " + request.method());
-                    log.info("요청 URL: " + request.url());
+                    log.info("====== toss WebClient 요청 로그 ======");
+                    log.info("요청 메서드: {}", request.method());
+                    log.info("요청 URL: {}", request.url());
                     request.headers().forEach((name, values) ->
                             values.forEach(value ->
-                                    log.info("헤더 - " + name + ": " + value)));
+                                    log.info("헤더 - {}: {}", name, value)));
                     return next.exchange(request);
                 })
                 .build();

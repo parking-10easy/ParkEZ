@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/")
 @RequiredArgsConstructor
-public class PaymentNotiController {
+public class PaymentResultController {
 
     private final PaymentService paymentService;
 

@@ -17,6 +17,13 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 
 @Entity
+@Table(
+        name = "payment",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_order_id", columnNames = "order_id"),
+                @UniqueConstraint(name = "uk_payment_key", columnNames = "payment_key")
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Payment extends BaseEntity {
@@ -45,7 +52,6 @@ public class Payment extends BaseEntity {
     @Column(nullable = false)
     private String orderId;
 
-    @Column(nullable = false)
     private String paymentKey;
 
     private int cardFee;
@@ -69,11 +75,11 @@ public class Payment extends BaseEntity {
 
 
     // 승인 이후 payment 정보 update 하는 메서드
-    public void updatePaymentInfo(String paymentKey, String approvedAt, String type) {
+    public void approvePaymentInfo(String paymentKey, String approvedAt, PaymentType type) {
         this.paymentKey = paymentKey;
         this.paymentStatus = PaymentStatus.APPROVED;
         this.approvedAt = OffsetDateTime.parse(approvedAt).toLocalDateTime();
-        this.paymentType = PaymentType.from(type);
+        this.paymentType = type;
 
     }
 
@@ -97,7 +103,7 @@ public class Payment extends BaseEntity {
         return Objects.nonNull(reservation) ? reservation.getId() : null;
     }
 
-    public void updateStatusCancel() {
+    public void cancel() {
         this.paymentStatus = PaymentStatus.CANCELED;
     }
 

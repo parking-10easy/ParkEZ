@@ -89,15 +89,13 @@ public class Reservation extends BaseEntity {
         return this.status == ReservationStatus.COMPLETED;
     }
 
-    public void updateStatusConfirm(){
+    public void confirm(){
         this.status = ReservationStatus.CONFIRMED;
     }
 
-    public void updateStatusCancel(){
-        this.status = ReservationStatus.CANCELED;
-    }
 
     public boolean isTimeout(LocalDateTime currentTime, long timeoutMinutes) {
-        return Duration.between(this.getCreatedAt(), currentTime).toMinutes() > timeoutMinutes;
+        long elapsedMillis = Duration.between(this.getCreatedAt(), currentTime).toMillis();
+        return elapsedMillis > timeoutMinutes * 60 * 1000;
     }
 }

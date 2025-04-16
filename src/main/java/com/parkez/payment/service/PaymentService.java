@@ -41,7 +41,7 @@ public class PaymentService {
 
     private static final long TIME_OUT_MINUTE = 10;
 
-    public PaymentCreateResponse createPayment(AuthUser authUser, PaymentCreateRequest request) {
+    public PaymentCreateResponse createPayment(AuthUser authUser, PaymentCreateRequest request, String orderId) {
         User user = userReader.getActiveUserById(authUser.getId());
 
         Reservation reservation = reservationReader.findMyReservation(authUser.getId(), request.getReservationId());
@@ -49,8 +49,6 @@ public class PaymentService {
         checkReservationTimeout(reservation, LocalDateTime.now());
 
         validatePaymentStatus(reservation);
-
-        String orderId = UUID.randomUUID().toString().replace("-", "");
 
         Payment payment = paymentWriter.createPayment(user, reservation, orderId);
 
@@ -85,7 +83,7 @@ public class PaymentService {
             paymentWriter.savePayment(payment, confirmResponse);
         }
 
-        Reservation reservation = reservationReader.findMyReservation(payment.getUserId(), payment.getReservation().getId());
+        Reservation reservation = reservationReader.findMyReservation(payment.getUserId(), payment.getReservationId());
         reservationWriter.updateStatusConfirm(reservation);
 
         return confirmResponse;
@@ -93,7 +91,8 @@ public class PaymentService {
     }
 
     public PaymentInfoResponse getPaymentInfo(String orderId) {
-        return paymentReader.getPaymentInfo(orderId);
+        Payment payment = paymentReader.getPayment(orderId);
+        return PaymentInfoResponse.of(payment);
     }
 
     public PaymentResponse getMyPayment(AuthUser authUser, Long reservationId) {
@@ -108,13 +107,9 @@ public class PaymentService {
     }
 
     private void checkReservationTimeout(Reservation reservation, LocalDateTime now) {
-        long passedMinutes = Duration.between(reservation.getCreatedAt(), now).toMinutes();
-        log.info("CreatedAt: {}", reservation.getCreatedAt());
-        log.info("Now: {}", now);
-        log.info("Passed Minutes: {}", passedMinutes);
 
         if(reservation.isTimeout(now, TIME_OUT_MINUTE)) {
-            reservationWriter.updateStatusCancel(reservation);
+            reservationWriter.cancel(reservation);
             throw new ParkingEasyException(PaymentErrorCode.PAYMENT_TIME_OUT);
         }
 
@@ -142,7 +137,7 @@ public class PaymentService {
 
         Reservation reservation = reservationReader.findMyReservation(payment.getUserId(), payment.getReservationId());
 
-        reservationWriter.updateStatusCancel(reservation);
+        reservationWriter.cancel(reservation);
     }
 
 }

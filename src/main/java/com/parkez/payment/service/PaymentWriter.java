@@ -7,9 +7,11 @@ import com.parkez.payment.dto.response.PaymentConfirmResponse;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -24,7 +26,6 @@ public class PaymentWriter {
                 .reservation(reservation)
                 .paymentStatus(PaymentStatus.PENDING)
                 .orderId(orderId)
-                .paymentKey("")
                 .cardFee(0)
                 .build();
 
@@ -32,13 +33,11 @@ public class PaymentWriter {
     }
 
     public void savePayment(Payment payment, PaymentConfirmResponse response) {
-        payment.updatePaymentInfo(response.getPaymentKey(), response.getApprovedAt(), response.getType());
-        paymentRepository.save(payment);
+        payment.approvePaymentInfo(response.getPaymentKey(), response.getApprovedAt(), response.getType());
     }
 
     public void cancelPayment(Payment payment){
-        payment.updateStatusCancel();
-        paymentRepository.save(payment);
+        payment.cancel();
     }
 
 }
