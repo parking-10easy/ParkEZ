@@ -140,9 +140,6 @@ public class PaymentServiceTest {
         ReflectionTestUtils.setField(request, "startDateTime", start);
         ReflectionTestUtils.setField(request, "endDateTime", end);
 
-        System.out.println("Start DateTime: " + request.getStartDateTime());
-        System.out.println("End DateTime: " + request.getEndDateTime());
-
         return request;
     }
 
@@ -196,11 +193,10 @@ public class PaymentServiceTest {
 
             given(userReader.getActiveUserById(userId)).willReturn(user);
             given(reservationReader.findMyReservation(userId, reservationId)).willReturn(reservation);
-            given(paymentWriter.createPayment(eq(user), eq(reservation), anyString())).willReturn(payment);
-
+            given(paymentWriter.createPayment(eq(user), eq(reservation), eq(orderId))).willReturn(payment);
 
             //when
-            PaymentCreateResponse paymentCreateResponse = paymentService.createPayment(authUser, paymentCreateRequest);
+            PaymentCreateResponse paymentCreateResponse = paymentService.createPayment(authUser, paymentCreateRequest, orderId);
 
             //then
             assertThat(paymentCreateResponse).isNotNull()
@@ -214,21 +210,20 @@ public class PaymentServiceTest {
             // given
             Long userId = 1L;
             Long reservationId = 1L;
+            String orderId = "test-order-id";
 
             AuthUser authUser = createAuthUser(userId);
             User user = createUser(userId);
             Reservation reservation = mock(Reservation.class);
-
             given(userReader.getActiveUserById(userId)).willReturn(user);
             given(reservationReader.findMyReservation(userId, reservationId)).willReturn(reservation);
-            given(reservation.getCreatedAt()).willReturn(LocalDateTime.now().minusMinutes(11));
             given(reservation.isTimeout(any(), anyLong())).willReturn(true);
 
             PaymentCreateRequest request = getPaymentCreateRequest(reservationId);
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> paymentService.createPayment(authUser, request));
+                    () -> paymentService.createPayment(authUser, request, orderId));
 
             assertEquals(PaymentErrorCode.PAYMENT_TIME_OUT, exception.getErrorCode());
         }
@@ -328,7 +323,7 @@ public class PaymentServiceTest {
 
             PaymentConfirmResponse confirmResponse = new PaymentConfirmResponse();
             ReflectionTestUtils.setField(confirmResponse, "orderId", orderId);
-            ReflectionTestUtils.setField(confirmResponse, "method", "CARD");
+            ReflectionTestUtils.setField(confirmResponse, "type", PaymentType.NORMAL);
             ReflectionTestUtils.setField(confirmResponse, "amount", amount);
 
             given(paymentReader.getPayment(orderId)).willReturn(payment);
@@ -357,7 +352,7 @@ public class PaymentServiceTest {
         }
 
         @Test
-        void 결제승인요청시_4xx응답이_오면_예외_발생() {
+        void 결제승인요청시_4xx응답이_반환되면_예외_발생() {
             // given
             String orderId = "fail-order-id";
             PaymentConfirmRequest request = new PaymentConfirmRequest();
@@ -399,7 +394,7 @@ public class PaymentServiceTest {
         }
 
         @Test
-        void 결제승인요청시_5xx응답이_오면_예외_발생() {
+        void 결제승인요청시_5xx응답이_반환되면_예외_발생() {
             // given
             String orderId = "fail-order-id-500";
             PaymentConfirmRequest request = new PaymentConfirmRequest();
@@ -515,23 +510,64 @@ public class PaymentServiceTest {
             // given
             String orderId = "order-123";
 
-            PaymentInfoResponse response = PaymentInfoResponse.builder()
-                    .customerEmail("test@example.com")
-                    .customerName("홍길동")
-                    .customerMobilePhone("010-1234-5678")
-                    .totalPrice(BigDecimal.valueOf(10000))
-                    .customerKey("customer-key-123")
-                    .build();
+            Payment payment = mock(Payment.class);
+            given(payment.getUserEmail()).willReturn("test@example.com");
+            given(payment.getUserNickName()).willReturn("홍길동");
+            given(payment.getUserPhone()).willReturn("010-1234-5678");
+            given(payment.getTotalPrice()).willReturn(BigDecimal.valueOf(10000));
+            given(payment.getUserId()).willReturn(123L);
 
-            given(paymentReader.getPaymentInfo(orderId)).willReturn(response);
+            given(paymentReader.getPayment(orderId)).willReturn(payment);
 
             // when
             PaymentInfoResponse result = paymentService.getPaymentInfo(orderId);
 
             // then
-            assertThat(result).isEqualTo(response);
+            assertThat(result)
+                    .extracting("customerEmail", "customerName", "customerMobilePhone", "totalPrice", "customerKey")
+                    .containsExactly("test@example.com", "홍길동", "010-1234-5678", BigDecimal.valueOf(10000), "user_123");
+
 
         }
+
+        @Test
+        void 주문번호로_결제_정보_정상조회() {
+            // given
+            String orderId = "info-order-id";
+            Payment payment = mock(Payment.class);
+            given(paymentReader.getPayment(orderId)).willReturn(payment);
+            given(payment.getUserEmail()).willReturn("test@example.com");
+            given(payment.getUserNickName()).willReturn("테스터");
+            given(payment.getUserPhone()).willReturn("01012345678");
+            given(payment.getTotalPrice()).willReturn(BigDecimal.valueOf(10000));
+            given(payment.getUserId()).willReturn(1L);
+
+            // when
+            PaymentInfoResponse response = paymentService.getPaymentInfo(orderId);
+
+            // then
+            assertThat(response.getCustomerEmail()).isEqualTo("test@example.com");
+            assertThat(response.getCustomerName()).isEqualTo("테스터");
+            assertThat(response.getCustomerMobilePhone()).isEqualTo("01012345678");
+            assertThat(response.getTotalPrice()).isEqualTo(BigDecimal.valueOf(10000));
+            assertThat(response.getCustomerKey()).isEqualTo("user_1");
+        }
+
+        @Test
+        void 주문번호로_결제정보조회시_없으면_PAYMENT_NOT_FOUND_예외_발생() {
+            // given
+            String orderId = "non-existent-order";
+            given(paymentReader.getPayment(orderId)).willThrow(
+                    new ParkingEasyException(PaymentErrorCode.PAYMENT_NOT_FOUND)
+            );
+
+            // when & then
+            ParkingEasyException ex = assertThrows(ParkingEasyException.class,
+                    () -> paymentService.getPaymentInfo(orderId));
+
+            assertThat(ex.getErrorCode()).isEqualTo(PaymentErrorCode.PAYMENT_NOT_FOUND);
+        }
+
 
     }
 
@@ -563,7 +599,7 @@ public class PaymentServiceTest {
 
             // then
             verify(paymentWriter).cancelPayment(payment);
-            verify(reservationWriter).updateStatusCancel(reservation);
+            verify(reservationWriter).cancel(reservation);
         }
 
 

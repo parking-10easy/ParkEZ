@@ -1,6 +1,7 @@
 package com.parkez.payment.service;
 
 import com.parkez.payment.domain.entity.Payment;
+import com.parkez.payment.domain.enums.PaymentType;
 import com.parkez.payment.domain.repository.PaymentRepository;
 import com.parkez.payment.dto.response.PaymentConfirmResponse;
 import com.parkez.reservation.domain.entity.Reservation;
@@ -58,14 +59,13 @@ class PaymentWriterTest {
 
             given(response.getPaymentKey()).willReturn("payKey");
             given(response.getApprovedAt()).willReturn("2025-04-16T12:34:56");
-            given(response.getType()).willReturn("CARD");
+            given(response.getType()).willReturn(PaymentType.NORMAL);
 
             // when
             paymentWriter.savePayment(payment, response);
 
             // then
-            verify(payment).updatePaymentInfo("payKey", "2025-04-16T12:34:56", "CARD");
-            verify(paymentRepository).save(payment);
+            verify(payment).approvePaymentInfo("payKey", "2025-04-16T12:34:56", PaymentType.NORMAL);
         }
     }
 
@@ -81,8 +81,7 @@ class PaymentWriterTest {
             paymentWriter.cancelPayment(payment);
 
             // then
-            verify(payment).updateStatusCancel();
-            verify(paymentRepository).save(payment);
+            verify(payment).cancel();
         }
     }
 }
