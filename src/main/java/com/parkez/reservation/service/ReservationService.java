@@ -40,10 +40,12 @@ public class ReservationService {
         return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> {
 
             User user = userReader.getActiveUserById(authUser.getId());
+            System.out.println(user);
             ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
+            System.out.println(parkingZone);
 
             // 예약 날짜 및 시간 입력 오류 예외
-            if (request.getStartDateTime().isAfter(request.getEndDateTime())) {
+            if (!request.getStartDateTime().isBefore(request.getEndDateTime())) {
                 throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
             }
 

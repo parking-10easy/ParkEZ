@@ -39,7 +39,6 @@ public class Reservation extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime endDateTime;
 
-    @Column(nullable = false)
     private LocalDateTime useCompletionTime;
 
     @Column(nullable = false)
