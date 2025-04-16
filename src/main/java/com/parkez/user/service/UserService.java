@@ -9,6 +9,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.parkez.auth.service.TokenManager;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
@@ -34,6 +35,8 @@ public class UserService {
 	private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
 	private final UserReader userReader;
+
+	private final TokenManager tokenManager;
 
 	public MyProfileResponse getMyProfile(AuthUser authUser) {
 		User user = userReader.getActiveUserById(authUser.getId());
@@ -93,6 +96,7 @@ public class UserService {
 	public void deleteUser(Long id) {
 		User user = userReader.getActiveUserById(id);
 		user.softDelete(WITHDRAWAL_NICKNAME, LocalDateTime.now());
+		tokenManager.deleteRefreshToken(id);
 	}
 
 	private void validateBusinessInfo(UserProfileUpdateRequest request) {
