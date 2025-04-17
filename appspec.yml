@@ -1,0 +1,18 @@
+version: 0.0
+os: linux
+
+files:
+  - source: /
+    # CodeDeploy가 S3로부터 가져온 파일을 EC2의 어떤 경로에 저장할 지 지정한다.
+    destination: /home/ubuntu/parkez-server
+
+permissions:
+  - object: /
+    owner: ubuntu
+    group: ubuntu
+
+hooks:
+  ApplicationStart:
+    - location: scripts/deploy.sh
+      timeout: 60
+      runas: ubuntu
