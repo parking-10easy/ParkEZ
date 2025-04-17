@@ -2,6 +2,8 @@ package com.parkez.parkinglot.service;
 
 import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.principal.AuthUser;
+import com.parkez.parkinglot.client.kakaomap.geocode.Geocode;
+import com.parkez.parkinglot.client.kakaomap.geocode.KakaoGeocodeClient;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.entity.ParkingLotImage;
 import com.parkez.parkinglot.domain.enums.ChargeType;
@@ -31,6 +33,7 @@ public class ParkingLotService {
     private final ParkingLotWriter parkingLotWriter;
     private final ParkingLotReader parkingLotReader;
     private final UserReader userReader;
+    private final KakaoGeocodeClient kakaoGeocodeClient;
 
     @Value("${parking-lot.default-image-url}")
     private String defaultParkingLotImageUrl;
@@ -57,17 +60,24 @@ public class ParkingLotService {
                 .build();
         parkingLot.addImage(defaultImage);
 
+        Geocode geocode = kakaoGeocodeClient.getGeocode(parkingLot.getAddress());
+        Double latitude = geocode.getLatitude();
+        Double longitude = geocode.getLongitude();
+        parkingLot.updateGeocode(latitude, longitude);
+
         return ParkingLotResponse.from(parkingLotWriter.createParkingLot(parkingLot));
     }
 
     // 주차장 다건 조회 (이름, 주소)
     public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(ParkingLotSearchRequest request, PageRequest pageRequest) {
-        return parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(), pageRequest.getPage(), pageRequest.getSize());
+        return parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(),
+                request.getUserLatitude(), request.getUserLongitude(), request.getRadiusInMeters(),
+                pageRequest.getPage(), pageRequest.getSize());
     }
 
     // 주차장 단건 조회
     public ParkingLotSearchResponse searchParkingLotById(Long parkingLotId) {
-        return ParkingLotSearchResponse.from(parkingLotReader.searchParkingLotById(parkingLotId));
+        return parkingLotReader.searchParkingLotById(parkingLotId);
     }
 
     // 본인이 소유한 주차장 조회
@@ -112,6 +122,7 @@ public class ParkingLotService {
     public void deleteParkingLot(AuthUser authUser, Long parkingLotId) {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
+        parkingLot.updateStatus(ParkingLotStatus.CLOSED);
         parkingLotWriter.deleteParkingLot(parkingLot);
     }
 
