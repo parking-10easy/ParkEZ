@@ -13,5 +13,4 @@ public interface ParkingLotRepository extends JpaRepository<ParkingLot, Long>, P
 
     boolean existsByIdAndDeletedAtIsNull(Long parkingLotId);
 
-    List<ParkingLot> findByNameIn(List<String> names);
 }
