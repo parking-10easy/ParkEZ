@@ -38,7 +38,7 @@
         const widgets = tossPayments.widgets({ customerKey });
 
         // 결제 금액 설정
-        const amount = paymentInfo.data.totalPrice
+        const amount = paymentInfo.data.price
 
         await widgets.setAmount({
             currency: "KRW",
