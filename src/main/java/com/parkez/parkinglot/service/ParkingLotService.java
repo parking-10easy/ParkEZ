@@ -16,14 +16,19 @@ import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
+import com.parkez.parkinglot.rediskey.CachedPageDto;
+import com.parkez.parkinglot.rediskey.ParkingLotSearchRedisKey;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 
 @Service
@@ -34,6 +39,9 @@ public class ParkingLotService {
     private final ParkingLotReader parkingLotReader;
     private final UserReader userReader;
     private final KakaoGeocodeClient kakaoGeocodeClient;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    private static final long CACHE_TTL = 5L;
 
     @Value("${parking-lot.default-image-url}")
     private String defaultParkingLotImageUrl;
@@ -70,9 +78,31 @@ public class ParkingLotService {
 
     // 주차장 다건 조회 (이름, 주소)
     public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(ParkingLotSearchRequest request, PageRequest pageRequest) {
-        return parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(),
+        String redisKey = ParkingLotSearchRedisKey.generateRedisKey(request.getName(), request.getAddress(),
                 request.getUserLatitude(), request.getUserLongitude(), request.getRadiusInMeters(),
                 pageRequest.getPage(), pageRequest.getSize());
+
+        // 캐시 조회
+        CachedPageDto<ParkingLotSearchResponse> cached = (CachedPageDto<ParkingLotSearchResponse>) redisTemplate.opsForValue().get(redisKey);
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(pageRequest.getPage()-1, pageRequest.getSize());
+        if (cached != null) {
+            return cached.toPage(pageable);
+        }
+
+        // DB 조회
+        Page<ParkingLotSearchResponse> resultPage = parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(),
+                request.getUserLatitude(), request.getUserLongitude(), request.getRadiusInMeters(),
+                pageRequest.getPage(), pageRequest.getSize());
+
+        // pageImpl 타입으로 변환
+        CachedPageDto<ParkingLotSearchResponse> result = new CachedPageDto<>(
+                resultPage.getContent(),
+                resultPage.getTotalElements()
+        );
+
+        // 캐시 저장
+        redisTemplate.opsForValue().set(redisKey, result, Duration.ofMinutes(CACHE_TTL));
+        return resultPage;
     }
 
     // 주차장 단건 조회
