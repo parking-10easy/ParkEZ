@@ -488,19 +488,31 @@ public class ParkingLotServiceTest {
             //given
             Long parkingLotId = 1L;
             Long userId = getAuthUserOwner().getId();
+
             ParkingLot parkingLot = getParkingLot();
-            AuthUser authUser = getAuthUserOwner();
             ParkingLotRequest request = getParkingLotRequest();
+
+            AuthUser authUser = getAuthUserOwner();
+
+            Geocode geocode = Geocode.builder()
+                    .latitude(37.500066200)
+                    .longitude(127.032926912)
+                    .build();
+
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
+            when(kakaoGeocodeClient.getGeocode(request.getAddress())).thenReturn(geocode);
 
             // when
             parkingLotService.updateParkingLot(authUser, parkingLotId, request);
 
             //then
             assertThat(parkingLot)
-                    .extracting("name", "address")
+                    .extracting("name", "address", "latitude", "longitude")
                     .containsExactly(
-                            request.getName(), request.getAddress()
+                            request.getName(),
+                            request.getAddress(),
+                            geocode.getLatitude(),
+                            geocode.getLongitude()
                     );
         }
 

@@ -68,7 +68,6 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                         parkingLot.sourceType,
                         parkingLot.status
                 )
-                .orderBy(parkingLot.name.asc()) // 이름 오름차순 정렬
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
