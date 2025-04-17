@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Getter
@@ -98,6 +99,15 @@ public class Reservation extends BaseEntity {
 
     public boolean isCompleted() {
         return this.status == ReservationStatus.COMPLETED;
+    }
+
+    public void confirm(){
+        this.status = ReservationStatus.CONFIRMED;
+    }
+
+    public boolean isTimeout(LocalDateTime currentTime, long timeoutMinutes) {
+        long elapsedMillis = Duration.between(this.getCreatedAt(), currentTime).toMillis();
+        return elapsedMillis > timeoutMinutes * 60 * 1000;
     }
 
     public void writeReview() {
