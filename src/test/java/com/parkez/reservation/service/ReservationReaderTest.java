@@ -23,7 +23,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
@@ -110,7 +109,7 @@ class ReservationReaderTest {
     class GetReservationByUserId {
 
         @Test
-        void 특정_사용자의_특정_예약_단건_조회_테스트() {
+        void 특정_사용자의_특정_예약_조회_테스트() {
             // given
             Long userId = 1L;
             Long reservationId = 1L;
@@ -131,7 +130,7 @@ class ReservationReaderTest {
         }
 
         @Test
-        void 특정_사용자의_특정_예약_단건_조회_시_예약이_존재하지_않을_경우_NOT_FOUND_RESERVATION_예외_처리() {
+        void 특정_사용자의_특정_예약_조회_시_예약이_존재하지_않을_경우_NOT_FOUND_RESERVATION_예외_처리() {
             // given
             Long userId = 1L;
             Long reservationId = -1L;
@@ -141,7 +140,7 @@ class ReservationReaderTest {
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                     () -> reservationReader.findMyReservation(userId, reservationId));
-            assertEquals(ReservationErrorCode.NOT_FOUND_RESERVATION, exception.getErrorCode());
+            assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.NOT_FOUND_RESERVATION);
         }
 
         @Test
@@ -160,7 +159,7 @@ class ReservationReaderTest {
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
                     () -> reservationReader.findMyReservation(userId, reservationId));
-            assertEquals(ReservationErrorCode.NOT_MY_RESERVATION, exception.getErrorCode());
+            assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.NOT_MY_RESERVATION);
         }
     }
 

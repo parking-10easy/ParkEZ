@@ -1,12 +1,10 @@
 package com.parkez.reservation.service;
 
-import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.domain.repository.ReservationRepository;
-import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -21,11 +19,9 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyList;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationWriterTest {
@@ -114,55 +110,23 @@ class ReservationWriterTest {
 
             Reservation reservation = createReservation(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price);
 
-            given(reservationRepository.existsReservationByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
-                    .willReturn(false);
             given(reservationRepository.save(any(Reservation.class))).willReturn(reservation);
 
             // when
-            Reservation result = reservationWriter.createReservation(user, parkingZone, parkingLotName, startDateTime, endDateTime, price);
+            Reservation result = reservationWriter.create(user, parkingZone, startDateTime, endDateTime);
 
             // then
             assertThat(result)
                     .isNotNull()
-                    .extracting("id", "user", "parkingZone", "parkingLotName", "startDateTime", "endDateTime", "price", "status")
+                    .extracting("id", "user", "parkingZone", "parkingLotName", "startDateTime", "endDateTime", "price", "status", "reviewWritten")
                     .isEqualTo(
-                            List.of(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price, ReservationStatus.PENDING)
+                            List.of(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price, ReservationStatus.PENDING, false)
                     );
-        }
-
-        @Test
-        void 특정_주차공간에_대한_예약_생성_시_예약이_이미_존재할_경우_ALREADY_RESERVED_예외_처리() {
-            // given
-            Long userId = 1L;
-            Long ownerId = 2L;
-            String parkingLotName = "test";
-            Long parkingLotId = 1L;
-            Long parkingZoneId = 1L;
-            BigDecimal price = BigDecimal.valueOf(2000);
-
-            User user = createUser(userId);
-            User owner = createUser(ownerId);
-
-            ParkingLot parkingLot = createParkingLot(parkingLotId, owner, parkingLotName);
-
-            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
-
-            LocalDateTime startDateTime = LocalDateTime.now();
-            LocalDateTime endDateTime = LocalDateTime.now().plusHours(1);
-
-            given(reservationRepository.existsReservationByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList()))
-                    .willReturn(true);
-
-            // when & then
-            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationWriter.createReservation(user, parkingZone, parkingLotName, startDateTime, endDateTime, price));
-            assertNotNull(exception);
-            assertEquals(ReservationErrorCode.ALREADY_RESERVED, exception.getErrorCode());
         }
     }
 
     @Nested
-    class completeReservation {
+    class CompleteReservation {
 
         @Test
         void 특정_예약_사용_완료_테스트() {
@@ -176,12 +140,13 @@ class ReservationWriterTest {
             reservationWriter.complete(reservation);
 
             // then
-            assertEquals(ReservationStatus.COMPLETED, reservation.getStatus());
+            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+            assertThat(reservation.getUseCompletionTime()).isNotNull();
         }
     }
 
     @Nested
-    class cancelReservation {
+    class CancelReservation {
 
         @Test
         void 특정_예약_취소_테스트() {
@@ -195,7 +160,7 @@ class ReservationWriterTest {
             reservationWriter.cancel(reservation);
 
             // then
-            assertEquals(ReservationStatus.CANCELED, reservation.getStatus());
+            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELED);
         }
     }
 }

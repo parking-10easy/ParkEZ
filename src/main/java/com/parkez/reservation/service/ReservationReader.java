@@ -1,7 +1,9 @@
 package com.parkez.reservation.service;
 
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.entity.Reservation;
+import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.domain.repository.ReservationRepository;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
@@ -12,7 +14,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -53,5 +57,9 @@ public class ReservationReader {
         }
 
         return reservationRepository.findAllByParkingZone_Id(parkingZoneId, pageable);
+    }
+
+    public boolean existsReservationByConditions(ParkingZone parkingZone, LocalDateTime startDateTime, LocalDateTime endDateTime, List<ReservationStatus> statusList) {
+        return reservationRepository.existsReservationByConditions(parkingZone, startDateTime, endDateTime, statusList);
     }
 }

@@ -40,12 +40,17 @@ public class Reservation extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime endDateTime;
 
+    private LocalDateTime useCompletionTime;
+
     @Column(nullable = false)
     private BigDecimal price;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReservationStatus status;
+
+    @Column(nullable = false)
+    private boolean reviewWritten;
 
     @Builder
     private Reservation(
@@ -61,19 +66,26 @@ public class Reservation extends BaseEntity {
         this.parkingLotName = parkingLotName;
         this.startDateTime = startDateTime;
         this.endDateTime = endDateTime;
+        this.useCompletionTime = null;
         this.price = price;
         this.status = ReservationStatus.PENDING;
+        this.reviewWritten = false;
     }
 
-    public void complete() {
+    public void complete(LocalDateTime useCompletionTime) {
         this.status = ReservationStatus.COMPLETED;
+        this.useCompletionTime = useCompletionTime;
     }
 
     public void cancel() {
         this.status = ReservationStatus.CANCELED;
     }
 
-    public Long extractUserId() {
+    public void expire() {
+        this.status = ReservationStatus.PAYMENT_EXPIRED;
+    }
+
+    public Long getUserId() {
         return this.user.getId();
     }
 
@@ -81,7 +93,7 @@ public class Reservation extends BaseEntity {
         return this.user.getId().equals(userId);
     }
 
-    public Long extractParkingZoneId() {
+    public Long getParkingZoneId() {
         return this.parkingZone.getId();
     }
 
@@ -97,5 +109,17 @@ public class Reservation extends BaseEntity {
     public boolean isTimeout(LocalDateTime currentTime, long timeoutMinutes) {
         long elapsedMillis = Duration.between(this.getCreatedAt(), currentTime).toMillis();
         return elapsedMillis > timeoutMinutes * 60 * 1000;
+    }
+
+    public void writeReview() {
+        this.reviewWritten = true;
+    }
+
+    public boolean canBeCanceled() {
+        return this.status == ReservationStatus.PENDING || this.status == ReservationStatus.CONFIRMED;
+    }
+
+    public boolean isAfter(LocalDateTime cancelLimitHour, LocalDateTime now) {
+        return now.isAfter(cancelLimitHour);
     }
 }
