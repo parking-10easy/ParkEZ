@@ -58,4 +58,29 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
               AND r.createdAt <= :expiredTime
             """)
     List<Reservation> findReservationsToExpire(@Param("expiredTime") LocalDateTime expiredTime);
+
+    /* alarm 도메인에서 필요 - 예약 만료 10분 전 알림 */
+    @Query("""
+            SELECT r
+            FROM Reservation r
+            WHERE r.status = :status
+              AND r.endDateTime BETWEEN :start AND :end
+    """)
+    List<Reservation> findConfirmedReservationsBetween(
+            @Param("status") ReservationStatus status,
+            @Param("start") LocalDateTime now,
+            @Param("end") LocalDateTime tenMinLater
+    );
+
+    /* alarm 도메인에서 필요 - 예약 만료 시 알림 */
+    @Query("""
+            SELECT r
+            FROM Reservation r
+            WHERE r.status = :status
+              AND r.endDateTime < :now
+    """)
+    List<Reservation> findExpiredReservations(
+            @Param("status") ReservationStatus status,
+            @Param("now") LocalDateTime now
+    );
 }
