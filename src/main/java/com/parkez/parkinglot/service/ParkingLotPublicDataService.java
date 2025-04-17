@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -27,6 +28,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -56,6 +58,7 @@ public class ParkingLotPublicDataService {
     private final int perPage = 10;
 
     // TODO : jdbc template bulk insert 사용해보기
+    @Transactional
     @Scheduled(fixedRate = 300000, initialDelay = 10000)
     public void fetchAndSavePublicData() {
         try {
@@ -85,20 +88,25 @@ public class ParkingLotPublicDataService {
                     .map(ParkingLotData::getName)
                     .toList();
 
-            // 이름 리스트에 해당하는 주차장 데이터 조회
+            // 이름 리스트에 해당하는 주차장 데이터 조회 + 동일한 이름이어도 위도 경도 값에 따라 다른 주차장으로 인식
             List<ParkingLot> existingParkingLots = parkingLotRepository.findByNameIn(names);
             Map<String, ParkingLot> existingMap = existingParkingLots.stream()
-                    .collect(Collectors.toMap(ParkingLot::getName, parkingLot -> parkingLot));
+                    .collect(Collectors.toMap(
+                            pl -> pl.getLatitude() + ":" + pl.getLongitude(),
+                            Function.identity(),
+                            (first, second) -> first
+                    ));
 
-            // 신규 데이터와 업데이트 해야할 데이터 분리
+            // 저장할 신규 주차장 데이터
             List<ParkingLot> newParkingLots = new ArrayList<>();
-            List<ParkingLot> updatedParkingLots = new ArrayList<>();
 
             for (ParkingLotData data : dataResponse.getData()) {
                 ParkingLot newParkingLot = convertToParkingLot(data);
+                String key = newParkingLot.getLatitude() + ":" + newParkingLot.getLongitude();
+
                 // 존재하는 데이터 -> 업데이트
-                if (existingMap.containsKey(newParkingLot.getName())) {
-                    ParkingLot existingParkingLot = existingMap.get(newParkingLot.getName());
+                if (existingMap.containsKey(key)) {
+                    ParkingLot existingParkingLot = existingMap.get(key);
                     existingParkingLot.update(
                             newParkingLot.getName(),
                             newParkingLot.getAddress(),
@@ -107,21 +115,27 @@ public class ParkingLotPublicDataService {
                             newParkingLot.getPricePerHour(),
                             newParkingLot.getDescription(),
                             newParkingLot.getQuantity());
-                    updatedParkingLots.add(existingParkingLot);
                     log.info("중복 데이터 업데이트: {}", existingParkingLot.getName());
-                } else { // 새로운 데이터 -> 저장
+                } else {
+                    // 새로운 데이터 -> 저장
                     newParkingLots.add(newParkingLot);
                     log.info("새로운 주차장 저장: {}", newParkingLot.getName());
                 }
             }
 
+
+            // 시작 시간
+            long startTime = System.currentTimeMillis();
+
+            // 새로운 데이터 저장
             if (!newParkingLots.isEmpty()) {
                 parkingLotRepository.saveAll(newParkingLots);
             }
 
-            if (!updatedParkingLots.isEmpty()) {
-                parkingLotRepository.saveAll(updatedParkingLots);
-            }
+            long endTime = System.currentTimeMillis();
+            System.out.println("---------------------------------");
+            System.out.printf("수행시간: %d\n", endTime - startTime);
+            System.out.println("---------------------------------");
 
             if (dataResponse.getData().size() < perPage) {
                 currentPage = 1;
