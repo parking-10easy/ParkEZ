@@ -123,4 +123,9 @@ public class ParkingLot extends BaseDeleteEntity {
     public boolean isOwned(Long userId) {
         return Objects.equals(this.owner.getId(), userId);
     }
+
+    public void updateGeocode(Double latitude, Double longitude) {
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
 }

@@ -23,7 +23,7 @@ public class ParkingLotRequest {
     private String name;
 
     @NotBlank(message = "주소는 필수 값 입니다.")
-    @Schema(description = "주차장 주소", example = "서울시 강남구 테헤란로 1111")
+    @Schema(description = "주차장 주소", example = "서울시 강남구 테헤란로 131")
     private String address;
 
     @NotNull(message = "시작 시간은 필수 값 입니다.")
