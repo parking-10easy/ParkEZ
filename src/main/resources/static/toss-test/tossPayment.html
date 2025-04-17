@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <script src="https://js.tosspayments.com/v2/standard"></script>
+</head>
+<body>
+<!-- 결제 UI -->
+<div id="payment-method"></div>
+
+<!-- 이용약관 UI -->
+<div id="agreement"></div>
+
+<!-- 결제하기 버튼 -->
+<button class="button" id="payment-button" style="margin-top: 30px">결제하기</button>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId');
+
+    main();
+
+    async function main() {
+        const button = document.getElementById("payment-button");
+
+        // ------ Toss clientKey ------
+        const clientKey = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm";
+        const tossPayments = TossPayments(clientKey);
+
+
+        // 서버에서 결제 정보를 받아오기
+        const paymentInfo = await getPaymentInfo(orderId);
+
+        console.log('💬 paymentInfo:', paymentInfo);
+
+        // ------ 회원 식별 키 ------
+        const customerKey = paymentInfo.data.customerKey
+        const widgets = tossPayments.widgets({ customerKey });
+
+        // 결제 금액 설정
+        const amount = paymentInfo.data.price
+
+        await widgets.setAmount({
+            currency: "KRW",
+            value: amount,
+        });
+
+        // 위젯 렌더링
+        await Promise.all([
+            widgets.renderPaymentMethods({
+                selector: "#payment-method",
+                variantKey: "DEFAULT",
+            }),
+            widgets.renderAgreement({
+                selector: "#agreement",
+                variantKey: "AGREEMENT",
+            }),
+        ]);
+
+        // 결제 요청
+        button.addEventListener("click", async function () {
+            await widgets.requestPayment({
+                orderId: orderId,
+                orderName: "주차 예약 결제",
+                successUrl: window.location.origin + "/toss-test/success.html",
+                failUrl: window.location.origin + "/toss-test/fail.html",
+                customerEmail: paymentInfo.customerEmail,
+                customerName: paymentInfo.customerName,
+                customerMobilePhone: paymentInfo.customerMobilePhone,
+
+            });
+        });
+    }
+
+    async function getPaymentInfo(orderId) {
+        const token = localStorage.getItem("accessToken");
+        console.log("로컬 스토리지 jwt : ", token);
+
+        const response = await fetch(`/api/v1/payment-info?orderId=${orderId}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+
+            },
+        });
+
+        const data = await response.json();
+
+        return data;
+    }
+</script>
+</body>
+</html>
