@@ -46,6 +46,7 @@ class RedissonDistributedLockManagerTest {
 
         given(redissonClient.getLock(anyString())).willReturn(lock);
         given(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).willReturn(true);
+        given(lock.isHeldByCurrentThread()).willReturn(true);
 
         // when
         String result = redissonDistributedLockManager.executeWithLock(key, task);

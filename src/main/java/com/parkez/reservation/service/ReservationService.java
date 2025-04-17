@@ -35,12 +35,13 @@ public class ReservationService {
     private final ParkingZoneReader parkingZoneReader;
     private final ReviewReader reviewReader;
 
+    private static final long CANCEL_LIMIT_HOURS = 1L;
+
     public ReservationResponse createReservation(AuthUser authUser, ReservationRequest request) {
 
         return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> {
 
             User user = userReader.getActiveUserById(authUser.getId());
-            System.out.println(user);
             ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
             System.out.println(parkingZone);
 
@@ -121,12 +122,13 @@ public class ReservationService {
         Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
         // 결제 대기 중 또는 결제 완료 된 예약만 취소할 수 있음
-        if (reservation.getStatus() != ReservationStatus.PENDING && reservation.getStatus() != ReservationStatus.CONFIRMED) {
+        if (!reservation.canBeCanceled()) {
             throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_RESERVATION);
         }
 
         // 시작 시간 1시간 이내일 경우 취소 불가 예외
-        if (LocalDateTime.now().isAfter(reservation.getStartDateTime().minusHours(1))) {
+        LocalDateTime cancelLimitTime = reservation.getStartDateTime().minusHours(CANCEL_LIMIT_HOURS);
+        if (reservation.isAfter(cancelLimitTime, LocalDateTime.now())) {
             throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
         }
 
