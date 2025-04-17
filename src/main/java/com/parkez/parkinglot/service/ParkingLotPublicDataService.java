@@ -33,10 +33,6 @@ import java.sql.Timestamp;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -60,11 +56,13 @@ public class ParkingLotPublicDataService {
     private final ParkingLotRepository parkingLotRepository;
     private final UserReader userReader;
 
+    private final JdbcTemplate jdbcTemplate;
+
     private static final String description = "공공데이터로 등록한 주차장입니다.";
     private int currentPage = 1;
-    private final int perPage = 10;
+    private final int perPage = 1000;
 
-    // TODO : jdbc template bulk insert 사용해보기
+    // MEMO : 중복 데이터 처리 x
     @Transactional
     @Scheduled(fixedRate = 300000, initialDelay = 10000)
     public void fetchAndSavePublicData() {
@@ -87,61 +85,22 @@ public class ParkingLotPublicDataService {
                 return;
             }
 
-            // API로 받은 모든 주차장 데이터
-            List<ParkingLotData> dataList = dataResponse.getData();
-
-            // API로 받은 모든 주차장 데이터의 주차장 이름 리스트
-            List<String> names = dataList.stream()
-                    .map(ParkingLotData::getName)
+            // 받아온 데이터를 엔티티로 전환
+            List<ParkingLot> parkingLots = dataResponse.getData().stream()
+                    .map(this::convertToParkingLot)
                     .toList();
 
-            // 이름 리스트에 해당하는 주차장 데이터 조회 + 동일한 이름이어도 위도 경도 값에 따라 다른 주차장으로 인식
-            List<ParkingLot> existingParkingLots = parkingLotRepository.findByNameIn(names);
-            Map<String, ParkingLot> existingMap = existingParkingLots.stream()
-                    .collect(Collectors.toMap(
-                            pl -> pl.getLatitude() + ":" + pl.getLongitude(),
-                            Function.identity(),
-                            (first, second) -> first
-                    ));
 
-            // 저장할 신규 주차장 데이터
-            List<ParkingLot> newParkingLots = new ArrayList<>();
+            long start = System.currentTimeMillis();
 
-            for (ParkingLotData data : dataResponse.getData()) {
-                ParkingLot newParkingLot = convertToParkingLot(data);
-                String key = newParkingLot.getLatitude() + ":" + newParkingLot.getLongitude();
+//            parkingLotRepository.saveAll(parkingLots);
+            bulkInsertParkingLots(parkingLots);
+            bulkInsertImages(parkingLots);
 
-                // 존재하는 데이터 -> 업데이트
-                if (existingMap.containsKey(key)) {
-                    ParkingLot existingParkingLot = existingMap.get(key);
-                    existingParkingLot.update(
-                            newParkingLot.getName(),
-                            newParkingLot.getAddress(),
-                            newParkingLot.getOpenedAt(),
-                            newParkingLot.getClosedAt(),
-                            newParkingLot.getPricePerHour(),
-                            newParkingLot.getDescription(),
-                            newParkingLot.getQuantity());
-                    log.info("중복 데이터 업데이트: {}", existingParkingLot.getName());
-                } else {
-                    // 새로운 데이터 -> 저장
-                    newParkingLots.add(newParkingLot);
-                    log.info("새로운 주차장 저장: {}", newParkingLot.getName());
-                }
-            }
+            long end = System.currentTimeMillis();
 
-
-            // 시작 시간
-            long startTime = System.currentTimeMillis();
-
-            // 새로운 데이터 저장
-            if (!newParkingLots.isEmpty()) {
-                parkingLotRepository.saveAll(newParkingLots);
-            }
-
-            long endTime = System.currentTimeMillis();
             System.out.println("---------------------------------");
-            System.out.printf("수행시간: %d\n", endTime - startTime);
+            log.info("전체 저장 완료: {}건, 수행시간 : {}ms", parkingLots.size(), (end - start));
             System.out.println("---------------------------------");
 
             if (dataResponse.getData().size() < perPage) {
@@ -154,6 +113,77 @@ public class ParkingLotPublicDataService {
         } catch (Exception e) {
             log.error("API 호출 중 에러 발생", e);
         }
+    }
+
+    private void bulkInsertParkingLots(List<ParkingLot> parkingLots) {
+        String sql = """
+                INSERT INTO parking_lot
+                  (owner_id, name, address, latitude, longitude,
+                   opened_at, closed_at, price_per_hour,
+                   description, quantity, charge_type,
+                   source_type, status, created_at,  modified_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ParkingLot pl = parkingLots.get(i);
+                ps.setLong(1, pl.getOwner().getId());
+                ps.setString(2, pl.getName());
+                ps.setString(3, pl.getAddress());
+                ps.setDouble(4, pl.getLatitude());
+                ps.setDouble(5, pl.getLongitude());
+                ps.setTime(6, Time.valueOf(pl.getOpenedAt()));
+                ps.setTime(7, Time.valueOf(pl.getClosedAt()));
+                ps.setBigDecimal(8, pl.getPricePerHour());
+                ps.setString(9, pl.getDescription());
+                ps.setInt(10, pl.getQuantity());
+                ps.setString(11, pl.getChargeType() != null
+                        ? pl.getChargeType().name() : null);
+                ps.setString(12, pl.getSourceType().name());
+                ps.setString(13, pl.getStatus().name());
+                Timestamp now = new Timestamp(System.currentTimeMillis());
+                ps.setTimestamp(14, now);
+                ps.setTimestamp(15, now);
+            }
+
+            @Override
+            public int getBatchSize() {
+                return parkingLots.size();
+            }
+        });
+    }
+
+    private void bulkInsertImages(List<ParkingLot> parkingLots) {
+        String sql = """
+                INSERT INTO parking_lot_image
+                  (parking_lot_id, image_url, created_at, modified_at)
+                SELECT pl.id, ?, NOW(), NOW()
+                  FROM parking_lot pl
+                 WHERE pl.longitude = ?
+                  AND pl.latitude = ?
+                   AND NOT EXISTS (
+                      SELECT 1
+                      FROM parking_lot_image pi
+                      WHERE pi.parking_lot_id = pl.id
+                )
+                """;
+
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ParkingLot pl = parkingLots.get(i);
+                ps.setString(1, pl.getImages().get(0).getImageUrl());
+                ps.setDouble(2, pl.getLongitude());
+                ps.setDouble(3, pl.getLatitude());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return parkingLots.size();
+            }
+        });
     }
 
     // 받아온 정보를 엔티티로 변경

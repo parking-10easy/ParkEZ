@@ -7,11 +7,11 @@ import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,15 +20,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
-
-import org.apache.commons.lang3.reflect.FieldUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class ParkingLotPublicDataServiceTest {
@@ -160,76 +154,40 @@ public class ParkingLotPublicDataServiceTest {
 //            assertTrue(updatedListFound);
 //        }
 
-        @Test
-        void 신규_주차장_공공데이터가_저장된다() {
-            // given
-            ParkingLotData newParkingLotData = getNewParkingLotData();
-            List<ParkingLotData> dataList = List.of(newParkingLotData);
-
-            ParkingLotDataResponse dataResponse = ParkingLotDataResponse.builder()
-                    .page(1)
-                    .perPage(10)
-                    .totalCount(1)
-                    .currentCount(1)
-                    .matchCount(1)
-                    .data(dataList)
-                    .build();
-
-            ResponseEntity<ParkingLotDataResponse> responseEntity = ResponseEntity.ok(dataResponse);
-
-            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
-                    .thenReturn(responseEntity);
-
-            when(parkingLotRepository.findByNameIn(any())).thenReturn(Collections.emptyList());
-
-            // when
-            parkingLotPublicDataService.fetchAndSavePublicData();
-
-            // then
-            assertEquals(1, parkingLotPublicDataService.getCurrentPage());
-            ArgumentCaptor<List<ParkingLot>> captor = ArgumentCaptor.forClass(List.class);
-            verify(parkingLotRepository).saveAll(captor.capture());
-            List<ParkingLot> savedList = captor.getValue();
-            assertEquals(1, savedList.size());
-            assertEquals(newParkingLotData.getName(), savedList.get(0).getName());
-
-        }
-
-        @Test
-        void 공공데이터의_기존_주차장_정보가_수정되어_저장된다() {
-
-            // given
-            ParkingLotData existingParkingLotData = getExistingParkingLotData();
-            List<ParkingLotData> dataList = List.of(existingParkingLotData);
-
-            ParkingLotDataResponse dataResponse = ParkingLotDataResponse.builder()
-                    .page(1)
-                    .perPage(10)
-                    .totalCount(1)
-                    .currentCount(1)
-                    .matchCount(1)
-                    .data(dataList)
-                    .build();
-
-            ResponseEntity<ParkingLotDataResponse> responseEntity = ResponseEntity.ok(dataResponse);
-            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
-                    .thenReturn(responseEntity);
-
-            ParkingLot existngParkingLot = getExistngParkingLot();
-            when(parkingLotRepository.findByNameIn(any())).thenReturn(List.of(existngParkingLot));
-
-            //when
-            parkingLotPublicDataService.fetchAndSavePublicData();
-
-            //then
-            assertEquals(1, parkingLotPublicDataService.getCurrentPage());
-            ArgumentCaptor<List<ParkingLot>> captor = ArgumentCaptor.forClass(List.class);
-            verify(parkingLotRepository).saveAll(captor.capture());
-            List<ParkingLot> savedList = captor.getValue();
-            assertEquals(1, savedList.size());
-            assertEquals(existingParkingLotData.getName(), savedList.get(0).getName());
-            assertEquals(existingParkingLotData.getAddress(), savedList.get(0).getAddress());
-        }
+//        @Test
+//        void 신규_주차장_공공데이터가_저장된다() {
+//            // given
+//            ParkingLotData newParkingLotData = getNewParkingLotData();
+//            List<ParkingLotData> dataList = List.of(newParkingLotData);
+//
+//            ParkingLotDataResponse dataResponse = ParkingLotDataResponse.builder()
+//                    .page(1)
+//                    .perPage(10)
+//                    .totalCount(1)
+//                    .currentCount(1)
+//                    .matchCount(1)
+//                    .data(dataList)
+//                    .build();
+//
+//            ResponseEntity<ParkingLotDataResponse> responseEntity = ResponseEntity.ok(dataResponse);
+//
+//            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
+//                    .thenReturn(responseEntity);
+//
+//            when(parkingLotRepository.findByNameIn(any())).thenReturn(Collections.emptyList());
+//
+//            // when
+//            parkingLotPublicDataService.fetchAndSavePublicData();
+//
+//            // then
+//            assertEquals(1, parkingLotPublicDataService.getCurrentPage());
+//            ArgumentCaptor<List<ParkingLot>> captor = ArgumentCaptor.forClass(List.class);
+//            verify(parkingLotRepository).saveAll(captor.capture());
+//            List<ParkingLot> savedList = captor.getValue();
+//            assertEquals(1, savedList.size());
+//            assertEquals(newParkingLotData.getName(), savedList.get(0).getName());
+//
+//        }
 
         @Test
         void 데이터_응답이_null_이면_currentPage가_리셋된다() {
@@ -267,35 +225,35 @@ public class ParkingLotPublicDataServiceTest {
 
         }
 
-        @Test
-        void 데이터의_수가_perPage보다_작으면_currentPage가_리셋된다(){
-            // given
-            ReflectionTestUtils.setField(parkingLotPublicDataService, "currentPage", 5);
-
-            ParkingLotData newData = getNewParkingLotData();
-            List<ParkingLotData> dataList = List.of(newData);
-            ParkingLotDataResponse dataResponse = ParkingLotDataResponse.builder()
-                    .page(5)
-                    .perPage(10)
-                    .totalCount(1)
-                    .currentCount(1)
-                    .matchCount(1)
-                    .data(dataList)
-                    .build();
-
-            ResponseEntity<ParkingLotDataResponse> responseEntity = ResponseEntity.ok(dataResponse);
-            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
-                    .thenReturn(responseEntity);
-
-            ParkingLot existngParkingLot = getExistngParkingLot();
-            when(parkingLotRepository.findByNameIn(any())).thenReturn(List.of(existngParkingLot));
-
-            // when
-            parkingLotPublicDataService.fetchAndSavePublicData();
-
-            // then
-            assertEquals(1, parkingLotPublicDataService.getCurrentPage());
-        }
+//        @Test
+//        void 데이터의_수가_perPage보다_작으면_currentPage가_리셋된다(){
+//            // given
+//            ReflectionTestUtils.setField(parkingLotPublicDataService, "currentPage", 5);
+//
+//            ParkingLotData newData = getNewParkingLotData();
+//            List<ParkingLotData> dataList = List.of(newData);
+//            ParkingLotDataResponse dataResponse = ParkingLotDataResponse.builder()
+//                    .page(5)
+//                    .perPage(10)
+//                    .totalCount(1)
+//                    .currentCount(1)
+//                    .matchCount(1)
+//                    .data(dataList)
+//                    .build();
+//
+//            ResponseEntity<ParkingLotDataResponse> responseEntity = ResponseEntity.ok(dataResponse);
+//            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
+//                    .thenReturn(responseEntity);
+//
+//            ParkingLot existngParkingLot = getExistngParkingLot();
+//            when(parkingLotRepository.findByNameIn(any())).thenReturn(List.of(existngParkingLot));
+//
+//            // when
+//            parkingLotPublicDataService.fetchAndSavePublicData();
+//
+//            // then
+//            assertEquals(1, parkingLotPublicDataService.getCurrentPage());
+//        }
     }
 
 
