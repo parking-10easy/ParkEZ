@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.parkez.auth.service.TokenManager;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
@@ -35,6 +36,9 @@ class UserServiceTest {
 
 	@Mock
 	private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+	@Mock
+	private TokenManager tokenManager;
 
 	@InjectMocks
 	private UserService userService;
@@ -387,6 +391,7 @@ class UserServiceTest {
 				.build();
 
 			given(userReader.getActiveUserById(anyLong())).willReturn(user);
+			doNothing().when(tokenManager).deleteRefreshToken(anyLong());
 
 			// when
 			userService.deleteUser(userId);
