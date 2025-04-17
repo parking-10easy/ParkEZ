@@ -1,11 +1,8 @@
 package com.parkez.reservation.service;
 
-import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.entity.Reservation;
-import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.domain.repository.ReservationRepository;
-import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @Transactional
@@ -22,26 +19,20 @@ public class ReservationWriter {
 
     private final ReservationRepository reservationRepository;
 
-    public Reservation createReservation(
+    public Reservation create(
             User user,
             ParkingZone parkingZone,
-            String parkingLotName,
             LocalDateTime startDateTime,
-            LocalDateTime endDateTime,
-            BigDecimal price
+            LocalDateTime endDateTime
     ) {
-
-        // 이미 해당 시간에 예약이 존재할 경우
-        List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
-        boolean exists = reservationRepository.existsReservationByConditions(parkingZone, startDateTime, endDateTime, statusList);
-        if (exists) {
-            throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED);
-        }
+        // 요금 계산
+        long hours = ChronoUnit.HOURS.between(startDateTime, endDateTime);
+        BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
 
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
-                .parkingLotName(parkingLotName)
+                .parkingLotName(parkingZone.getParkingLotName())
                 .startDateTime(startDateTime)
                 .endDateTime(endDateTime)
                 .price(price)
@@ -51,7 +42,7 @@ public class ReservationWriter {
     }
 
     public void complete(Reservation reservation) {
-        reservation.complete();
+        reservation.complete(LocalDateTime.now());
     }
 
     public void cancel(Reservation reservation) {
@@ -61,6 +52,4 @@ public class ReservationWriter {
     public void updateStatusConfirm(Reservation reservation){
         reservation.confirm();
     }
-
-
 }
