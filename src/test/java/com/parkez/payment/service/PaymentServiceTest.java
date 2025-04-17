@@ -200,7 +200,7 @@ public class PaymentServiceTest {
 
             //then
             assertThat(paymentCreateResponse).isNotNull()
-                    .extracting("paymentId", "totalPrice", "orderId")
+                    .extracting("paymentId", "price", "orderId")
                     .containsExactly(1L, price, orderId);
 
         }
@@ -514,7 +514,7 @@ public class PaymentServiceTest {
             given(payment.getUserEmail()).willReturn("test@example.com");
             given(payment.getUserNickName()).willReturn("홍길동");
             given(payment.getUserPhone()).willReturn("010-1234-5678");
-            given(payment.getTotalPrice()).willReturn(BigDecimal.valueOf(10000));
+            given(payment.getPrice()).willReturn(BigDecimal.valueOf(10000));
             given(payment.getUserId()).willReturn(123L);
 
             given(paymentReader.getPayment(orderId)).willReturn(payment);
@@ -524,7 +524,7 @@ public class PaymentServiceTest {
 
             // then
             assertThat(result)
-                    .extracting("customerEmail", "customerName", "customerMobilePhone", "totalPrice", "customerKey")
+                    .extracting("customerEmail", "customerName", "customerMobilePhone", "price", "customerKey")
                     .containsExactly("test@example.com", "홍길동", "010-1234-5678", BigDecimal.valueOf(10000), "user_123");
 
 
@@ -539,7 +539,7 @@ public class PaymentServiceTest {
             given(payment.getUserEmail()).willReturn("test@example.com");
             given(payment.getUserNickName()).willReturn("테스터");
             given(payment.getUserPhone()).willReturn("01012345678");
-            given(payment.getTotalPrice()).willReturn(BigDecimal.valueOf(10000));
+            given(payment.getPrice()).willReturn(BigDecimal.valueOf(10000));
             given(payment.getUserId()).willReturn(1L);
 
             // when
@@ -549,7 +549,7 @@ public class PaymentServiceTest {
             assertThat(response.getCustomerEmail()).isEqualTo("test@example.com");
             assertThat(response.getCustomerName()).isEqualTo("테스터");
             assertThat(response.getCustomerMobilePhone()).isEqualTo("01012345678");
-            assertThat(response.getTotalPrice()).isEqualTo(BigDecimal.valueOf(10000));
+            assertThat(response.getPrice()).isEqualTo(BigDecimal.valueOf(10000));
             assertThat(response.getCustomerKey()).isEqualTo("user_1");
         }
 

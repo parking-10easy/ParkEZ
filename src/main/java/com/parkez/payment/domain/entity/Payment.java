@@ -41,7 +41,7 @@ public class Payment extends BaseEntity {
     private Reservation reservation;
 
     @Column(nullable = false)
-    private BigDecimal totalPrice;
+    private BigDecimal price;
 
     @Enumerated(EnumType.STRING)
     private PaymentType paymentType;
@@ -64,7 +64,7 @@ public class Payment extends BaseEntity {
                    String paymentKey, String orderId, int cardFee, LocalDateTime approvedAt) {
         this.user = user;
         this.reservation = reservation;
-        this.totalPrice = reservation.getPrice();
+        this.price = reservation.getPrice();
         this.paymentType = paymentType;
         this.paymentStatus = paymentStatus;
         this.paymentKey = paymentKey;

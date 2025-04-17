@@ -3,7 +3,6 @@ package com.parkez.payment.service;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.payment.domain.entity.Payment;
 import com.parkez.payment.domain.repository.PaymentRepository;
-import com.parkez.payment.dto.response.PaymentInfoResponse;
 import com.parkez.payment.exception.PaymentErrorCode;
 import com.parkez.reservation.domain.entity.Reservation;
 import lombok.RequiredArgsConstructor;

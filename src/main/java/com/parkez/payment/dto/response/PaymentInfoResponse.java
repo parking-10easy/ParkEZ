@@ -14,16 +14,16 @@ public class PaymentInfoResponse {
     private String customerEmail;
     private String customerName;
     private String customerMobilePhone;
-    private BigDecimal totalPrice;
+    private BigDecimal price;
     private String customerKey;
 
 
     @Builder
-    public PaymentInfoResponse(String customerEmail, String customerName, String customerMobilePhone, BigDecimal totalPrice, String customerKey) {
+    public PaymentInfoResponse(String customerEmail, String customerName, String customerMobilePhone, BigDecimal price, String customerKey) {
         this.customerEmail = customerEmail;
         this.customerName = customerName;
         this.customerMobilePhone = customerMobilePhone;
-        this.totalPrice = totalPrice;
+        this.price = price;
         this.customerKey = customerKey;
     }
 
@@ -32,7 +32,7 @@ public class PaymentInfoResponse {
                 .customerEmail(payment.getUserEmail())
                 .customerName(payment.getUserNickName())
                 .customerMobilePhone(payment.getUserPhone())
-                .totalPrice(payment.getTotalPrice())
+                .price(payment.getPrice())
                 .customerKey(String.format("user_%d", payment.getUserId()))
                 .build();
     }

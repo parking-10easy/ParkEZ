@@ -5,7 +5,6 @@ import com.parkez.payment.domain.enums.PaymentStatus;
 import com.parkez.payment.domain.enums.PaymentType;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -16,7 +15,7 @@ public class PaymentResponse {
     private Long id;
     private Long userId;
     private Long reservationId;
-    private BigDecimal totalPrice;
+    private BigDecimal price;
     private PaymentType paymentType;
     private PaymentStatus paymentStatus;
     private String orderId;
@@ -29,7 +28,7 @@ public class PaymentResponse {
                 .id(payment.getId())
                 .userId(payment.getUserId()) 
                 .reservationId(payment.getReservationId())
-                .totalPrice(payment.getTotalPrice())
+                .price(payment.getPrice())
                 .paymentType(payment.getPaymentType())
                 .paymentStatus(payment.getPaymentStatus())
                 .orderId(payment.getOrderId())
