@@ -43,7 +43,7 @@ public class ReservationController {
     @Operation(summary = "나의 예약 다건 조회", description = "나의 예약 다건 조회 기능입니다.")
     public Response<ReservationResponse> getMyReservations(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
-            @ParameterObject PageRequest pageRequest
+            @Valid @ParameterObject PageRequest pageRequest
             ) {
         return Response.fromPage(reservationService.getMyReservations(authUser, pageRequest.getPage(), pageRequest.getSize()));
     }
@@ -65,7 +65,7 @@ public class ReservationController {
     public Response<ReservationResponse> getOwnerReservations(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @PathVariable Long parkingZoneId,
-            @ParameterObject PageRequest pageRequest
+            @Valid @ParameterObject PageRequest pageRequest
     ) {
         return Response.fromPage(reservationService.getOwnerReservations(authUser, parkingZoneId, pageRequest.getPage(), pageRequest.getSize()));
     }

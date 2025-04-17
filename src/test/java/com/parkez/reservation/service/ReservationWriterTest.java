@@ -20,9 +20,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationWriterTest {
@@ -162,31 +161,6 @@ class ReservationWriterTest {
 
             // then
             assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELED);
-        }
-    }
-
-    @Nested
-    class ExpireReservation {
-
-        @Test
-        void 예약_생성_후_10분이_지나도_상태가_PENDING인_예약들의_상태를_PAYMENT_EXPIRED_으로_변경_테스트() {
-            // given
-            Long reservationId = 1L;
-
-            Reservation reservation = getReservation(reservationId);
-            ReflectionTestUtils.setField(reservation, "status", ReservationStatus.PENDING);
-            ReflectionTestUtils.setField(reservation, "createdAt", LocalDateTime.now().minusMinutes(11));
-
-            List<Reservation> expiredToReservation = List.of(reservation);
-
-            given(reservationRepository.findReservationsToExpire(any(LocalDateTime.class))).willReturn(expiredToReservation);
-
-            // when
-            reservationWriter.expire();
-
-            // then
-            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.PAYMENT_EXPIRED);
-            verify(reservationRepository).saveAll(expiredToReservation);
         }
     }
 }

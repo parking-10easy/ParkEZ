@@ -72,9 +72,9 @@ public class Reservation extends BaseEntity {
         this.reviewWritten = false;
     }
 
-    public void complete() {
+    public void complete(LocalDateTime useCompletionTime) {
         this.status = ReservationStatus.COMPLETED;
-        this.useCompletionTime = LocalDateTime.now();
+        this.useCompletionTime = useCompletionTime;
     }
 
     public void cancel() {
@@ -113,5 +113,13 @@ public class Reservation extends BaseEntity {
 
     public void writeReview() {
         this.reviewWritten = true;
+    }
+
+    public boolean canBeCanceled() {
+        return this.status == ReservationStatus.PENDING || this.status == ReservationStatus.CONFIRMED;
+    }
+
+    public boolean isAfter(LocalDateTime cancelLimitHour, LocalDateTime now) {
+        return now.isAfter(cancelLimitHour);
     }
 }
