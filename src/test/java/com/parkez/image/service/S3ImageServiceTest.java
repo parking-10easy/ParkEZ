@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
@@ -25,6 +26,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -166,7 +170,6 @@ public class S3ImageServiceTest {
 
         MultipartFile file = mock(MultipartFile.class);
         when(file.getOriginalFilename()).thenReturn("test.png");
-        when(file.getContentType()).thenReturn("image/png");
         when(file.getSize()).thenReturn(123L);
         when(file.getInputStream()).thenThrow(new IOException("강제로 발생시킨 예외"));
 
@@ -317,5 +320,30 @@ public class S3ImageServiceTest {
 
         assertEquals(ImageErrorCode.FILENAME_IS_NULL, exception.getErrorCode());
     }
+
+    @Test
+    void contentType_추출중_IOException_발생시_IMAGE_UPLOAD_FAIL_예외_발생() throws IOException{
+        // given
+        ImageRequest request = ImageRequest.builder()
+                .targetType(ImageTargetType.USER_PROFILE)
+                .targetId(1L)
+                .build();
+
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.getOriginalFilename()).thenReturn("image.png");
+
+        // Files.probeContentType(path) mocking
+        try (MockedStatic<Files> mockedFiles = mockStatic(Files.class)) {
+            mockedFiles.when(() -> Files.probeContentType(any(Path.class)))
+                    .thenThrow(new IOException("테스트용 예외"));
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> imageService.upload(request, List.of(file)));
+
+            assertEquals(ImageErrorCode.IMAGE_UPLOAD_FAIL, exception.getErrorCode());
+        }
+    }
+
 
 }
