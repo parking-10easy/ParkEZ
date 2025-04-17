@@ -28,7 +28,7 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
-    // 락 사용 x OR 분산락을 통한 예약 생성
+    // 예약 생성
     @PostMapping("/v1/reservations")
     @Operation(summary = "예약 생성", description = "분산락을 통해 동시성 제어를 적용한 예약 생성 기능입니다.")
     public Response<ReservationResponse> createReservation(
