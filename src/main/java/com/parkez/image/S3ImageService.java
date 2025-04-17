@@ -17,6 +17,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -115,11 +118,12 @@ public class S3ImageService implements ImageService {
     private void uploadToS3(MultipartFile file, String fileName) {
 
         try{
+            String contentType = extractContentType(file);
             // S3에 파일 업로드 요청 생성
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucket)
                     .key(fileName)
-                    .contentType(file.getContentType())
+                    .contentType(contentType)
                     .contentLength(file.getSize())
                     .build();
 
@@ -160,6 +164,23 @@ public class S3ImageService implements ImageService {
         }
         return fileName.substring(index + 1);
 
+    }
+
+    private String extractContentType(MultipartFile file) {
+        try{
+            String originalFilename = file.getOriginalFilename();
+            if(originalFilename!=null){
+                Path path = Paths.get(originalFilename);
+                String mimeType = Files.probeContentType(path);
+                if (mimeType != null) {
+                    return mimeType;
+                }
+            }
+        } catch (IOException e) {
+            log.error("[IOException] 파일 contentType 처리 중 실패: {}", e.getMessage(), e);
+            throw new ParkingEasyException(ImageErrorCode.IMAGE_UPLOAD_FAIL);
+        }
+        return "application/octet-stream";
     }
 
 
