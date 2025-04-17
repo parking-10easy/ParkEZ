@@ -93,11 +93,14 @@ public class ParkingLot extends BaseDeleteEntity {
         this.images = images;
     }
 
-    public void update(String name, String address, LocalTime openedAt,
-                       LocalTime closedAt, BigDecimal pricePerHour,
+    public void update(String name, String address,
+                       Double latitude, Double longitude,
+                       LocalTime openedAt, LocalTime closedAt, BigDecimal pricePerHour,
                        String description, Integer quantity) {
         this.name = name;
         this.address = address;
+        this.latitude = latitude;
+        this.longitude = longitude;
         this.openedAt = openedAt;
         this.closedAt = closedAt;
         this.pricePerHour = pricePerHour;

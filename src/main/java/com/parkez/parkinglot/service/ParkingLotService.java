@@ -91,8 +91,15 @@ public class ParkingLotService {
     public void updateParkingLot(AuthUser authUser, Long parkingLotId, ParkingLotRequest request) {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
+
+        Geocode geocode = kakaoGeocodeClient.getGeocode(request.getAddress());
+        Double latitude = geocode.getLatitude();
+        Double longitude = geocode.getLongitude();
+        parkingLot.updateGeocode(latitude, longitude);
+
         parkingLot.update(
                 request.getName(), request.getAddress(),
+                latitude,longitude,
                 request.getOpenedAt(), request.getClosedAt(),
                 request.getPricePerHour(), request.getDescription(), request.getQuantity()
         );
