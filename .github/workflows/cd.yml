@@ -43,12 +43,14 @@ jobs:
           echo "$APPLICATION_PROD" > src/main/resources/application-prod.yml
           echo "$APPLICATION_AWS" > src/main/resources/application-aws.yml
           echo "$APPLICATION_OAUTH" > src/main/resources/application-oauth.yml
+          echo "$APPLICATION_PAYMENT" > src/main/resources/application-payment.yml
         env:
           APPLICATION_YML: ${{ secrets.APPLICATION_YML }}
           APPLICATION_JWT: ${{ secrets.APPLICATION_JWT }}
           APPLICATION_PROD: ${{ secrets.APPLICATION_PROD }}
           APPLICATION_AWS: ${{ secrets.APPLICATION_AWS }}
           APPLICATION_OAUTH: ${{ secrets.APPLICATION_OAUTH }}
+          APPLICATION_PAYMENT: ${{ secrets.APPLICATION_PAYMENT }}
 
       - name: gradlew 실행 권한 부여
         run: chmod +x gradlew
