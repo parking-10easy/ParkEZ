@@ -31,7 +31,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -83,11 +85,19 @@ public class ParkingLotPublicDataService {
                 return;
             }
 
-            // 받아온 데이터를 엔티티로 전환
-            List<ParkingLot> parkingLots = dataResponse.getData().stream()
-                    .map(this::convertToParkingLot)
-                    .toList();
+            // 동일한 위도 경도를 가지고 있는 주차장은 건너 뜀
+            List<ParkingLot> parkingLots = new ArrayList<>();
+            Set<String> coordinateKey = new HashSet<>();
 
+            for(ParkingLotData data : dataResponse.getData()){
+                String latLngKey = data.getLatitude() + ":" + data.getLongitude();
+                if(coordinateKey.contains(latLngKey)){
+                    continue;
+                }
+                coordinateKey.add(latLngKey);
+                ParkingLot parkingLot = convertToParkingLot(data);
+                parkingLots.add(parkingLot);
+            }
 
             long start = System.currentTimeMillis();
 
@@ -138,8 +148,7 @@ public class ParkingLotPublicDataService {
                 ps.setBigDecimal(8, pl.getPricePerHour());
                 ps.setString(9, pl.getDescription());
                 ps.setInt(10, pl.getQuantity());
-                ps.setString(11, pl.getChargeType() != null
-                        ? pl.getChargeType().name() : null);
+                ps.setString(11, pl.getChargeType().name());
                 ps.setString(12, pl.getSourceType().name());
                 ps.setString(13, pl.getStatus().name());
                 Timestamp now = new Timestamp(System.currentTimeMillis());
@@ -162,11 +171,6 @@ public class ParkingLotPublicDataService {
                   FROM parking_lot pl
                  WHERE pl.longitude = ?
                   AND pl.latitude = ?
-                   AND NOT EXISTS (
-                      SELECT 1
-                      FROM parking_lot_image pi
-                      WHERE pi.parking_lot_id = pl.id
-                )
                 """;
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
@@ -252,15 +256,12 @@ public class ParkingLotPublicDataService {
     }
 
     private ChargeType parseChargeType(String chargeTypeStr) {
-        if (!StringUtils.hasText(chargeTypeStr)) {
-            return null;
-        }
         if ("무료".equalsIgnoreCase(chargeTypeStr)) {
             return ChargeType.FREE;
         } else if ("유료".equalsIgnoreCase(chargeTypeStr)) {
             return ChargeType.PAID;
         } else {
-            return null;
+            return ChargeType.NO_DATA;
         }
     }
 }
