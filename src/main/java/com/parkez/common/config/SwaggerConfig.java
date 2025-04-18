@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -20,7 +21,11 @@ import lombok.RequiredArgsConstructor;
 		title = "주차10조",
 		description = "최종 프로젝트",
 		version = "1.0.0"
-	)
+	),
+	servers = {
+		@Server(url = "https://parkez.link", description = "개발 서버"),
+		@Server(url = "http://localhost:8080", description = "로컬 서버")
+	}
 )
 @RequiredArgsConstructor
 public class SwaggerConfig {
