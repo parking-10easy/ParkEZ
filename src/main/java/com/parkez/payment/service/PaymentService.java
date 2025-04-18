@@ -39,6 +39,7 @@ public class PaymentService {
     private final ReservationReader reservationReader;
     private final ReservationWriter reservationWriter;
     private final WebClient tossWebClient;
+    private final TossPaymentService tossPaymentService;
 
     private static final long TIME_OUT_MINUTE = 10;
 
@@ -63,24 +64,7 @@ public class PaymentService {
 
         Payment payment = paymentReader.getPayment(request.getOrderId());
 
-        PaymentConfirmResponse confirmResponse = tossWebClient.post()
-                .uri("/confirm")
-                .bodyValue(request)
-                .retrieve()
-                .onStatus(status -> status.is4xxClientError(), response ->
-                        response.bodyToMono(String.class).flatMap(body -> {
-                            log.info("클라이언트 오류: " + body);
-                            return Mono.error(new RuntimeException("결제 승인 실패 (4xx): " + body));
-                        })
-                )
-                .onStatus(status -> status.is5xxServerError(), response ->
-                        response.bodyToMono(String.class).flatMap(body -> {
-                            log.info("서버 오류: " + body);
-                            return Mono.error(new RuntimeException("결제 승인 실패 (5xx): " + body));
-                        })
-                )
-                .bodyToMono(PaymentConfirmResponse.class)
-                .block();
+        PaymentConfirmResponse confirmResponse = tossPaymentService.confirmPayment(request);
 
         if(confirmResponse!=null) {
             paymentWriter.savePayment(payment, confirmResponse);
@@ -173,24 +157,7 @@ public class PaymentService {
 
             String paymentKey = payment.getPaymentKey();
 
-            tossWebClient.post()
-                    .uri("/{paymentKey}/cancel", paymentKey)
-                    .bodyValue(request)
-                    .retrieve()
-                    .onStatus(status -> status.is4xxClientError(), response ->
-                            response.bodyToMono(String.class).flatMap(body -> {
-                                log.info("클라이언트 오류: " + body);
-                                return Mono.error(new RuntimeException("결제 취소 실패 (4xx): " + body));
-                            })
-                    )
-                    .onStatus(status -> status.is5xxServerError(), response ->
-                            response.bodyToMono(String.class).flatMap(body -> {
-                                log.info("서버 오류: " + body);
-                                return Mono.error(new RuntimeException("결제 취소 실패 (5xx): " + body));
-                            })
-                    )
-                    .bodyToMono(Void.class)
-                    .block();
+            tossPaymentService.cancelPayment(paymentKey, request);
 
             paymentWriter.cancelPayment(payment);
         }
