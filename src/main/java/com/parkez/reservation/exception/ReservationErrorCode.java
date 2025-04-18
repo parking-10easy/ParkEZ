@@ -14,6 +14,8 @@ public enum ReservationErrorCode implements ErrorCode {
     CANT_MODIFY_RESERVATION_STATUS(HttpStatus.BAD_REQUEST, "RESERVATION_002", "사용 중인 예약이 아닙니다."),
     CANT_CANCEL_RESERVATION(HttpStatus.BAD_REQUEST, "RESERVATION_003", "결제 대기 중 또는 확인 완료 된 예약만 취소할 수 있습니다."),
     CANT_CANCEL_WITHIN_ONE_HOUR(HttpStatus.BAD_REQUEST, "RESERVATION_004", "예약 시작 시간으로부터 1시간 이내일 경우 예약을 취소할 수 없습니다."),
+    RESERVATION_ALREADY_USED(HttpStatus.BAD_REQUEST, "RESERVATION_010", "이미 사용 완료된 예약입니다."),
+    RESERVATION_ALREADY_CANCELED(HttpStatus.BAD_REQUEST, "RESERVATION_011", "이미 취소된 예약입니다."),
     // CONFLICT
     ALREADY_RESERVED(HttpStatus.CONFLICT, "RESERVATION_005", "이미 예약이 존재합니다."),
     // NOT_FOUND
