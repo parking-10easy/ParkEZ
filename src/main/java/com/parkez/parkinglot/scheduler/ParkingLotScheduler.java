@@ -1,4 +1,4 @@
-package com.parkez.parkinglot.schedule;
+package com.parkez.parkinglot.scheduler;
 
 import com.parkez.parkinglot.service.ParkingLotPublicDataService;
 import lombok.RequiredArgsConstructor;
