@@ -108,6 +108,19 @@ public class PaymentService {
 
     }
 
+    private void validateReservationStatus(Reservation reservation){
+        switch (reservation.getStatus()){
+            case CONFIRMED:
+                throw new ParkingEasyException(PaymentErrorCode.PAYMENT_ALREADY_APPROVED);
+            case COMPLETED:
+                throw new ParkingEasyException(ReservationErrorCode.RESERVATION_ALREADY_USED);
+            case CANCELED:
+                throw new ParkingEasyException(ReservationErrorCode.RESERVATION_ALREADY_CANCELED);
+            case PAYMENT_EXPIRED:
+                throw new ParkingEasyException(PaymentErrorCode.PAYMENT_TIME_OUT);
+        }
+    }
+
     private void checkReservationTimeout(Reservation reservation, LocalDateTime now) {
 
         if(reservation.isTimeout(now, TIME_OUT_MINUTE)) {
