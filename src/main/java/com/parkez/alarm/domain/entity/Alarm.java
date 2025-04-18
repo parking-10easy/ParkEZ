@@ -45,11 +45,11 @@ public class Alarm extends BaseEntity {
 
     private String failReason;     // 실패 시 로그용
 
-    public static Alarm createEmailAlarm(Long userId, Long reservationId, String email, String title, String message, NotificationType notificationType) {
+    public static Alarm createEmailAlarm(Long userId, Long reservationId, AlarmTargetType alarmTargetType, String email, String title, String message, NotificationType notificationType) {
         return Alarm.builder()
                 .userId(userId)
                 .targetId(reservationId)
-                .targetType(AlarmTargetType.RESERVATION)
+                .targetType(alarmTargetType)
                 .channel(AlarmChannel.EMAIL)
                 .title(title)
                 .message(message)
@@ -59,11 +59,11 @@ public class Alarm extends BaseEntity {
                 .build();
     }
 
-    public static Alarm createFcmAlarm(Long userId, Long reservationId, String token, String title, String message, NotificationType notificationType) {
+    public static Alarm createFcmAlarm(Long userId, Long reservationId, AlarmTargetType alarmTargetType, String token, String title, String message, NotificationType notificationType) {
         return Alarm.builder()
                 .userId(userId)
                 .targetId(reservationId)
-                .targetType(AlarmTargetType.RESERVATION)
+                .targetType(alarmTargetType)
                 .channel(AlarmChannel.FCM)
                 .title(title)
                 .message(message)
@@ -81,7 +81,7 @@ public class Alarm extends BaseEntity {
         this.sentAt = sentAt;
     }
 
-    public void updateFailReason(String message) {
-        this.message = message;
+    public void updateFailReason(String failReason) {
+        this.failReason= failReason;
     }
 }

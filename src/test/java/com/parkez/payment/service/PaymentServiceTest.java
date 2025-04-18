@@ -1,5 +1,8 @@
 package com.parkez.payment.service;
 
+import com.parkez.alarm.domain.enums.NotificationType;
+import com.parkez.alarm.service.AlarmSender;
+import com.parkez.alarm.service.AlarmService;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
@@ -71,6 +74,12 @@ public class PaymentServiceTest {
 
     @Mock
     private WebClient tossWebClient;
+
+    @Mock
+    private AlarmService alarmService;
+
+    @Mock
+    private AlarmSender alarmSender;
 
     private static AuthUser createAuthUser(Long id) {
         return AuthUser.builder()
@@ -600,11 +609,8 @@ public class PaymentServiceTest {
             // then
             verify(paymentWriter).cancelPayment(payment);
             verify(reservationWriter).cancel(reservation);
+            verify(alarmService).createPaymentAlarms(reservation, NotificationType.FAILED);
+            verify(alarmSender).processAlarms();
         }
-
-
-
     }
-
-
 }

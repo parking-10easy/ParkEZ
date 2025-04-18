@@ -1,5 +1,8 @@
 package com.parkez.payment.service;
 
+import com.parkez.alarm.domain.enums.NotificationType;
+import com.parkez.alarm.service.AlarmSender;
+import com.parkez.alarm.service.AlarmService;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.payment.domain.entity.Payment;
@@ -38,6 +41,8 @@ public class PaymentService {
     private final ReservationReader reservationReader;
     private final ReservationWriter reservationWriter;
     private final WebClient tossWebClient;
+    private final AlarmService alarmService;
+    private final AlarmSender alarmSender;
 
     private static final long TIME_OUT_MINUTE = 10;
 
@@ -138,6 +143,9 @@ public class PaymentService {
         Reservation reservation = reservationReader.findMyReservation(payment.getUserId(), payment.getReservationId());
 
         reservationWriter.cancel(reservation);
+
+        alarmService.createPaymentAlarms(reservation, NotificationType.FAILED);
+        alarmSender.processAlarms();
     }
 
 }

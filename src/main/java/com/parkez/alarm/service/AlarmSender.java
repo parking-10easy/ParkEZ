@@ -5,7 +5,6 @@ import com.parkez.alarm.domain.enums.AlarmChannel;
 import com.parkez.alarm.domain.repository.AlarmRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +21,6 @@ public class AlarmSender {
     @Value("${spring.mail.username}")
     private String fromMail;
 
-    @Scheduled(fixedRate = 30000)
     @Transactional
     public void processAlarms() {
         List<Alarm> pendingAlarms = alarmRepository.findAllBySentFalse();
@@ -38,7 +36,6 @@ public class AlarmSender {
                     );
                     alarm.updateSent(true);
                     alarm.updateSentAt(LocalDateTime.now());
-
                 }
 
             } catch (Exception e) {
