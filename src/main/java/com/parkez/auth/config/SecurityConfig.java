@@ -59,6 +59,7 @@ public class SecurityConfig {
                         auth -> auth
                                 .requestMatchers(new AntPathRequestMatcher("/api/*/auth/signup/social/**")).authenticated()
                                 .requestMatchers(new AntPathRequestMatcher("/api/*/auth/**")).permitAll()
+                                .requestMatchers("/actuator/health").permitAll()
                                 .requestMatchers(SWAGGER_URI).permitAll()
                                 .requestMatchers("/toss-test/**").permitAll()
                                 .anyRequest().authenticated()
