@@ -131,6 +131,12 @@ public class ParkingLotService {
     public void updateParkingLotImages(AuthUser authUser, Long parkingLotId, ParkingLotImagesRequest request) {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
+
+        List<String> imageUrls = request.getImageUrls();
+        if (imageUrls.size() > 5) {
+            throw new ParkingEasyException(ParkingLotErrorCode.TOO_MANY_PARKING_LOT_IMAGES);
+        }
+
         List<ParkingLotImage> newImages = request.getImageUrls().stream()
                 .map(url -> ParkingLotImage.builder().imageUrl(url).parkingLot(parkingLot).build())
                 .toList();

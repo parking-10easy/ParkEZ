@@ -20,6 +20,7 @@ public enum ParkingLotErrorCode implements ErrorCode {
     INVALID_PARKING_LOT_STATUS(HttpStatus.BAD_REQUEST, "PARKING_004", "올바르지 않은 주차 상태입니다."),
     INVALID_PARKING_LOT_STATUS_CHANGE(HttpStatus.BAD_REQUEST, "PARKING_006", "주차장 상태를 CLOSED로 변경할 수 없습니다."),
     DUPLICATED_PARKING_LOT_LOCATION(HttpStatus.BAD_REQUEST, "PARKING_007", "해당 위치에 등록된 주차장이 존재합니다."),
+    TOO_MANY_PARKING_LOT_IMAGES(HttpStatus.BAD_REQUEST, "PARKING_008", "이미지는 최대 5개까지만 등록할 수 있습니다."),
 
     // BAD_GATEWAY
     KAKAO_MAP_API_ERROR(HttpStatus.BAD_GATEWAY, "PARKING_005", "카카오 지도 API 호출에 실패하였습니다.");
