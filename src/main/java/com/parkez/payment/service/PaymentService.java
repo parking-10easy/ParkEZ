@@ -1,5 +1,8 @@
 package com.parkez.payment.service;
 
+import com.parkez.alarm.domain.enums.NotificationType;
+import com.parkez.alarm.service.AlarmSender;
+import com.parkez.alarm.service.AlarmService;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.payment.domain.entity.Payment;
@@ -22,6 +25,7 @@ import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,7 +41,10 @@ public class PaymentService {
     private final UserReader userReader;
     private final ReservationReader reservationReader;
     private final ReservationWriter reservationWriter;
+    private final WebClient tossWebClient;
     private final TossPaymentService tossPaymentService;
+    private final AlarmService alarmService;
+    private final AlarmSender alarmSender;
 
     private static final long TIME_OUT_MINUTE = 10;
     private static final long EXPIRATION_TIME = 10L;
@@ -138,6 +145,9 @@ public class PaymentService {
         Reservation reservation = reservationReader.findMyReservation(payment.getUserId(), payment.getReservationId());
 
         reservationWriter.cancel(reservation);
+
+        alarmService.createPaymentAlarms(reservation, NotificationType.FAILED);
+        alarmSender.processAlarms();
     }
 
     public void cancelPayment(Reservation reservation, ReservationCancelRequest request){
