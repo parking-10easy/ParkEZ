@@ -46,6 +46,8 @@ public class PaymentService {
 
         Reservation reservation = reservationReader.findMyReservation(authUser.getId(), request.getReservationId());
 
+        validateReservationStatus(reservation);
+
         checkReservationTimeout(reservation, LocalDateTime.now());
 
         validatePaymentStatus(reservation);
