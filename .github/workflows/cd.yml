@@ -1,0 +1,121 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+env:
+  ECR_REPOSITORY: parkez-server-ecr
+  IMAGE_TAG: latest
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 현재 레포지토리의 코드를 체크아웃해서 Actions에 가져온다
+        uses: actions/checkout@v4
+
+      - name: JDK 17 설치
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Gradle Caching
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: yml 파일 만들기
+        run: |
+          mkdir -p src/main/resources/
+          echo "$APPLICATION_YML" > src/main/resources/application.yml
+          echo "$APPLICATION_JWT" > src/main/resources/application-jwt.yml
+          echo "$APPLICATION_PROD" > src/main/resources/application-prod.yml
+          echo "$APPLICATION_AWS" > src/main/resources/application-aws.yml
+          echo "$APPLICATION_OAUTH" > src/main/resources/application-oauth.yml
+          echo "$APPLICATION_PAYMENT" > src/main/resources/application-payment.yml
+        env:
+          APPLICATION_YML: ${{ secrets.APPLICATION_YML }}
+          APPLICATION_JWT: ${{ secrets.APPLICATION_JWT }}
+          APPLICATION_PROD: ${{ secrets.APPLICATION_PROD }}
+          APPLICATION_AWS: ${{ secrets.APPLICATION_AWS }}
+          APPLICATION_OAUTH: ${{ secrets.APPLICATION_OAUTH }}
+          APPLICATION_PAYMENT: ${{ secrets.APPLICATION_PAYMENT }}
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x gradlew
+
+      - name: 빌드하기
+        run: ./gradlew clean build -x test
+
+      - name: aws iam 사용자 설정
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: ecr에 로그인
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Docker 이미지 생성
+        run: |
+          docker build -t $ECR_REPOSITORY .
+
+      - name: Docker 이미지에 Tag 붙이기
+        run: docker tag $ECR_REPOSITORY ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: ECR에 Docker 이미지 Push
+        run: docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: 압축
+        run: tar -czvf $GITHUB_SHA.tar.gz appspec.yml scripts
+
+      - name: S3에 프로젝트 폴더 업로드하기
+        run: aws s3 cp --region ap-northeast-2 ./$GITHUB_SHA.tar.gz s3://${{ secrets.S3_BUCKET }}/$GITHUB_SHA.tar.gz
+
+      - name: Code Deploy를 활용해 EC2에 프로젝트 코드 배포
+        run: aws deploy create-deployment
+          --application-name parkez-server
+          --deployment-config-name CodeDeployDefault.AllAtOnce
+          --deployment-group-name Production
+          --s3-location bucket=${{ secrets.S3_BUCKET }},bundleType=tgz,key=$GITHUB_SHA.tar.gz
+
+      - name: 배포 완료 상태 기다리기
+        run: |
+          DEPLOYMENT_ID=$(aws deploy list-deployments \
+            --application-name parkez-server \
+            --deployment-group-name Production \
+            --query "deployments[0]" --output text)
+
+          echo "👉 최신 배포 ID: $DEPLOYMENT_ID"
+
+          for i in {1..20}; do
+            STATUS=$(aws deploy get-deployment --deployment-id $DEPLOYMENT_ID \
+              --query "deploymentInfo.status" --output text)
+
+            echo "⌛ CodeDeploy 상태: $STATUS ($i/20)"
+
+            if [ "$STATUS" == "Succeeded" ]; then
+              echo "✅ 배포 완료됨!"
+              exit 0
+            elif [ "$STATUS" == "Failed" ]; then
+              echo "❌ 배포 실패"
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          echo "⏰ 배포가 시간 내에 완료되지 않았습니다."
+          exit 1

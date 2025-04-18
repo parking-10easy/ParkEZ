@@ -6,9 +6,11 @@ import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import com.parkez.parkingzone.service.ParkingZoneReader;
+import com.parkez.payment.service.PaymentService;
 import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
+import com.parkez.reservation.dto.request.ReservationCancelRequest;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.ReservationResponse;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
@@ -36,6 +38,7 @@ public class ReservationService {
     private final UserReader userReader;
     private final ParkingZoneReader parkingZoneReader;
     private final ReviewReader reviewReader;
+    private final PaymentService paymentService;
 
     private static final long CANCEL_LIMIT_HOURS = 1L;
     private static final long EXPIRATION_TIME = 10L;
@@ -129,7 +132,7 @@ public class ReservationService {
         reservationWriter.complete(reservation);
     }
 
-    public void cancelReservation(AuthUser authUser, Long reservationId) {
+    public void cancelReservation(AuthUser authUser, Long reservationId, ReservationCancelRequest request) {
 
         Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
@@ -143,6 +146,8 @@ public class ReservationService {
         if (reservation.isAfter(cancelLimitTime, LocalDateTime.now())) {
             throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
         }
+
+        paymentService.cancelPayment(reservation, request);
 
         reservationWriter.cancel(reservation);
     }

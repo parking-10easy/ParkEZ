@@ -58,10 +58,12 @@ public class Payment extends BaseEntity {
 
     private LocalDateTime approvedAt;
 
+    private LocalDateTime canceledAt;
+
     @Builder
     public Payment(User user, Reservation reservation,
                    PaymentType paymentType, PaymentStatus paymentStatus,
-                   String paymentKey, String orderId, int cardFee, LocalDateTime approvedAt) {
+                   String paymentKey, String orderId, int cardFee, LocalDateTime approvedAt, LocalDateTime canceledAt) {
         this.user = user;
         this.reservation = reservation;
         this.price = reservation.getPrice();
@@ -71,6 +73,7 @@ public class Payment extends BaseEntity {
         this.orderId = orderId;
         this.cardFee = cardFee;
         this.approvedAt = approvedAt;
+        this.canceledAt = canceledAt;
     }
 
 
@@ -103,8 +106,9 @@ public class Payment extends BaseEntity {
         return Objects.nonNull(reservation) ? reservation.getId() : null;
     }
 
-    public void cancel() {
+    public void cancel(LocalDateTime canceledAt) {
         this.paymentStatus = PaymentStatus.CANCELED;
+        this.canceledAt = canceledAt;
     }
 
 

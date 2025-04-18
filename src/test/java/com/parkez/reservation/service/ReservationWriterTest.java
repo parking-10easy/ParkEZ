@@ -166,6 +166,43 @@ class ReservationWriterTest {
     }
 
     @Nested
+    class updateStatusConfirm {
+        @Test
+        void 예약_상태를_CONFIRMED로_변경() {
+            // given
+            Long reservationId = 1L;
+
+            Reservation reservation = getReservation(reservationId);
+            ReflectionTestUtils.setField(reservation, "status", ReservationStatus.PENDING);
+
+            // when
+            reservationWriter.updateStatusConfirm(reservation);
+
+            // then
+            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+        }
+    }
+
+    @Nested
+    class ExpirePaymentTimeout {
+
+        @Test
+        void 결제_시간_초과로_예약_만료_상태로_변경() {
+            // given
+            Long reservationId = 1L;
+
+            Reservation reservation = getReservation(reservationId);
+            ReflectionTestUtils.setField(reservation, "status", ReservationStatus.PENDING);
+
+            // when
+            reservationWriter.expirePaymentTimeout(reservation);
+
+            // then
+            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.PAYMENT_EXPIRED);
+        }
+    }
+
+    @Nested
     class ExpireReservation {
 
         @Test

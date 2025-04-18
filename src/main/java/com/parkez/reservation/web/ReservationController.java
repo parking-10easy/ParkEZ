@@ -5,6 +5,7 @@ import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.dto.response.Response;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.common.resolver.AuthenticatedUser;
+import com.parkez.reservation.dto.request.ReservationCancelRequest;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.ReservationResponse;
 import com.parkez.reservation.service.ReservationService;
@@ -86,9 +87,10 @@ public class ReservationController {
     @Operation(summary = "예약 취소", description = "사용하지 않은 예약에 대한 취소 기능입니다.")
     public Response<Void> cancelReservation(
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
-            @PathVariable Long reservationId
-    ) {
-        reservationService.cancelReservation(authUser, reservationId);
+            @PathVariable Long reservationId,
+            @Valid @RequestBody ReservationCancelRequest request
+            ) {
+        reservationService.cancelReservation(authUser, reservationId, request);
         return Response.empty();
     }
 }

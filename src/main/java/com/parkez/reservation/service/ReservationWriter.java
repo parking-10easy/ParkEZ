@@ -54,6 +54,10 @@ public class ReservationWriter {
         reservation.confirm();
     }
 
+    public void expirePaymentTimeout(Reservation reservation) {
+        reservation.expire();
+    }
+
     public void expire(LocalDateTime expiredTime) {
         List<Reservation> expireToReservation = reservationRepository.findReservationsToExpire(expiredTime);
 

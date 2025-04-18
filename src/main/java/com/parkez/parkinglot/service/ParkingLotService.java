@@ -1,6 +1,7 @@
 package com.parkez.parkinglot.service;
 
 import com.parkez.common.dto.request.PageRequest;
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.client.kakaomap.geocode.Geocode;
 import com.parkez.parkinglot.client.kakaomap.geocode.KakaoGeocodeClient;
@@ -16,10 +17,12 @@ import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
+import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,7 +68,11 @@ public class ParkingLotService {
         Double longitude = geocode.getLongitude();
         parkingLot.updateGeocode(latitude, longitude);
 
-        return ParkingLotResponse.from(parkingLotWriter.createParkingLot(parkingLot));
+        try {
+            return ParkingLotResponse.from(parkingLotWriter.createParkingLot(parkingLot));
+        } catch (DataIntegrityViolationException e) {
+            throw new ParkingEasyException(ParkingLotErrorCode.DUPLICATED_PARKING_LOT_LOCATION);
+        }
     }
 
     // 주차장 다건 조회 (이름, 주소)
@@ -91,8 +98,15 @@ public class ParkingLotService {
     public void updateParkingLot(AuthUser authUser, Long parkingLotId, ParkingLotRequest request) {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
+
+        Geocode geocode = kakaoGeocodeClient.getGeocode(request.getAddress());
+        Double latitude = geocode.getLatitude();
+        Double longitude = geocode.getLongitude();
+        parkingLot.updateGeocode(latitude, longitude);
+
         parkingLot.update(
                 request.getName(), request.getAddress(),
+                latitude, longitude,
                 request.getOpenedAt(), request.getClosedAt(),
                 request.getPricePerHour(), request.getDescription(), request.getQuantity()
         );
@@ -104,6 +118,11 @@ public class ParkingLotService {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
         ParkingLotStatus newStatus = ParkingLotStatus.from(request.getStatus());
+
+        if (newStatus == ParkingLotStatus.CLOSED) {
+            throw new ParkingEasyException(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS_CHANGE);
+        }
+
         parkingLot.updateStatus(newStatus);
     }
 
@@ -112,6 +131,12 @@ public class ParkingLotService {
     public void updateParkingLotImages(AuthUser authUser, Long parkingLotId, ParkingLotImagesRequest request) {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
+
+        List<String> imageUrls = request.getImageUrls();
+        if (imageUrls.size() > 5) {
+            throw new ParkingEasyException(ParkingLotErrorCode.TOO_MANY_PARKING_LOT_IMAGES);
+        }
+
         List<ParkingLotImage> newImages = request.getImageUrls().stream()
                 .map(url -> ParkingLotImage.builder().imageUrl(url).parkingLot(parkingLot).build())
                 .toList();

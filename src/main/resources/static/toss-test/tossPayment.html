@@ -76,7 +76,7 @@
         const token = localStorage.getItem("accessToken");
         console.log("로컬 스토리지 jwt : ", token);
 
-        const response = await fetch(`/api/v1/payment-info?orderId=${orderId}`, {
+        const response = await fetch(`/api/v1/payment/info?orderId=${orderId}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
