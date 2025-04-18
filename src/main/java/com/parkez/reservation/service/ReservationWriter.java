@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @Transactional
@@ -55,5 +56,14 @@ public class ReservationWriter {
 
     public void expirePaymentTimeout(Reservation reservation) {
         reservation.expire();
+    }
+
+    public void expire(LocalDateTime expiredTime) {
+        List<Reservation> expireToReservation = reservationRepository.findReservationsToExpire(expiredTime);
+
+        if (!expireToReservation.isEmpty()) {
+            expireToReservation.forEach(Reservation::expire);
+            reservationRepository.saveAll(expireToReservation);
+        }
     }
 }
