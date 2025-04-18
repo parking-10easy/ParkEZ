@@ -62,7 +62,7 @@ public class ParkingLotPublicDataService {
 
     private static final String description = "공공데이터로 등록한 주차장입니다.";
     private int currentPage = 1;
-    private final int perPage = 1;
+    private final int perPage = 2;
 
     @Value("${parking-lot.public-data.admin-email}")
     private String adminEmail;
