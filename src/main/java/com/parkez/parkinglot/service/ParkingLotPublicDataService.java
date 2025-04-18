@@ -25,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.yaml.snakeyaml.constructor.DuplicateKeyException;
 
 import java.math.BigDecimal;
 import java.net.URI;
