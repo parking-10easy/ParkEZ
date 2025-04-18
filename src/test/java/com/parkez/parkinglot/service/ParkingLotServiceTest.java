@@ -637,6 +637,27 @@ public class ParkingLotServiceTest {
             assertEquals(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS, exception.getErrorCode());
         }
 
+        @Test
+        void CLOSED_상태로_변경하려고_하면_예외가_발생한다() {
+
+            // given
+            AuthUser authUser = getAuthUserOwner();
+            Long parkingLotId = 1L;
+            ParkingLotStatusRequest closedStatusRequest = ParkingLotStatusRequest.builder()
+                    .status("CLOSED")
+                    .build();
+
+            // when
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                    parkingLotService.updateParkingLotStatus(authUser, parkingLotId, closedStatusRequest)
+            );
+
+            // then
+            assertEquals(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS_CHANGE, exception.getErrorCode());
+
+        }
+
+
     }
 
     @Nested
