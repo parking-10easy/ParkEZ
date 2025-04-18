@@ -19,7 +19,6 @@ public class PaymentResponse {
     private PaymentType paymentType;
     private PaymentStatus paymentStatus;
     private String orderId;
-    private String paymentKey;
     private int cardFee;
     private LocalDateTime approvedAt;
 
@@ -32,7 +31,6 @@ public class PaymentResponse {
                 .paymentType(payment.getPaymentType())
                 .paymentStatus(payment.getPaymentStatus())
                 .orderId(payment.getOrderId())
-                .paymentKey(payment.getPaymentKey())
                 .cardFee(payment.getCardFee())
                 .approvedAt(payment.getApprovedAt())
                 .build();

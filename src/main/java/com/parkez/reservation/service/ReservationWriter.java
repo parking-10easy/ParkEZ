@@ -52,4 +52,8 @@ public class ReservationWriter {
     public void updateStatusConfirm(Reservation reservation){
         reservation.confirm();
     }
+
+    public void expirePaymentTimeout(Reservation reservation) {
+        reservation.expire();
+    }
 }

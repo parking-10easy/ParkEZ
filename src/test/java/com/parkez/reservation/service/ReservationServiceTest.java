@@ -7,9 +7,11 @@ import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import com.parkez.parkingzone.service.ParkingZoneReader;
+import com.parkez.payment.service.PaymentService;
 import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
+import com.parkez.reservation.dto.request.ReservationCancelRequest;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.ReservationResponse;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
@@ -57,6 +59,8 @@ class ReservationServiceTest {
     private ReviewReader reviewReader;
     @Mock
     private DistributedLockManager distributedLockManager;
+    @Mock
+    private PaymentService paymentService;
     @InjectMocks
     private ReservationService reservationService;
 
@@ -524,7 +528,8 @@ class ReservationServiceTest {
                 doNothing().when(reservationWriter).cancel(reservation);
 
                 // when
-                reservationService.cancelReservation(authUser, reservationId);
+                ReservationCancelRequest request = new ReservationCancelRequest();
+                reservationService.cancelReservation(authUser, reservationId, request);
 
                 // then
                 verify(reservationWriter, times(1)).cancel(reservation);
@@ -556,7 +561,8 @@ class ReservationServiceTest {
                 doNothing().when(reservationWriter).cancel(reservation);
 
                 // when
-                reservationService.cancelReservation(authUser, reservationId);
+                ReservationCancelRequest request = new ReservationCancelRequest();
+                reservationService.cancelReservation(authUser, reservationId, request);
 
                 // then
                 verify(reservationWriter, times(1)).cancel(reservation);
@@ -585,8 +591,10 @@ class ReservationServiceTest {
 
                 given(reservationReader.findMyReservation(anyLong(), any(Long.class))).willReturn(reservation);
                 // when & then
+                ReservationCancelRequest request = new ReservationCancelRequest();
+
                 ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                        () -> reservationService.cancelReservation(authUser, reservationId));
+                        () -> reservationService.cancelReservation(authUser, reservationId, request));
                 assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.CANT_CANCEL_RESERVATION);
             }
 
@@ -615,8 +623,10 @@ class ReservationServiceTest {
                 given(reservationReader.findMyReservation(anyLong(), any(Long.class))).willReturn(reservation);
 
                 // when & then
+                ReservationCancelRequest request = new ReservationCancelRequest();
+
                 ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                        () -> reservationService.cancelReservation(authUser, reservationId));
+                        () -> reservationService.cancelReservation(authUser, reservationId, request));
                 assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
             }
         }
