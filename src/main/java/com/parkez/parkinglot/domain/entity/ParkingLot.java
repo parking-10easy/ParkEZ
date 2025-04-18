@@ -20,7 +20,12 @@ import java.util.Objects;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@Table(name = "parking_lot")
+@Table(
+        name = "parking_lot",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_latitude_longitude", columnNames = {"longitude", "latitude"})
+        }
+)
 public class ParkingLot extends BaseDeleteEntity {
 
     @Id

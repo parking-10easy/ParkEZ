@@ -1,6 +1,7 @@
 package com.parkez.parkinglot.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.parkez.parkinglot.client.kakaomap.geocode.KakaoGeocodeClient;
 import com.parkez.parkinglot.client.publicData.ParkingLotData;
 import com.parkez.parkinglot.client.publicData.ParkingLotDataResponse;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
@@ -9,11 +10,13 @@ import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.SourceType;
 import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.yaml.snakeyaml.constructor.DuplicateKeyException;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -31,9 +35,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 
 @Service
@@ -61,9 +63,13 @@ public class ParkingLotPublicDataService {
 
     private static final String description = "공공데이터로 등록한 주차장입니다.";
     private int currentPage = 1;
-    private final int perPage = 3000;
+    private final int perPage = 100;
 
-    // MEMO : 중복 데이터 처리 x
+    @Value("${parking-lot.public-data.admin-email}")
+    private String adminEmail;
+
+    private final KakaoGeocodeClient kakaoGeocodeClient;
+
     @Transactional
     public void fetchAndSavePublicData() {
         try {
@@ -74,7 +80,7 @@ public class ParkingLotPublicDataService {
                     .build()
                     .encode()
                     .toUri();
-            log.info("요청 URL : {}", uri);
+            log.info("공공데이터 요청 URL : {}", uri);
 
             ResponseEntity<ParkingLotDataResponse> responseEntity = restTemplate.getForEntity(uri, ParkingLotDataResponse.class);
             ParkingLotDataResponse dataResponse = responseEntity.getBody();
@@ -85,38 +91,29 @@ public class ParkingLotPublicDataService {
                 return;
             }
 
-            // 동일한 위도 경도를 가지고 있는 주차장은 건너 뜀
-            List<ParkingLot> parkingLots = new ArrayList<>();
-            Set<String> coordinateKey = new HashSet<>();
-
-            for(ParkingLotData data : dataResponse.getData()){
-                String latLngKey = data.getLatitude() + ":" + data.getLongitude();
-                if(coordinateKey.contains(latLngKey)){
-                    continue;
-                }
-                coordinateKey.add(latLngKey);
-                ParkingLot parkingLot = convertToParkingLot(data);
-                parkingLots.add(parkingLot);
-            }
+            List<ParkingLotData> dataList = dataResponse.getData();
+            List<ParkingLot> parkingLots = dataList.stream()
+                    .map(this::convertToParkingLot)
+                    .toList();
 
             long start = System.currentTimeMillis();
+            int insertedCount = 0;
 
+            try {
 //            parkingLotRepository.saveAll(parkingLots);
-            bulkInsertParkingLots(parkingLots);
-            bulkInsertImages(parkingLots);
+                bulkInsertParkingLots(parkingLots);
+                bulkInsertImages(parkingLots);
+                insertedCount = parkingLots.size();
+            } catch (DataIntegrityViolationException | DuplicateKeyException e) {
+                log.warn("중복된 위경도 주차장이 있어 일부 저장되지 않았습니다: {}", e.getMessage());
+            }
 
             long end = System.currentTimeMillis();
+            int totalCount = dataList.size();
+            int duplicateCount = totalCount - insertedCount;
+            log.info("불러온 공공데이터 {}건, 저장된 주차장: {}건, 중복으로 건너 뛴 주차장 {}건, 수행시간 : {}ms", totalCount, insertedCount, duplicateCount, (end - start));
 
-            System.out.println("---------------------------------");
-            log.info("전체 저장 완료: {}건, 수행시간 : {}ms", parkingLots.size(), (end - start));
-            System.out.println("---------------------------------");
-
-            if (dataResponse.getData().size() < perPage) {
-                currentPage = 1;
-                log.info("전체 데이터 저장 완료, 인덱스를 1로 초기화");
-            } else {
-                currentPage++;
-            }
+            currentPage = (dataList.size() < perPage) ? 1 : currentPage + 1;
 
         } catch (Exception e) {
             log.error("API 호출 중 에러 발생", e);
@@ -193,6 +190,9 @@ public class ParkingLotPublicDataService {
     private ParkingLot convertToParkingLot(ParkingLotData data) {
         Double latitude = parseDouble(data.getLatitude());
         Double longitude = parseDouble(data.getLongitude());
+
+        String getAddress = kakaoGeocodeClient.getAddress(longitude, latitude);
+        String address = !StringUtils.hasText(data.getAddress()) ? getAddress : data.getAddress();
         Integer quantity = parseInteger(data.getQuantity());
         LocalTime openedAt = parseTime(data.getOpenedAt());
         LocalTime closedAt = parseTime(data.getClosedAt());
@@ -200,8 +200,7 @@ public class ParkingLotPublicDataService {
         SourceType sourceType = SourceType.PUBLIC_DATA;
         ChargeType chargeType = parseChargeType(data.getChargeType());
 
-        // TODO : 소유주 - 수정이 필요할 듯 함 (관리자로)
-        User user = userReader.getActiveUserById(1L);
+        User user = userReader.getUserByEmailAndRole(adminEmail, UserRole.ROLE_ADMIN);
 
         List<ParkingLotImage> images = new ArrayList<>();
         ParkingLotImage defaultImage = ParkingLotImage.builder()
@@ -211,7 +210,7 @@ public class ParkingLotPublicDataService {
         ParkingLot parkingLot = ParkingLot.builder()
                 .owner(user)
                 .name(data.getName())
-                .address(data.getAddress())
+                .address(address)
                 .latitude(latitude)
                 .longitude(longitude)
                 .openedAt(openedAt)
