@@ -25,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -642,10 +641,10 @@ public class ParkingLotServiceTest {
 
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
-
-            // when
             AuthUser authUser = getAuthUserOwner();
             ParkingLotStatusRequest request = getParkingLotStatusRequest();
+
+            // when
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                     parkingLotService.updateParkingLotStatus(authUser, parkingLotId, request)
             );
@@ -706,9 +705,10 @@ public class ParkingLotServiceTest {
 
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
 
-            // when
             AuthUser authUser = getAuthUserOwner();
             ParkingLotImagesRequest request = getParkingLotImagesRequest();
+
+            // when
             parkingLotService.updateParkingLotImages(authUser, parkingLotId, request);
 
             //then
@@ -755,6 +755,31 @@ public class ParkingLotServiceTest {
 
             // then
             assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
+        }
+
+        @Test
+        void 이미지가_6개_이상이면_예외가_발생한다() {
+            // given
+            AuthUser authUser = getAuthUserOwner();
+            Long parkingLotId = 1L;
+            List<String> imageUrls = List.of(
+                    "https://img1.jpg", "https://img2.jpg", "https://img3.jpg",
+                    "https://img4.jpg", "https://img5.jpg", "https://img6.jpg"
+            );
+            ParkingLotImagesRequest request = ParkingLotImagesRequest.builder()
+                    .imageUrls(imageUrls)
+                    .build();
+
+            ParkingLot parkingLot = getParkingLot();
+            when(parkingLotReader.getOwnedParkingLot(authUser.getId(), parkingLotId)).thenReturn(parkingLot);
+
+            // when
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                    parkingLotService.updateParkingLotImages(authUser, parkingLotId, request)
+            );
+
+            // then
+            assertEquals(ParkingLotErrorCode.TOO_MANY_PARKING_LOT_IMAGES, exception.getErrorCode());
         }
     }
 
