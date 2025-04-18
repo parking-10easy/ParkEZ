@@ -39,6 +39,7 @@ public class AlarmSender {
                 }
 
             } catch (Exception e) {
+                e.printStackTrace();
                 alarm.updateFailReason(e.getMessage());
             }
         }

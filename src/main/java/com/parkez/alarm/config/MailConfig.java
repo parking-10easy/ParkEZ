@@ -30,12 +30,12 @@ public class MailConfig {
 
         // 추가 JavaMail 프로퍼티
         Properties props = mailSender.getJavaMailProperties();
-        props.put("mail.transport.protocol", "smtp");
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.debug", "true");
-        props.put("mail.smtp.ssl.enable", "true");
-        props.put("mail.smtp.ssl.trust", "smtp.test.com");
+        props.put("spring.mail.transport.protocol", "smtp");
+        props.put("spring.mail.smtp.auth", "true");
+        props.put("spring.mail.smtp.starttls.enable", "true");
+        props.put("spring.mail.debug", "true");
+        props.put("spring.mail.smtp.ssl.enable", "true");
+        props.put("spring.mail.smtp.ssl.trust", "smtp.test.com");
 
         return mailSender;
     }
