@@ -2,8 +2,6 @@ package com.parkez.image.service;
 
 
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.image.ImageService;
-import com.parkez.image.S3ImageService;
 import com.parkez.image.config.S3Properties;
 import com.parkez.image.dto.request.ImageRequest;
 import com.parkez.image.dto.response.ImageUrlResponse;
@@ -13,7 +11,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -27,7 +24,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;

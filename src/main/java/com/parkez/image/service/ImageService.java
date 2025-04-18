@@ -1,4 +1,4 @@
-package com.parkez.image;
+package com.parkez.image.service;
 
 import com.parkez.image.dto.request.ImageRequest;
 import com.parkez.image.dto.response.ImageUrlResponse;
