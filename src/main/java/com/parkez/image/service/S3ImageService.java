@@ -1,4 +1,4 @@
-package com.parkez.image;
+package com.parkez.image.service;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.image.config.S3Properties;
