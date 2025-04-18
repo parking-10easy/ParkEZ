@@ -153,6 +153,11 @@ public class ReservationService {
     }
 
     public boolean validateRequestTime (ReservationRequest request) {
-        return request.getStartDateTime().isBefore(request.getEndDateTime()) && request.getStartDateTime().isAfter(LocalDateTime.now());
+        LocalDateTime startDateTime = request.getStartDateTime();
+        LocalDateTime endDateTime = request.getEndDateTime();
+
+        return startDateTime.isBefore(endDateTime)
+                && startDateTime.isAfter(LocalDateTime.now())
+                && startDateTime.toLocalDate().equals(endDateTime.toLocalDate());
     }
 }
