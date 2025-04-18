@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 		version = "1.0.0"
 	),
 	servers = {
-		@Server(url = "https://parkez.link", description = "개발 서버"),
+		@Server(url = "https://parkez.click", description = "개발 서버"),
 		@Server(url = "http://localhost:8080", description = "로컬 서버")
 	}
 )
