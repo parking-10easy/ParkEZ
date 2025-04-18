@@ -44,10 +44,9 @@ public class ReservationService {
 
             User user = userReader.getActiveUserById(authUser.getId());
             ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
-            System.out.println(parkingZone);
 
             // 예약 날짜 및 시간 입력 오류 예외
-            if (!request.getStartDateTime().isBefore(request.getEndDateTime())) {
+            if (!validateRequestTime(request)) {
                 throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
             }
 
@@ -139,5 +138,9 @@ public class ReservationService {
     public void expireReservation() {
         LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(EXPIRATION_TIME);
         reservationWriter.expire(expiredTime);
+    }
+
+    public boolean validateRequestTime (ReservationRequest request) {
+        return request.getStartDateTime().isBefore(request.getEndDateTime()) && request.getStartDateTime().isAfter(LocalDateTime.now());
     }
 }
