@@ -1,9 +1,7 @@
 package com.parkez.user.domain.enums;
 
-import com.parkez.auth.exception.AuthErrorCode;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.user.exception.UserErrorCode;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -13,7 +11,8 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public enum UserRole {
     ROLE_OWNER(Authority.OWNER, "owner"),
-    ROLE_USER(Authority.USER, "user");
+    ROLE_USER(Authority.USER, "user"),
+    ROLE_ADMIN(Authority.ADMIN, "admin");
 
     private final String userRole;
     private final String stateValue;
@@ -27,13 +26,14 @@ public enum UserRole {
 
     public static UserRole fromState(String state) {
         return Arrays.stream(values())
-            .filter(r -> r.stateValue.equalsIgnoreCase(state))
-            .findFirst()
-            .orElseThrow(() -> new ParkingEasyException(UserErrorCode.INVALID_USER_ROLE_STATE));
+                .filter(r -> r.stateValue.equalsIgnoreCase(state))
+                .findFirst()
+                .orElseThrow(() -> new ParkingEasyException(UserErrorCode.INVALID_USER_ROLE_STATE));
     }
 
     public static class Authority {
         public static final String OWNER = "ROLE_OWNER";
         public static final String USER = "ROLE_USER";
+        public static final String ADMIN = "ROLE_ADMIN";
     }
 }
