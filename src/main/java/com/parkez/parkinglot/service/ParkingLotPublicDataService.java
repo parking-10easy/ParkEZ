@@ -104,7 +104,7 @@ public class ParkingLotPublicDataService {
                 bulkInsertParkingLots(parkingLots);
                 bulkInsertImages(parkingLots);
                 insertedCount = parkingLots.size();
-            } catch (DataIntegrityViolationException | DuplicateKeyException e) {
+            } catch (DataIntegrityViolationException e) {
                 log.warn("중복된 위/경도를 가진 주차장이 있어 일부 저장되지 않았습니다: {}", e.getMessage());
             }
 

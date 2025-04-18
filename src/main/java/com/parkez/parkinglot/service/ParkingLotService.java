@@ -21,10 +21,13 @@ import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.yaml.snakeyaml.constructor.DuplicateKeyException;
 
 import java.util.List;
 
@@ -67,7 +70,11 @@ public class ParkingLotService {
         Double longitude = geocode.getLongitude();
         parkingLot.updateGeocode(latitude, longitude);
 
-        return ParkingLotResponse.from(parkingLotWriter.createParkingLot(parkingLot));
+        try {
+            return ParkingLotResponse.from(parkingLotWriter.createParkingLot(parkingLot));
+        } catch (DataIntegrityViolationException e) {
+            throw new ParkingEasyException(ParkingLotErrorCode.DUPLICATED_PARKING_LOT_LOCATION);
+        }
     }
 
     // 주차장 다건 조회 (이름, 주소)
