@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -60,11 +59,10 @@ public class ParkingLotPublicDataService {
 
     private static final String description = "공공데이터로 등록한 주차장입니다.";
     private int currentPage = 1;
-    private final int perPage = 10;
+    private final int perPage = 3000;
 
     // MEMO : 중복 데이터 처리 x
     @Transactional
-    @Scheduled(fixedRate = 300000, initialDelay = 10000)
     public void fetchAndSavePublicData() {
         try {
             URI uri = UriComponentsBuilder.fromUriString(parkingLotPublicDataUrl)
@@ -112,6 +110,7 @@ public class ParkingLotPublicDataService {
 
         } catch (Exception e) {
             log.error("API 호출 중 에러 발생", e);
+            throw e;
         }
     }
 
