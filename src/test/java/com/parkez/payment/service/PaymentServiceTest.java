@@ -36,6 +36,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -645,5 +647,41 @@ public class PaymentServiceTest {
             verify(paymentWriter).cancelPayment(payment);
         }
     }
+
+    @Nested
+    class ExpirePayment {
+
+        @Test
+        void 만료된_PENDING_결제가_존재하면_자동으로_취소하고_예약도_만료처리() {
+            // given
+            Payment payment = mock(Payment.class);
+            Reservation reservation = mock(Reservation.class);
+
+            when(payment.getReservation()).thenReturn(reservation);
+            when(paymentReader.findPendingPayments(any(LocalDateTime.class))).thenReturn(List.of(payment));
+
+            // when
+            paymentService.expirePayment();
+
+            // then
+            verify(paymentWriter).cancelPayment(payment);
+            verify(reservationWriter).expirePaymentTimeout(reservation);
+        }
+
+        @Test
+        void 만료된_PENDING_결제가_없으면_아무_처리도_하지_않는다() {
+            // given
+            when(paymentReader.findPendingPayments(any(LocalDateTime.class))).thenReturn(Collections.emptyList());
+
+            // when
+            paymentService.expirePayment();
+
+            // then
+            verify(paymentWriter, never()).cancelPayment(any());
+            verify(reservationWriter, never()).expirePaymentTimeout(any());
+        }
+    }
+
+
 
 }
