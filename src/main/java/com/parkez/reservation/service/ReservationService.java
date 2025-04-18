@@ -36,6 +36,7 @@ public class ReservationService {
     private final ReviewReader reviewReader;
 
     private static final long CANCEL_LIMIT_HOURS = 1L;
+    private static final long EXPIRATION_TIME = 10L;
 
     public ReservationResponse createReservation(AuthUser authUser, ReservationRequest request) {
 
@@ -133,5 +134,10 @@ public class ReservationService {
         }
 
         reservationWriter.cancel(reservation);
+    }
+
+    public void expireReservation() {
+        LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(EXPIRATION_TIME);
+        reservationWriter.expire(expiredTime);
     }
 }

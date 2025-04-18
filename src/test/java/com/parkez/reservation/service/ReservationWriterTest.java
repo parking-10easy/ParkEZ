@@ -22,6 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationWriterTest {
@@ -161,6 +162,32 @@ class ReservationWriterTest {
 
             // then
             assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELED);
+        }
+    }
+
+    @Nested
+    class ExpireReservation {
+
+        @Test
+        void 예약_생성_후_일정_시간_이내_결제_요청을_생성하지_않을_경우_예약_만료() {
+            // given
+            Long reservationId = 1L;
+            LocalDateTime expiredTime = LocalDateTime.now();
+
+            Reservation reservation = getReservation(reservationId);
+            ReflectionTestUtils.setField(reservation, "status", ReservationStatus.PENDING);
+            ReflectionTestUtils.setField(reservation, "createdAt", LocalDateTime.now().minusMinutes(11));
+
+            List<Reservation> expiredToReservation = List.of(reservation);
+
+            given(reservationRepository.findReservationsToExpire(any(LocalDateTime.class))).willReturn(expiredToReservation);
+
+            // when
+            reservationWriter.expire(expiredTime);
+
+            // then
+            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.PAYMENT_EXPIRED);
+            verify(reservationRepository).saveAll(expiredToReservation);
         }
     }
 }
