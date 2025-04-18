@@ -58,12 +58,9 @@ public class ReservationService {
             }
 
             // parkingLot 의 영업 시간 내에만 예약 가능
-            LocalTime startTime = request.getStartDateTime().toLocalTime();
-            LocalTime endTime = request.getEndDateTime().toLocalTime();
-            if (!parkingZone.isOpened(startTime, endTime)) {
+            if (!parkingZone.isOpened(request.getStartDateTime(), request.getEndDateTime())) {
                 throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
             }
-            System.out.println("hi");
 
             // 이미 해당 시간에 예약이 존재할 경우
             List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);

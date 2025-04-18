@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
@@ -88,8 +90,11 @@ public class ParkingZone extends BaseDeleteEntity {
         return this.getParkingLot().getClosedAt();
     }
 
-    public boolean isOpened(LocalTime startTime, LocalTime endTime) {
-        return !startTime.isBefore(this.getParkingLotOpenedAt())
-                && !endTime.isAfter(this.getParkingLotClosedAt());
+    public boolean isOpened(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        LocalDate date = startDateTime.toLocalDate();
+        LocalDateTime openedAt = LocalDateTime.of(date, this.getParkingLotOpenedAt());
+        LocalDateTime closedAt = LocalDateTime.of(date, this.getParkingLotClosedAt());
+        return !startDateTime.isBefore(openedAt)
+                && !endDateTime.isAfter(closedAt);
     }
 }

@@ -210,7 +210,7 @@ class ReservationServiceTest {
             AuthUser authUser = createAuthUser(userId);
 
             ReservationRequest request = createRequest(parkingZoneId);
-            ReflectionTestUtils.setField(request, "endDateTime", request.getStartDateTime().minusHours(1));
+            ReflectionTestUtils.setField(request, "endDateTime", request.getStartDateTime().minusNanos(1));
 
             User owner = createOwner(ownerId);
             User user = createUser(authUser.getId());
@@ -240,7 +240,7 @@ class ReservationServiceTest {
             Long parkingLotId = 1L;
             Long parkingZoneId = 1L;
 
-            LocalDateTime startDateTime = LocalDateTime.now().minusDays(1);
+            LocalDateTime startDateTime = LocalDateTime.now().minusNanos(1);
 
             AuthUser authUser = createAuthUser(userId);
 
@@ -343,7 +343,7 @@ class ReservationServiceTest {
             Long parkingLotId = 1L;
             Long parkingZoneId = 1L;
 
-            LocalDateTime endDateTime = RESERVATION_END_DATE_TIME.plusHours(1);
+            LocalDateTime endDateTime = RESERVATION_END_DATE_TIME.plusNanos(1);
 
             AuthUser authUser = createAuthUser(userId);
 
