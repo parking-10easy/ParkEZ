@@ -1,6 +1,7 @@
 package com.parkez.parkinglot.service;
 
 import com.parkez.common.dto.request.PageRequest;
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.client.kakaomap.geocode.Geocode;
 import com.parkez.parkinglot.client.kakaomap.geocode.KakaoGeocodeClient;
@@ -16,6 +17,7 @@ import com.parkez.parkinglot.dto.request.ParkingLotStatusRequest;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
+import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -99,7 +101,7 @@ public class ParkingLotService {
 
         parkingLot.update(
                 request.getName(), request.getAddress(),
-                latitude,longitude,
+                latitude, longitude,
                 request.getOpenedAt(), request.getClosedAt(),
                 request.getPricePerHour(), request.getDescription(), request.getQuantity()
         );
@@ -111,6 +113,11 @@ public class ParkingLotService {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
         ParkingLotStatus newStatus = ParkingLotStatus.from(request.getStatus());
+
+        if (newStatus == ParkingLotStatus.CLOSED) {
+            throw new ParkingEasyException(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS_CHANGE);
+        }
+
         parkingLot.updateStatus(newStatus);
     }
 
