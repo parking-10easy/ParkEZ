@@ -182,5 +182,77 @@ class UserRepositoryTest {
 
 	}
 
+	@Nested
+	class FindByEmailAndRoleAndDeletedAtIsNull {
+
+		@Test
+		void 이메일과_역할로_삭제되지_않은_유저를_조회할_수_있다() {
+			// given
+			String email = "admin@parkez.com";
+			UserRole role = UserRole.ROLE_ADMIN;
+
+			User user = User.builder()
+					.email(email)
+					.password("password123")
+					.nickname("관리자")
+					.phone("010-0000-0000")
+					.role(role)
+					.loginType(LoginType.NORMAL)
+					.status(UserStatus.COMPLETED)
+					.build();
+
+			User savedUser = userRepository.save(user);
+
+			// when
+			Optional<User> result = userRepository.findByEmailAndRoleAndDeletedAtIsNull(email, role);
+
+			// then
+			assertThat(result).isPresent();
+			assertThat(result.get()).extracting(
+					"email", "password", "nickname", "role"
+			).containsExactly(
+					"admin@parkez.com", "password123", "관리자", UserRole.ROLE_ADMIN
+			);
+		}
+
+		@Test
+		void 삭제된_유저는_이메일과_역할로_조회할_수_없다() {
+			// given
+			String email = "deleted@parkez.com";
+			UserRole role = UserRole.ROLE_ADMIN;
+
+			User user = User.builder()
+					.email(email)
+					.password("delete123")
+					.nickname("삭제된관리자")
+					.phone("010-1111-1111")
+					.role(role)
+					.loginType(LoginType.NORMAL)
+					.status(UserStatus.COMPLETED)
+					.build();
+			user.softDelete("관리자 탈퇴", LocalDateTime.now());
+
+			userRepository.save(user);
+
+			// when
+			Optional<User> result = userRepository.findByEmailAndRoleAndDeletedAtIsNull(email, role);
+
+			// then
+			assertThat(result).isNotPresent();
+		}
+
+		@Test
+		void 이메일이나_역할이_일치하지_않으면_empty를_반환한다() {
+			// given
+			String email = "notfound@parkez.com";
+			UserRole role = UserRole.ROLE_ADMIN;
+
+			// when
+			Optional<User> result = userRepository.findByEmailAndRoleAndDeletedAtIsNull(email, role);
+
+			// then
+			assertThat(result).isEmpty();
+		}
+	}
 
 }

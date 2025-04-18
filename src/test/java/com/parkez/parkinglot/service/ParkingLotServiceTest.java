@@ -177,6 +177,37 @@ public class ParkingLotServiceTest {
             verify(parkingLotWriter).createParkingLot(any(ParkingLot.class));
             verify(kakaoGeocodeClient).getGeocode(parkingLotRequest.getAddress());
         }
+
+        @Test
+        void 동일한_좌표의_주차장이_이미_존재하면_예외가_발생한다() {
+            // given
+            AuthUser authUser = getAuthUserOwner();
+            User owner = getOwnerUser();
+            ParkingLotRequest parkingLotRequest = getParkingLotRequest();
+            Geocode geocode = Geocode.builder()
+                    .latitude(37.500066200)
+                    .longitude(127.032926912)
+                    .build();
+
+            when(userReader.getActiveUserById(authUser.getId())).thenReturn(owner);
+
+            when(kakaoGeocodeClient.getGeocode(parkingLotRequest.getAddress())).thenReturn(geocode);
+
+            when(parkingLotWriter.createParkingLot(any(ParkingLot.class)))
+                    .thenThrow(new ParkingEasyException(ParkingLotErrorCode.DUPLICATED_PARKING_LOT_LOCATION));
+
+            // when
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                    parkingLotService.createParkingLot(authUser, parkingLotRequest)
+            );
+
+            // then
+            assertEquals(ParkingLotErrorCode.DUPLICATED_PARKING_LOT_LOCATION, exception.getErrorCode());
+
+            verify(userReader).getActiveUserById(authUser.getId());
+            verify(kakaoGeocodeClient).getGeocode(parkingLotRequest.getAddress());
+            verify(parkingLotWriter).createParkingLot(any(ParkingLot.class));
+        }
     }
 
     @Nested
@@ -488,19 +519,31 @@ public class ParkingLotServiceTest {
             //given
             Long parkingLotId = 1L;
             Long userId = getAuthUserOwner().getId();
+
             ParkingLot parkingLot = getParkingLot();
-            AuthUser authUser = getAuthUserOwner();
             ParkingLotRequest request = getParkingLotRequest();
+
+            AuthUser authUser = getAuthUserOwner();
+
+            Geocode geocode = Geocode.builder()
+                    .latitude(37.500066200)
+                    .longitude(127.032926912)
+                    .build();
+
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
+            when(kakaoGeocodeClient.getGeocode(request.getAddress())).thenReturn(geocode);
 
             // when
             parkingLotService.updateParkingLot(authUser, parkingLotId, request);
 
             //then
             assertThat(parkingLot)
-                    .extracting("name", "address")
+                    .extracting("name", "address", "latitude", "longitude")
                     .containsExactly(
-                            request.getName(), request.getAddress()
+                            request.getName(),
+                            request.getAddress(),
+                            geocode.getLatitude(),
+                            geocode.getLongitude()
                     );
         }
 
@@ -551,12 +594,15 @@ public class ParkingLotServiceTest {
         void 특정_주차장의_상태를_변경한다() {
             // given
             AuthUser authUser = getAuthUserOwner();
-            Long userId = getAuthUserOwner().getId();
+            Long userId = authUser.getId();
             Long parkingLotId = 1L;
-            ParkingLotStatusRequest request = getParkingLotStatusRequest();
+
+            // 상태 변경 요청: CLOSED가 아닌 정상 상태 (예: TEMP_CLOSED)
+            ParkingLotStatusRequest request = ParkingLotStatusRequest.builder()
+                    .status("TEMPORARILY_CLOSED")
+                    .build();
 
             ParkingLot parkingLot = getParkingLot();
-            parkingLot.updateStatus(ParkingLotStatus.CLOSED);
 
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
 
@@ -564,7 +610,7 @@ public class ParkingLotServiceTest {
             parkingLotService.updateParkingLotStatus(authUser, parkingLotId, request);
 
             // then
-            assertEquals(request.getStatus(), parkingLot.getStatus().name());
+        assertEquals(ParkingLotStatus.TEMPORARILY_CLOSED, parkingLot.getStatus());
         }
 
         @Test
@@ -595,10 +641,10 @@ public class ParkingLotServiceTest {
 
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId))
                     .thenThrow(new ParkingEasyException(ParkingLotErrorCode.NOT_FOUND));
-
-            // when
             AuthUser authUser = getAuthUserOwner();
             ParkingLotStatusRequest request = getParkingLotStatusRequest();
+
+            // when
             ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
                     parkingLotService.updateParkingLotStatus(authUser, parkingLotId, request)
             );
@@ -625,6 +671,27 @@ public class ParkingLotServiceTest {
             assertEquals(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS, exception.getErrorCode());
         }
 
+        @Test
+        void CLOSED_상태로_변경하려고_하면_예외가_발생한다() {
+
+            // given
+            AuthUser authUser = getAuthUserOwner();
+            Long parkingLotId = 1L;
+            ParkingLotStatusRequest closedStatusRequest = ParkingLotStatusRequest.builder()
+                    .status("CLOSED")
+                    .build();
+
+            // when
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                    parkingLotService.updateParkingLotStatus(authUser, parkingLotId, closedStatusRequest)
+            );
+
+            // then
+            assertEquals(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS_CHANGE, exception.getErrorCode());
+
+        }
+
+
     }
 
     @Nested
@@ -638,9 +705,10 @@ public class ParkingLotServiceTest {
 
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
 
-            // when
             AuthUser authUser = getAuthUserOwner();
             ParkingLotImagesRequest request = getParkingLotImagesRequest();
+
+            // when
             parkingLotService.updateParkingLotImages(authUser, parkingLotId, request);
 
             //then
@@ -687,6 +755,31 @@ public class ParkingLotServiceTest {
 
             // then
             assertEquals(ParkingLotErrorCode.NOT_FOUND, exception.getErrorCode());
+        }
+
+        @Test
+        void 이미지가_6개_이상이면_예외가_발생한다() {
+            // given
+            AuthUser authUser = getAuthUserOwner();
+            Long parkingLotId = 1L;
+            List<String> imageUrls = List.of(
+                    "https://img1.jpg", "https://img2.jpg", "https://img3.jpg",
+                    "https://img4.jpg", "https://img5.jpg", "https://img6.jpg"
+            );
+            ParkingLotImagesRequest request = ParkingLotImagesRequest.builder()
+                    .imageUrls(imageUrls)
+                    .build();
+
+            ParkingLot parkingLot = getParkingLot();
+            when(parkingLotReader.getOwnedParkingLot(authUser.getId(), parkingLotId)).thenReturn(parkingLot);
+
+            // when
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class, () ->
+                    parkingLotService.updateParkingLotImages(authUser, parkingLotId, request)
+            );
+
+            // then
+            assertEquals(ParkingLotErrorCode.TOO_MANY_PARKING_LOT_IMAGES, exception.getErrorCode());
         }
     }
 
