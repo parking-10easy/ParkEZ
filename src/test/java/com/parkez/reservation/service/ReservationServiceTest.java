@@ -268,7 +268,7 @@ class ReservationServiceTest {
         }
 
         @Test
-        void 특정_주차공간에_대한_예약_생성_시_하루를_초과하여_예약을_하는_경우_NOT_VALID_REQUEST_TIME_예외_처리() {
+        void 특정_주차공간에_대한_예약_생성_시_예약_기간이_하루를_초과하여_예약을_하는_경우_NOT_VALID_REQUEST_TIME_예외_처리() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
