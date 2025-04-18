@@ -1,4 +1,4 @@
-package com.parkez.common;
+package com.parkez.common.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.MediaType;
