@@ -62,7 +62,7 @@ public class ParkingLotPublicDataService {
 
     private static final String description = "공공데이터로 등록한 주차장입니다.";
     private int currentPage = 1;
-    private final int perPage = 10;
+    private final int perPage = 30;
 
     @Value("${parking-lot.public-data.admin-email}")
     private String adminEmail;
@@ -96,21 +96,25 @@ public class ParkingLotPublicDataService {
                     .toList();
 
             long start = System.currentTimeMillis();
-            int insertedCount = 0;
+            int totalCount = parkingLots.size();
+            boolean hasDuplicate = false;
 
             try {
 //            parkingLotRepository.saveAll(parkingLots);
                 bulkInsertParkingLots(parkingLots);
                 bulkInsertImages(parkingLots);
-                insertedCount = parkingLots.size();
             } catch (DataIntegrityViolationException e) {
+                hasDuplicate = true;;
                 log.warn("중복된 위/경도를 가진 주차장이 있어 일부 저장되지 않았습니다: {}", e.getMessage());
             }
 
             long end = System.currentTimeMillis();
-            int totalCount = dataList.size();
-            int duplicateCount = totalCount - insertedCount;
-            log.info("불러온 공공데이터 {}건, 저장된 주차장: {}건, 중복으로 건너 뛴 주차장 {}건, 수행시간 : {}ms", totalCount, insertedCount, duplicateCount, (end - start));
+
+            if (hasDuplicate) {
+                log.info("불러온 공공데이터 {}건 중 일부는 중복으로 저장되지 않음, 수행시간 : {}ms", totalCount, (end - start));
+            } else {
+                log.info("불러온 공공데이터 {}건 전부 저장 완료, 수행시간 : {}ms", totalCount, (end - start));
+            }
 
             currentPage = (dataList.size() < perPage) ? 1 : currentPage + 1;
 
