@@ -22,10 +22,9 @@ import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -38,10 +37,11 @@ public class PaymentService {
     private final UserReader userReader;
     private final ReservationReader reservationReader;
     private final ReservationWriter reservationWriter;
-    private final WebClient tossWebClient;
     private final TossPaymentService tossPaymentService;
 
     private static final long TIME_OUT_MINUTE = 10;
+    private static final long EXPIRATION_TIME = 10L;
+
 
     public PaymentCreateResponse createPayment(AuthUser authUser, PaymentCreateRequest request, String orderId) {
         User user = userReader.getActiveUserById(authUser.getId());
@@ -140,7 +140,7 @@ public class PaymentService {
         reservationWriter.cancel(reservation);
     }
 
-    public void cancel(Reservation reservation, ReservationCancelRequest request){
+    public void cancelPayment(Reservation reservation, ReservationCancelRequest request){
 
         Payment payment = paymentReader.findByReservation(reservation).orElseThrow(
                 () -> new ParkingEasyException(PaymentErrorCode.PAYMENT_NOT_FOUND));
@@ -164,4 +164,18 @@ public class PaymentService {
 
     }
 
+    public void expirePayment() {
+        LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(EXPIRATION_TIME);
+
+        List<Payment> expiredPayments = paymentReader.findPendingPayments(expiredTime);
+
+        for (Payment payment : expiredPayments) {
+
+            paymentWriter.cancelPayment(payment);
+
+            Reservation reservation = payment.getReservation();
+            reservationWriter.expirePaymentTimeout(reservation);
+
+        }
+    }
 }

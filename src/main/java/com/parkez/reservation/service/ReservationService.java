@@ -135,7 +135,7 @@ public class ReservationService {
             throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
         }
 
-        paymentService.cancel(reservation, request);
+        paymentService.cancelPayment(reservation, request);
 
         reservationWriter.cancel(reservation);
     }

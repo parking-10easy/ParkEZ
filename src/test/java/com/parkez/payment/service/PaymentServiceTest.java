@@ -588,7 +588,7 @@ public class PaymentServiceTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> paymentService.cancel(reservation, request));
+                    () -> paymentService.cancelPayment(reservation, request));
 
             assertEquals(PaymentErrorCode.PAYMENT_NOT_FOUND, exception.getErrorCode());
         }
@@ -604,7 +604,7 @@ public class PaymentServiceTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> paymentService.cancel(reservation, request));
+                    () -> paymentService.cancelPayment(reservation, request));
 
             assertEquals(PaymentErrorCode.PAYMENT_CANCELED, exception.getErrorCode());
         }
@@ -619,7 +619,7 @@ public class PaymentServiceTest {
             ReservationCancelRequest request = mock(ReservationCancelRequest.class);
 
             // when
-            paymentService.cancel(reservation, request);
+            paymentService.cancelPayment(reservation, request);
 
             // then
             verify(paymentWriter).cancelPayment(payment);
@@ -638,7 +638,7 @@ public class PaymentServiceTest {
             ReservationCancelRequest request = mock(ReservationCancelRequest.class);
 
             // when
-            paymentService.cancel(reservation, request);
+            paymentService.cancelPayment(reservation, request);
 
             // then
             verify(tossPaymentService).cancelPayment("payment-key-123", request);

@@ -19,7 +19,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             SELECT p
             FROM Payment p
             WHERE p.paymentStatus = 'PENDING'
-              AND p.createdAt < :expiredTime
+              AND p.createdAt <= :expiredTime
             """)
     List<Payment> findPendingPaymentsToExpire(LocalDateTime expiredTime);
 }
