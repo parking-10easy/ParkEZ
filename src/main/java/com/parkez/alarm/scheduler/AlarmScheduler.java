@@ -13,13 +13,9 @@ public class AlarmScheduler {
     private final ReservationAlarmService reservationAlarmService;
     private final AlarmSender alarmSender;
 
-    @Scheduled(cron = "0 * * * * *")
-    public void setReservationAlarmService() {
+    @Scheduled(initialDelay = 1000, fixedRate = 60000)
+    public void scheduleAlarmsInOrder() {
         reservationAlarmService.checkReservations();
-    }
-
-    @Scheduled(cron = "30 * * * * *")
-    public void setAlarmSender() {
         alarmSender.processAlarms();
     }
 }

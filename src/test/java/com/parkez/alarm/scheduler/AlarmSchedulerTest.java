@@ -23,20 +23,12 @@ class AlarmSchedulerTest {
     private AlarmScheduler alarmScheduler;
 
     @Test
-    void 예약알람_스케줄러_작동시_reservationService_호출된다() {
+    void 예약알람_스케줄러_작동시_scheduleAlarmsInOrder_호출된다() {
         // when
-        alarmScheduler.setReservationAlarmService();
+        alarmScheduler.scheduleAlarmsInOrder();
 
         // then
         verify(reservationAlarmService).checkReservations();
-    }
-
-    @Test
-    void 알람전송_스케줄러_작동시_alarmSender_호출된다() {
-        // when
-        alarmScheduler.setAlarmSender();
-
-        // then
         verify(alarmSender).processAlarms();
     }
 }
