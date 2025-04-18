@@ -10,8 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -79,5 +78,18 @@ public class ParkingZone extends BaseDeleteEntity {
         if (this.reviewCount > 0) {
             this.reviewCount--;
         }
+    }
+
+    public LocalTime getParkingLotOpenedAt() {
+        return this.getParkingLot().getOpenedAt();
+    }
+
+    public LocalTime getParkingLotClosedAt() {
+        return this.getParkingLot().getClosedAt();
+    }
+
+    public boolean isOpened(LocalTime startTime, LocalTime endTime) {
+        return !startTime.isBefore(this.getParkingLotOpenedAt())
+                && !endTime.isAfter(this.getParkingLotClosedAt());
     }
 }

@@ -5,6 +5,7 @@ import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
@@ -31,7 +32,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -59,6 +62,11 @@ class ReservationServiceTest {
     private DistributedLockManager distributedLockManager;
     @InjectMocks
     private ReservationService reservationService;
+
+    private static final LocalTime OPENED_AT = LocalTime.of(9,0,0);
+    private static final LocalTime CLOSED_AT = LocalTime.of(21,0,0);
+    private static final LocalDateTime RESERVATION_START_DATE_TIME = LocalDateTime.of(LocalDate.now().plusDays(1), OPENED_AT);
+    private static final LocalDateTime RESERVATION_END_DATE_TIME = LocalDateTime.of(LocalDate.now().plusDays(1), CLOSED_AT);
 
     private static AuthUser createAuthUser(Long id) {
         return AuthUser.builder()
@@ -95,6 +103,8 @@ class ReservationServiceTest {
                 .owner(owner)
                 .pricePerHour(BigDecimal.valueOf(2000))
                 .name("test")
+                .openedAt(OPENED_AT)
+                .closedAt(CLOSED_AT)
                 .build();
         ReflectionTestUtils.setField(parkingLot, "id", id);
         return parkingLot;
@@ -105,6 +115,7 @@ class ReservationServiceTest {
                 .parkingLot(parkingLot)
                 .build();
         ReflectionTestUtils.setField(parkingZone, "id", id);
+        ReflectionTestUtils.setField(parkingZone, "status", ParkingZoneStatus.AVAILABLE);
         return parkingZone;
     }
 
@@ -134,7 +145,8 @@ class ReservationServiceTest {
     private static ReservationRequest createRequest(Long id) {
         ReservationRequest request = new ReservationRequest();
         ReflectionTestUtils.setField(request, "parkingZoneId", id);
-        ReflectionTestUtils.setField(request, "startDateTime", LocalDateTime.now().plusHours(1).truncatedTo(ChronoUnit.SECONDS));
+        ReflectionTestUtils.setField(request, "startDateTime", RESERVATION_START_DATE_TIME);
+        ReflectionTestUtils.setField(request, "endDateTime", RESERVATION_END_DATE_TIME);
         return request;
     }
 
@@ -153,7 +165,6 @@ class ReservationServiceTest {
             AuthUser authUser = createAuthUser(userId);
 
             ReservationRequest request = createRequest(parkingZoneId);
-            ReflectionTestUtils.setField(request, "endDateTime", request.getStartDateTime().plusHours(1));
 
             User owner = createOwner(ownerId);
             User user = createUser(authUser.getId());
@@ -222,19 +233,19 @@ class ReservationServiceTest {
         }
 
         @Test
-        void 특정_주차공간에_대한_예약_생성_시_시작_시간이_현재보다_늦을_경우_NOT_VALID_REQUEST_TIME_예외_처리() {
+        void 특정_주차공간에_대한_예약_생성_시_과거_시간에_예약을_하는_경우_NOT_VALID_REQUEST_TIME_예외_처리() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
             Long parkingLotId = 1L;
             Long parkingZoneId = 1L;
-            LocalDateTime startDateTime = LocalDateTime.now().minusHours(1).truncatedTo(ChronoUnit.SECONDS);
+
+            LocalDateTime startDateTime = LocalDateTime.now().minusDays(1);
 
             AuthUser authUser = createAuthUser(userId);
 
             ReservationRequest request = createRequest(parkingZoneId);
             ReflectionTestUtils.setField(request, "startDateTime", startDateTime);
-            ReflectionTestUtils.setField(request, "endDateTime", request.getStartDateTime().plusHours(1));
 
             User owner = createOwner(ownerId);
             User user = createUser(authUser.getId());
@@ -257,6 +268,109 @@ class ReservationServiceTest {
         }
 
         @Test
+        void 특정_주차공간에_대한_예약_생성_시_parkingZone_의_상태가_UNAVAILABLE_일_경우_CANT_RESERVE_UNAVAILABLE_PARKING_ZONE_예외_처리() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+
+            AuthUser authUser = createAuthUser(userId);
+
+            ReservationRequest request = createRequest(parkingZoneId);
+
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+            ReflectionTestUtils.setField(parkingZone, "status", ParkingZoneStatus.UNAVAILABLE);
+
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> reservationService.createReservation(authUser, request));
+            assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.CANT_RESERVE_UNAVAILABLE_PARKING_ZONE);
+        }
+
+        @Test
+        void 특정_주차공간에_대한_예약_생성_시_예약_시작_시간이_OPEND_AT_이전일_경우_CANT_RESERVE_AT_CLOSE_TIME_예외_처리() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+
+            LocalDateTime startDateTime = RESERVATION_START_DATE_TIME.minusNanos(1);
+
+            AuthUser authUser = createAuthUser(userId);
+
+            ReservationRequest request = createRequest(parkingZoneId);
+            ReflectionTestUtils.setField(request, "startDateTime", startDateTime);
+
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> reservationService.createReservation(authUser, request));
+            assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
+        }
+
+        @Test
+        void 특정_주차공간에_대한_예약_생성_시_예약_종료_시간이_CLOSED_AT_이후일_경우_CANT_RESERVE_AT_CLOSE_TIME_예외_처리() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+
+            LocalDateTime endDateTime = RESERVATION_END_DATE_TIME.plusHours(1);
+
+            AuthUser authUser = createAuthUser(userId);
+
+            ReservationRequest request = createRequest(parkingZoneId);
+            ReflectionTestUtils.setField(request, "endDateTime", endDateTime);
+
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> reservationService.createReservation(authUser, request));
+            assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
+        }
+
+        @Test
         void 특정_주차공간에_대한_예약_생성_시_이미_해당_시간에_예약이_존재할_경우_ALREADY_RESERVED_예외_처리() {
             // given
             Long ownerId = 1L;
@@ -267,7 +381,6 @@ class ReservationServiceTest {
             AuthUser authUser = createAuthUser(userId);
 
             ReservationRequest request = createRequest(parkingZoneId);
-            ReflectionTestUtils.setField(request, "endDateTime", request.getStartDateTime().plusHours(1));
 
             User owner = createOwner(ownerId);
             User user = createUser(authUser.getId());
