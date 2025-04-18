@@ -7,21 +7,18 @@ import lombok.Getter;
 import java.util.List;
 
 @Getter
-public class KakaoGeocodeResponse {
-
+public class KakaoAddressResponse {
     private List<Document> documents;
 
-   @Getter
+    @Getter
     public static class Document {
+        private Address address;
+    }
+
+    @Getter
+    public static class Address {
 
         @JsonProperty("address_name")
-        private String address;
-
-        @JsonProperty("x")
-        private String longitude;
-
-        @JsonProperty("y")
-        private String latitude;
-
+        private String addressName;
     }
 }
