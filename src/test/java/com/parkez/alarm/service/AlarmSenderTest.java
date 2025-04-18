@@ -5,6 +5,7 @@ import com.parkez.alarm.domain.enums.AlarmChannel;
 import com.parkez.alarm.domain.enums.AlarmTargetType;
 import com.parkez.alarm.domain.enums.NotificationType;
 import com.parkez.alarm.domain.repository.AlarmRepository;
+import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +37,7 @@ class AlarmSenderTest {
     }
 
     @Test
-    void 이메일알람_전송_성공시_sent가_true로_업데이트된다() {
+    void 이메일알람_전송_성공시_sent가_true로_업데이트된다() throws MessagingException {
         // given
         Alarm emailAlarm = Alarm.createEmailAlarm(1L, 1L, AlarmTargetType.RESERVATION, "test@email.com", "제목", "본문", NotificationType.UPCOMING);
 
@@ -52,7 +53,7 @@ class AlarmSenderTest {
     }
 
     @Test
-    void 이메일알람_전송_실패시_예외처리_및_failReason_설정된다() {
+    void 이메일알람_전송_실패시_예외처리_및_failReason_설정된다() throws MessagingException {
         // given
         Alarm failedAlarm = Alarm.createEmailAlarm(1L, 1L, AlarmTargetType.RESERVATION, "fail@email.com", "제목", "본문", NotificationType.UPCOMING);
         ReflectionTestUtils.setField(failedAlarm, "channel", AlarmChannel.EMAIL);
