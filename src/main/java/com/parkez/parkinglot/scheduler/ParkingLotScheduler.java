@@ -11,7 +11,7 @@ public class ParkingLotScheduler {
 
     private final ParkingLotPublicDataService parkingLotPublicDataService;
 
-    @Scheduled(fixedRate = 300000, initialDelay = 10000)
+    @Scheduled(fixedDelay = 300000, initialDelay = 10000)
     public void getPublicData() {
         parkingLotPublicDataService.fetchAndSavePublicData();
     }

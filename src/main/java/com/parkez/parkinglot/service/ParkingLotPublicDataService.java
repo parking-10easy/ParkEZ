@@ -63,7 +63,7 @@ public class ParkingLotPublicDataService {
 
     private static final String description = "공공데이터로 등록한 주차장입니다.";
     private int currentPage = 1;
-    private final int perPage = 100;
+    private final int perPage = 10;
 
     @Value("${parking-lot.public-data.admin-email}")
     private String adminEmail;
@@ -105,7 +105,7 @@ public class ParkingLotPublicDataService {
                 bulkInsertImages(parkingLots);
                 insertedCount = parkingLots.size();
             } catch (DataIntegrityViolationException | DuplicateKeyException e) {
-                log.warn("중복된 위경도 주차장이 있어 일부 저장되지 않았습니다: {}", e.getMessage());
+                log.warn("중복된 위/경도를 가진 주차장이 있어 일부 저장되지 않았습니다: {}", e.getMessage());
             }
 
             long end = System.currentTimeMillis();
