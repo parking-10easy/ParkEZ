@@ -19,27 +19,32 @@ import com.parkez.user.exception.UserErrorCode;
 @RequiredArgsConstructor
 public class UserReader {
 
-	private final UserRepository userRepository;
+    private final UserRepository userRepository;
 
-	public boolean existsUser(String email, UserRole role, LoginType loginType) {
-		return userRepository.existsByEmailAndRoleAndLoginType(email,role, loginType);
-	}
+    public boolean existsUser(String email, UserRole role, LoginType loginType) {
+        return userRepository.existsByEmailAndRoleAndLoginType(email, role, loginType);
+    }
 
-	public User getActiveUser(String email, UserRole role, LoginType loginType) {
-		return userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(email, role, loginType).orElseThrow(
-			() -> new ParkingEasyException(UserErrorCode.EMAIL_NOT_FOUND)
-		);
-	}
+    public User getActiveUser(String email, UserRole role, LoginType loginType) {
+        return userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(email, role, loginType).orElseThrow(
+                () -> new ParkingEasyException(UserErrorCode.EMAIL_NOT_FOUND)
+        );
+    }
 
-	public User getActiveUserById(Long id) {
-		return userRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(
-			() -> new ParkingEasyException(UserErrorCode.USER_NOT_FOUND)
-		);
+    public User getActiveUserById(Long id) {
+        return userRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(
+                () -> new ParkingEasyException(UserErrorCode.USER_NOT_FOUND)
+        );
 
-	}
+    }
 
-	public Optional<User> findActiveUser(String email, UserRole role, LoginType loginType) {
-		return userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(email, role,loginType);
-	}
+    public Optional<User> findActiveUser(String email, UserRole role, LoginType loginType) {
+        return userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(email, role, loginType);
+    }
 
+    public User getUserByEmailAndRole(String email, UserRole role) {
+        return userRepository.findByEmailAndRoleAndDeletedAtIsNull(email, role).orElseThrow(
+                () -> new ParkingEasyException(UserErrorCode.USER_NOT_FOUND)
+        );
+    }
 }

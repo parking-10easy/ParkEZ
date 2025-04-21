@@ -121,4 +121,12 @@ public class Reservation extends BaseEntity {
     public boolean isAfter(LocalDateTime cancelLimitHour, LocalDateTime now) {
         return now.isAfter(cancelLimitHour);
     }
+
+    public String getParkingZoneName() {
+        return parkingZone.getName();
+    }
+
+    public String getUserEmail() {
+        return user.getEmail();
+    }
 }

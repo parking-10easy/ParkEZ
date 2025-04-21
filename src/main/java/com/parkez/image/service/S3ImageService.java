@@ -1,4 +1,4 @@
-package com.parkez.image;
+package com.parkez.image.service;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.image.config.S3Properties;
@@ -36,6 +36,8 @@ public class S3ImageService implements ImageService {
 
     private final String bucket;
 
+    private static final int MAX_IMAGE_UPLOAD_COUNT = 5;
+
     public S3ImageService(S3Client s3Client, S3Properties s3Properties) {
         this.s3Client = s3Client;
         this.region = s3Properties.getRegion();
@@ -47,6 +49,10 @@ public class S3ImageService implements ImageService {
 
         if(files == null || files.isEmpty()) {
             throw new ParkingEasyException(ImageErrorCode.IMAGE_IS_NULL);
+        }
+
+        if(files.size() > MAX_IMAGE_UPLOAD_COUNT) {
+            throw new ParkingEasyException(ImageErrorCode.EXCEED_IMAGE_UPLOAD_LIMIT);
         }
 
         List<String> imageUrls = new ArrayList<>();

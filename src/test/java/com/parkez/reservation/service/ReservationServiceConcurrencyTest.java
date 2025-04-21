@@ -25,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -51,6 +52,11 @@ class ReservationServiceConcurrencyTest {
     private ReservationRepository reservationRepository;
     @Autowired
     private ReservationService reservationService;
+
+    private static final LocalTime OPENED_AT = LocalTime.of(9, 0, 0);
+    private static final LocalTime CLOSED_AT = LocalTime.of(21, 0, 0);
+    private static final LocalDateTime RESERVATION_START_DATE_TIME = LocalDateTime.of(LocalDate.now().plusDays(1), OPENED_AT);
+    private static final LocalDateTime RESERVATION_END_DATE_TIME = LocalDateTime.of(LocalDate.now().plusDays(1), CLOSED_AT);
 
     private User user;
     private ParkingZone parkingZone;
@@ -81,8 +87,8 @@ class ReservationServiceConcurrencyTest {
                 .name("테스트 주차장")
                 .address("서울시 강남구")
                 .pricePerHour(BigDecimal.valueOf(2000))
-                .openedAt(LocalTime.of(9, 0))
-                .closedAt(LocalTime.of(23, 0))
+                .openedAt(OPENED_AT)
+                .closedAt(CLOSED_AT)
                 .description("설명")
                 .quantity(10)
                 .chargeType(ChargeType.PAID)
@@ -96,13 +102,11 @@ class ReservationServiceConcurrencyTest {
     }
 
     private ReservationRequest createRequest() {
-        LocalDateTime start = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
-        LocalDateTime end = start.plusHours(1);
 
         ReservationRequest request = new ReservationRequest();
         ReflectionTestUtils.setField(request, "parkingZoneId", parkingZone.getId());
-        ReflectionTestUtils.setField(request, "startDateTime", start);
-        ReflectionTestUtils.setField(request, "endDateTime", end);
+        ReflectionTestUtils.setField(request, "startDateTime", RESERVATION_START_DATE_TIME);
+        ReflectionTestUtils.setField(request, "endDateTime", RESERVATION_END_DATE_TIME);
 
         return request;
     }

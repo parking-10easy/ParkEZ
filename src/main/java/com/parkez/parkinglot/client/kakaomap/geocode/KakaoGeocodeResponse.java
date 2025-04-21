@@ -11,10 +11,11 @@ public class KakaoGeocodeResponse {
 
     private List<Document> documents;
 
-    @Data
+   @Getter
     public static class Document {
 
-        private String address_name;
+        @JsonProperty("address_name")
+        private String address;
 
         @JsonProperty("x")
         private String longitude;

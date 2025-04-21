@@ -1,5 +1,8 @@
 package com.parkez.payment.service;
 
+import com.parkez.alarm.domain.enums.NotificationType;
+import com.parkez.alarm.service.AlarmSender;
+import com.parkez.alarm.service.AlarmService;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
@@ -16,7 +19,10 @@ import com.parkez.payment.dto.response.PaymentInfoResponse;
 import com.parkez.payment.dto.response.PaymentResponse;
 import com.parkez.payment.exception.PaymentErrorCode;
 import com.parkez.reservation.domain.entity.Reservation;
+import com.parkez.reservation.domain.enums.ReservationStatus;
+import com.parkez.reservation.dto.request.ReservationCancelRequest;
 import com.parkez.reservation.dto.request.ReservationRequest;
+import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.reservation.service.ReservationReader;
 import com.parkez.reservation.service.ReservationWriter;
 import com.parkez.user.domain.entity.User;
@@ -28,23 +34,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -70,7 +70,13 @@ public class PaymentServiceTest {
     private ReservationWriter reservationWriter;
 
     @Mock
-    private WebClient tossWebClient;
+    private TossPaymentService tossPaymentService;
+
+    @Mock
+    private AlarmService alarmService;
+
+    @Mock
+    private AlarmSender alarmSender;
 
     private static AuthUser createAuthUser(Long id) {
         return AuthUser.builder()
@@ -204,7 +210,10 @@ public class PaymentServiceTest {
                     .containsExactly(1L, price, orderId);
 
         }
+    }
 
+    @Nested
+    class checkReservationTimeout{
         @Test
         void 예약_후_결제_생성할_때_시간초과시_PAYMENT_TIME_OUT_예외발생(){
             // given
@@ -215,6 +224,7 @@ public class PaymentServiceTest {
             AuthUser authUser = createAuthUser(userId);
             User user = createUser(userId);
             Reservation reservation = mock(Reservation.class);
+            given(reservation.getStatus()).willReturn(ReservationStatus.PENDING);
             given(userReader.getActiveUserById(userId)).willReturn(user);
             given(reservationReader.findMyReservation(userId, reservationId)).willReturn(reservation);
             given(reservation.isTimeout(any(), anyLong())).willReturn(true);
@@ -227,6 +237,10 @@ public class PaymentServiceTest {
 
             assertEquals(PaymentErrorCode.PAYMENT_TIME_OUT, exception.getErrorCode());
         }
+    }
+
+    @Nested
+    class validatePaymentStatus{
 
         @Test
         void 결제_생성할_때_예약_상태가_PENDING이면_PAYMENT_IN_PROGRESS_예외_발생(){
@@ -276,8 +290,74 @@ public class PaymentServiceTest {
             assertEquals(PaymentErrorCode.PAYMENT_CANCELED, exception.getErrorCode());
 
         }
-
     }
+
+    @Nested
+    class validateReservationStatus {
+
+        @Test
+        void 예약상태가_CONFIRMED이면_ALREADY_APPROVED_예외_발생() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+            given(reservation.getStatus()).willReturn(ReservationStatus.CONFIRMED);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> ReflectionTestUtils.invokeMethod(paymentService, "validateReservationStatus", reservation));
+
+            assertEquals(PaymentErrorCode.PAYMENT_ALREADY_APPROVED, exception.getErrorCode());
+        }
+
+        @Test
+        void 예약상태가_COMPLETED이면_RESERVATION_ALREADY_USED_예외_발생() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+            given(reservation.getStatus()).willReturn(ReservationStatus.COMPLETED);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> ReflectionTestUtils.invokeMethod(paymentService, "validateReservationStatus", reservation));
+
+            assertEquals(ReservationErrorCode.RESERVATION_ALREADY_USED, exception.getErrorCode());
+        }
+
+        @Test
+        void 예약상태가_CANCELED이면_RESERVATION_ALREADY_CANCELED_예외_발생() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+            given(reservation.getStatus()).willReturn(ReservationStatus.CANCELED);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> ReflectionTestUtils.invokeMethod(paymentService, "validateReservationStatus", reservation));
+
+            assertEquals(ReservationErrorCode.RESERVATION_ALREADY_CANCELED, exception.getErrorCode());
+        }
+
+        @Test
+        void 예약상태가_PAYMENT_EXPIRED이면_PAYMENT_TIME_OUT_예외_발생() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+            given(reservation.getStatus()).willReturn(ReservationStatus.PAYMENT_EXPIRED);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> ReflectionTestUtils.invokeMethod(paymentService, "validateReservationStatus", reservation));
+
+            assertEquals(PaymentErrorCode.PAYMENT_TIME_OUT, exception.getErrorCode());
+        }
+
+        @Test
+        void 예약상태가_PENDING이면_예외_발생하지_않는다() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+            given(reservation.getStatus()).willReturn(ReservationStatus.PENDING);
+
+            // when & then
+            assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(paymentService, "validateReservationStatus", reservation));
+        }
+    }
+
 
     @Nested
     class confirmPayment {
@@ -327,18 +407,8 @@ public class PaymentServiceTest {
             ReflectionTestUtils.setField(confirmResponse, "amount", amount);
 
             given(paymentReader.getPayment(orderId)).willReturn(payment);
+            given(tossPaymentService.confirmPayment(request)).willReturn(confirmResponse);
             given(reservationReader.findMyReservation(userId, reservationId)).willReturn(reservation);
-
-            WebClient.RequestBodyUriSpec uriSpec = mock(WebClient.RequestBodyUriSpec.class);
-            WebClient.RequestBodySpec bodySpec = mock(WebClient.RequestBodySpec.class);
-            WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
-
-            doReturn(uriSpec).when(tossWebClient).post();
-            doReturn(bodySpec).when(uriSpec).uri("/confirm");
-            doReturn(bodySpec).when(bodySpec).bodyValue(any());
-            doReturn(responseSpec).when(bodySpec).retrieve();
-            doReturn(responseSpec).when(responseSpec).onStatus(any(), any());
-            doReturn(Mono.just(confirmResponse)).when(responseSpec).bodyToMono(PaymentConfirmResponse.class);
 
             // when
             PaymentConfirmResponse result = paymentService.confirmPayment(request);
@@ -349,92 +419,6 @@ public class PaymentServiceTest {
             verify(paymentWriter).savePayment(payment, confirmResponse);
             verify(reservationWriter).updateStatusConfirm(reservation);
 
-        }
-
-        @Test
-        void 결제승인요청시_4xx응답이_반환되면_예외_발생() {
-            // given
-            String orderId = "fail-order-id";
-            PaymentConfirmRequest request = new PaymentConfirmRequest();
-            ReflectionTestUtils.setField(request, "orderId", orderId);
-            ReflectionTestUtils.setField(request, "amount", 5000);
-            ReflectionTestUtils.setField(request, "paymentKey", "test-key");
-
-            Payment payment = mock(Payment.class);
-            given(paymentReader.getPayment(orderId)).willReturn(payment);
-
-            WebClient.RequestBodyUriSpec uriSpec = mock(WebClient.RequestBodyUriSpec.class);
-            WebClient.RequestBodySpec bodySpec = mock(WebClient.RequestBodySpec.class);
-            WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
-
-            // WebClient 체인 mock
-            doReturn(uriSpec).when(tossWebClient).post();
-            doReturn(bodySpec).when(uriSpec).uri("/confirm");
-            doReturn(bodySpec).when(bodySpec).bodyValue(any());
-            doReturn(responseSpec).when(bodySpec).retrieve();
-
-            doAnswer(invocation -> {
-                Predicate<HttpStatusCode> predicate = invocation.getArgument(0);
-                Function<ClientResponse, Mono<? extends Throwable>> handler = invocation.getArgument(1);
-
-                ClientResponse mockResponse = mock(ClientResponse.class);
-                when(mockResponse.bodyToMono(String.class)).thenReturn(Mono.just("테스트 에러 메시지"));
-
-                return handler.apply(mockResponse).block();
-
-            }).when(responseSpec).onStatus(any(), any());
-
-            // when & then
-            RuntimeException exception = assertThrows(RuntimeException.class,
-                    () -> paymentService.confirmPayment(request));
-
-            assertThat(exception.getMessage()).contains("결제 승인 실패 (4xx)");
-
-
-        }
-
-        @Test
-        void 결제승인요청시_5xx응답이_반환되면_예외_발생() {
-            // given
-            String orderId = "fail-order-id-500";
-            PaymentConfirmRequest request = new PaymentConfirmRequest();
-            ReflectionTestUtils.setField(request, "orderId", orderId);
-            ReflectionTestUtils.setField(request, "amount", 5000);
-            ReflectionTestUtils.setField(request, "paymentKey", "test-key");
-
-            Payment payment = mock(Payment.class);
-            given(paymentReader.getPayment(orderId)).willReturn(payment);
-
-            WebClient.RequestBodyUriSpec uriSpec = mock(WebClient.RequestBodyUriSpec.class);
-            WebClient.RequestBodySpec bodySpec = mock(WebClient.RequestBodySpec.class);
-            WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
-
-            // WebClient 체인 mock
-            doReturn(uriSpec).when(tossWebClient).post();
-            doReturn(bodySpec).when(uriSpec).uri("/confirm");
-            doReturn(bodySpec).when(bodySpec).bodyValue(any());
-            doReturn(responseSpec).when(bodySpec).retrieve();
-
-            doAnswer(invocation -> {
-                Predicate<HttpStatusCode> predicate = invocation.getArgument(0);
-                Function<ClientResponse, Mono<? extends Throwable>> handler = invocation.getArgument(1);
-
-                // 5xx 응답 조건 만족시키도록 HttpStatus.INTERNAL_SERVER_ERROR 사용
-                if (predicate.test(HttpStatus.INTERNAL_SERVER_ERROR)) {
-                    ClientResponse mockResponse = mock(ClientResponse.class);
-                    when(mockResponse.bodyToMono(String.class)).thenReturn(Mono.just("서버 에러 발생"));
-
-                    return handler.apply(mockResponse).block(); // 예외 던지기
-                }
-
-                return responseSpec; // 체인 유지
-            }).when(responseSpec).onStatus(any(), any());
-
-            // when & then
-            RuntimeException exception = assertThrows(RuntimeException.class,
-                    () -> paymentService.confirmPayment(request));
-
-            assertThat(exception.getMessage()).contains("결제 승인 실패 (5xx)");
         }
 
     }
@@ -600,11 +584,112 @@ public class PaymentServiceTest {
             // then
             verify(paymentWriter).cancelPayment(payment);
             verify(reservationWriter).cancel(reservation);
+            verify(alarmService).createPaymentAlarms(reservation, NotificationType.FAILED);
+            verify(alarmSender).processAlarms();
         }
-
-
-
     }
 
+    @Nested
+    class cancelPayment {
 
+        @Test
+        void 결제정보가_없으면_PAYMENT_NOT_FOUND_예외발생() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+            given(paymentReader.findByReservation(reservation)).willReturn(Optional.empty());
+            ReservationCancelRequest request = mock(ReservationCancelRequest.class);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> paymentService.cancelPayment(reservation, request));
+
+            assertEquals(PaymentErrorCode.PAYMENT_NOT_FOUND, exception.getErrorCode());
+        }
+
+        @Test
+        void 결제상태가_CANCELED면_PAYMENT_CANCELED_예외발생() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+            Payment payment = mock(Payment.class);
+            given(payment.getPaymentStatus()).willReturn(PaymentStatus.CANCELED);
+            given(paymentReader.findByReservation(reservation)).willReturn(Optional.of(payment));
+            ReservationCancelRequest request = mock(ReservationCancelRequest.class);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> paymentService.cancelPayment(reservation, request));
+
+            assertEquals(PaymentErrorCode.PAYMENT_CANCELED, exception.getErrorCode());
+        }
+
+        @Test
+        void 결제상태가_PENDING이면_cancelPayment_정상적으로_호출() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+            Payment payment = mock(Payment.class);
+            given(payment.getPaymentStatus()).willReturn(PaymentStatus.PENDING);
+            given(paymentReader.findByReservation(reservation)).willReturn(Optional.of(payment));
+            ReservationCancelRequest request = mock(ReservationCancelRequest.class);
+
+            // when
+            paymentService.cancelPayment(reservation, request);
+
+            // then
+            verify(paymentWriter).cancelPayment(payment);
+            verifyNoInteractions(tossPaymentService);
+        }
+
+        @Test
+        void 결제상태가_APPROVED이면_Toss_cancel_정상적으로_호출_후_cancelPayment_정상적으로_호출() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+            Payment payment = mock(Payment.class);
+            given(payment.getPaymentStatus()).willReturn(PaymentStatus.APPROVED);
+            given(payment.getPaymentKey()).willReturn("payment-key-123");
+            given(paymentReader.findByReservation(reservation)).willReturn(Optional.of(payment));
+
+            ReservationCancelRequest request = mock(ReservationCancelRequest.class);
+
+            // when
+            paymentService.cancelPayment(reservation, request);
+
+            // then
+            verify(tossPaymentService).cancelPayment("payment-key-123", request);
+            verify(paymentWriter).cancelPayment(payment);
+        }
+    }
+
+    @Nested
+    class ExpirePayment {
+
+        @Test
+        void 만료된_PENDING_결제가_존재하면_자동으로_취소하고_예약도_만료처리() {
+            // given
+            Payment payment = mock(Payment.class);
+            Reservation reservation = mock(Reservation.class);
+
+            when(payment.getReservation()).thenReturn(reservation);
+            when(paymentReader.findPendingPayments(any(LocalDateTime.class))).thenReturn(List.of(payment));
+
+            // when
+            paymentService.expirePayment();
+
+            // then
+            verify(paymentWriter).cancelPayment(payment);
+            verify(reservationWriter).expirePaymentTimeout(reservation);
+        }
+
+        @Test
+        void 만료된_PENDING_결제가_없으면_아무_처리도_하지_않는다() {
+            // given
+            when(paymentReader.findPendingPayments(any(LocalDateTime.class))).thenReturn(Collections.emptyList());
+
+            // when
+            paymentService.expirePayment();
+
+            // then
+            verify(paymentWriter, never()).cancelPayment(any());
+            verify(reservationWriter, never()).expirePaymentTimeout(any());
+        }
+    }
 }

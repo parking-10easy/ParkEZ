@@ -4,10 +4,13 @@ import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import com.parkez.parkingzone.service.ParkingZoneReader;
+import com.parkez.payment.service.PaymentService;
 import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
+import com.parkez.reservation.dto.request.ReservationCancelRequest;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.dto.response.ReservationResponse;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
@@ -22,6 +25,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -34,8 +38,10 @@ public class ReservationService {
     private final UserReader userReader;
     private final ParkingZoneReader parkingZoneReader;
     private final ReviewReader reviewReader;
+    private final PaymentService paymentService;
 
     private static final long CANCEL_LIMIT_HOURS = 1L;
+    private static final long EXPIRATION_TIME = 10L;
 
     public ReservationResponse createReservation(AuthUser authUser, ReservationRequest request) {
 
@@ -43,11 +49,20 @@ public class ReservationService {
 
             User user = userReader.getActiveUserById(authUser.getId());
             ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
-            System.out.println(parkingZone);
 
             // 예약 날짜 및 시간 입력 오류 예외
-            if (!request.getStartDateTime().isBefore(request.getEndDateTime())) {
+            if (!validateRequestTime(request)) {
                 throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
+            }
+
+            // parkingZone 의 상태가 AVAILABLE 일 경우에만 예약 가능
+            if (!parkingZone.getStatus().equals(ParkingZoneStatus.AVAILABLE)) {
+                throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_UNAVAILABLE_PARKING_ZONE);
+            }
+
+            // parkingLot 의 영업 시간 내에만 예약 가능
+            if (!parkingZone.isOpened(request.getStartDateTime(), request.getEndDateTime())) {
+                throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
             }
 
             // 이미 해당 시간에 예약이 존재할 경우
@@ -117,7 +132,7 @@ public class ReservationService {
         reservationWriter.complete(reservation);
     }
 
-    public void cancelReservation(AuthUser authUser, Long reservationId) {
+    public void cancelReservation(AuthUser authUser, Long reservationId, ReservationCancelRequest request) {
 
         Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
@@ -132,6 +147,22 @@ public class ReservationService {
             throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
         }
 
+        paymentService.cancelPayment(reservation, request);
+
         reservationWriter.cancel(reservation);
+    }
+
+    public void expireReservation() {
+        LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(EXPIRATION_TIME);
+        reservationWriter.expire(expiredTime);
+    }
+
+    public boolean validateRequestTime (ReservationRequest request) {
+        LocalDateTime startDateTime = request.getStartDateTime();
+        LocalDateTime endDateTime = request.getEndDateTime();
+
+        return startDateTime.isBefore(endDateTime)
+                && startDateTime.isAfter(LocalDateTime.now())
+                && startDateTime.toLocalDate().equals(endDateTime.toLocalDate());
     }
 }

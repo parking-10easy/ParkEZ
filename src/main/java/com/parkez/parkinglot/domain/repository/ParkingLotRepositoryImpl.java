@@ -3,7 +3,6 @@ package com.parkez.parkinglot.domain.repository;
 import com.parkez.parkinglot.dto.aggregation.ParkingLotAggregation;
 import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
-import com.parkez.review.domain.repository.ReviewRepository;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -39,7 +38,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
 
         List<ParkingLotSearchResponse> dtoList = jpaQueryFactory
                 .select(Projections.constructor(ParkingLotSearchResponse.class,
-                        parkingLot.id,
+                        parkingLot.id.min(),
                         parkingLot.name,
                         parkingLot.address,
                         parkingLot.openedAt,
@@ -58,7 +57,17 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                         parkingLot.address.isNotEmpty(),
                         notDeleted()
                 )
-                .groupBy(parkingLot.id)
+                .groupBy(
+                        parkingLot.name,
+                        parkingLot.address,
+                        parkingLot.openedAt,
+                        parkingLot.closedAt,
+                        parkingLot.pricePerHour,
+                        parkingLot.quantity,
+                        parkingLot.chargeType,
+                        parkingLot.sourceType,
+                        parkingLot.status
+                )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -66,6 +75,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
         // page 쿼리
         JPAQuery<Long> countQuery = jpaQueryFactory
                 .select(parkingLot.count())
+                .distinct()
                 .from(parkingLot)
                 .where(
                         nameContains(name),
@@ -121,7 +131,9 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
                         parkingLot.owner.id.eq(userId),
                         notDeleted()
                 )
-                .groupBy(parkingLot.id)
+                .groupBy(
+                        parkingLot.id
+                )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -129,6 +141,7 @@ public class ParkingLotRepositoryImpl implements ParkingLotQueryDslRepository {
         // page 쿼리
         JPAQuery<Long> countQuery = jpaQueryFactory
                 .select(parkingLot.count())
+                .distinct()
                 .from(parkingLot)
                 .where(
                         parkingLot.owner.id.eq(userId),

@@ -3,6 +3,7 @@ package com.parkez.reservation.service;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.entity.Reservation;
+import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.domain.repository.ReservationRepository;
 import com.parkez.reservation.dto.response.ReservationWithReviewDto;
 import com.parkez.reservation.exception.ReservationErrorCode;
@@ -18,6 +19,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,8 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationReaderTest {
@@ -216,4 +218,41 @@ class ReservationReaderTest {
         }
     }
 
+    @Nested
+    class FindReservationsForAlarm {
+        @Test
+        void 예약_만료_10분전_알림대상_조회() {
+            // given
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime tenMinLater = now.plusMinutes(10);
+
+            when(reservationRepository.findConfirmedReservationsBetween(
+                    ReservationStatus.CONFIRMED, now, tenMinLater))
+                    .thenReturn(Collections.emptyList());
+
+            // when
+            var result = reservationReader.findUpcomingReservations(now, tenMinLater);
+
+            // then
+            verify(reservationRepository).findConfirmedReservationsBetween(ReservationStatus.CONFIRMED, now, tenMinLater);
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        void 예약_만료_알림대상_조회() {
+            // given
+            LocalDateTime now = LocalDateTime.now();
+
+            when(reservationRepository.findExpiredReservations(
+                    ReservationStatus.CONFIRMED, now))
+                    .thenReturn(Collections.emptyList());
+
+            // when
+            var result = reservationReader.findExpiredReservations(now);
+
+            // then
+            verify(reservationRepository).findExpiredReservations(ReservationStatus.CONFIRMED, now);
+            assertThat(result).isEmpty();
+        }
+    }
 }

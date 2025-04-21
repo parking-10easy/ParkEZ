@@ -12,13 +12,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentReaderTest {
@@ -77,5 +79,26 @@ class PaymentReaderTest {
             // then
             assertThat(result).isPresent().contains(payment);
         }
+    }
+
+    @Nested
+    class findPendingPayments{
+        @Test
+        void 만료기준시간_이전_Pending_결제들을_조회한다() {
+            // given
+            LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(10);
+            List<Payment> expectedPayments = List.of(mock(Payment.class));
+
+            when(paymentRepository.findPendingPaymentsToExpire(expiredTime))
+                    .thenReturn(expectedPayments);
+
+            // when
+            List<Payment> result = paymentReader.findPendingPayments(expiredTime);
+
+            // then
+            assertThat(result).isEqualTo(expectedPayments);
+            verify(paymentRepository).findPendingPaymentsToExpire(expiredTime);
+        }
+
     }
 }

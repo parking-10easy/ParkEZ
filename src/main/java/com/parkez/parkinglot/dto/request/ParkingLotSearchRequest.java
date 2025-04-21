@@ -14,10 +14,10 @@ public class ParkingLotSearchRequest {
     @Schema(description = "주차장 주소", example = "강남")
     private String address;
 
-    @Schema(description = "사용자 현재 위도", example = "35.4821524")
+    @Schema(description = "사용자 현재 위도", example = "37.499907900646")
     private Double userLatitude;
 
-    @Schema(description = "사용자 현재 경도", example = "129.4083465")
+    @Schema(description = "사용자 현재 경도", example = "127.03302069842")
     private Double userLongitude;
 
     @Schema(description = "검색 범위(미터)", example = "10000")
