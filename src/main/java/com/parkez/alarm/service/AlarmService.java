@@ -5,17 +5,17 @@ import com.parkez.alarm.domain.enums.AlarmChannel;
 import com.parkez.alarm.domain.enums.AlarmTargetType;
 import com.parkez.alarm.domain.enums.NotificationType;
 import com.parkez.alarm.domain.repository.AlarmRepository;
+import com.parkez.alarm.domain.repository.FcmDeviceRepository;
 import com.parkez.reservation.domain.entity.Reservation;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AlarmService {
 
     private final AlarmRepository alarmRepository;
+    private final FcmDeviceRepository fcmDeviceRepository;
 
     public void createReservationAlarms(Reservation reservation, NotificationType notificationType) {
         Long userId = reservation.getUserId();
@@ -27,12 +27,19 @@ public class AlarmService {
 
         // 이메일 알림 생성
         boolean emailExists = alarmRepository.existsAlarm(reservationId, AlarmTargetType.RESERVATION, notificationType, AlarmChannel.EMAIL);
-        if (emailExists) {
-            log.warn("이미 예약 이메일 알림 전송됨: reservationId={}, type={}", reservationId, notificationType);
-        } else {
+        if (!emailExists) {
             Alarm emailAlarm = Alarm.createEmailAlarm(userId, reservationId, AlarmTargetType.RESERVATION, reservation.getUserEmail(), title, message, notificationType);
             alarmRepository.save(emailAlarm);
         }
+
+        // FCM 알림 생성
+        fcmDeviceRepository.findFirstByUserId(userId).ifPresent(device -> {
+            boolean fcmExists = alarmRepository.existsAlarm(reservationId, AlarmTargetType.RESERVATION, notificationType, AlarmChannel.FCM);
+            if (!fcmExists) {
+                Alarm fcmAlarm = Alarm.createFcmAlarm(userId, reservationId, AlarmTargetType.RESERVATION, device.getToken(), title, message, notificationType);
+                alarmRepository.save(fcmAlarm);
+            }
+        });
     }
 
     public void createPaymentAlarms(Reservation reservation, NotificationType notificationType) {
@@ -45,11 +52,18 @@ public class AlarmService {
 
         // 이메일 알림 생성
         boolean emailExists = alarmRepository.existsAlarm(reservationId, AlarmTargetType.PAYMENT, notificationType, AlarmChannel.EMAIL);
-        if (emailExists) {
-            log.warn("이미 결제 이메일 알림 전송됨: reservationId={}, type={}", reservationId, notificationType);
-        } else {
+        if (!emailExists) {
             Alarm emailAlarm = Alarm.createEmailAlarm(userId, reservationId, AlarmTargetType.PAYMENT, reservation.getUserEmail(), title, message, notificationType);
             alarmRepository.save(emailAlarm);
         }
+
+        // FCM 알림 생성
+        fcmDeviceRepository.findFirstByUserId(userId).ifPresent(device -> {
+            boolean fcmExists = alarmRepository.existsAlarm(reservationId, AlarmTargetType.RESERVATION, notificationType, AlarmChannel.FCM);
+            if (!fcmExists) {
+                Alarm fcmAlarm = Alarm.createFcmAlarm(userId, reservationId, AlarmTargetType.PAYMENT, device.getToken(), title, message, notificationType);
+                alarmRepository.save(fcmAlarm);
+            }
+        });
     }
 }

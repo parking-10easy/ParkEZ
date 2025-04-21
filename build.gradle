@@ -88,9 +88,11 @@ dependencies {
     //actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-
     // JavaMailSender
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // FCM
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
 }
 
 clean {

@@ -62,6 +62,11 @@ public class SecurityConfig {
                                 .requestMatchers("/actuator/health").permitAll()
                                 .requestMatchers(SWAGGER_URI).permitAll()
                                 .requestMatchers("/toss-test/**").permitAll()
+                                .requestMatchers(
+                                        new AntPathRequestMatcher("/firebase-messaging-sw.js"),
+                                        new AntPathRequestMatcher("/favicon.ico"),
+                                        new AntPathRequestMatcher("/alarm/**")
+                                ).permitAll()
                                 .anyRequest().authenticated()
                 )
                 .build();

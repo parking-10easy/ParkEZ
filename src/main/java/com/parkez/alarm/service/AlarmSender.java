@@ -4,6 +4,7 @@ import com.parkez.alarm.domain.entity.Alarm;
 import com.parkez.alarm.domain.enums.AlarmChannel;
 import com.parkez.alarm.domain.repository.AlarmRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,12 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AlarmSender {
 
     private final AlarmRepository alarmRepository;
     private final EmailService emailService;
+    private final PushService pushService;
 
     @Value("${spring.mail.username}")
     private String fromMail;
@@ -36,11 +39,13 @@ public class AlarmSender {
                     );
                     alarm.updateSent(true);
                     alarm.updateSentAt(LocalDateTime.now());
+                } else if (alarm.getChannel() == AlarmChannel.FCM) {
+                    pushService.sendPush(alarm, alarm.getDeviceToken(), alarm.getTitle(), alarm.getMessage());
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
                 alarm.updateFailReason(e.getMessage());
+                log.error("알림 전송 실패: alarmId={}, reason={}", alarm.getId(), e.getMessage(), e);
             }
         }
     }
