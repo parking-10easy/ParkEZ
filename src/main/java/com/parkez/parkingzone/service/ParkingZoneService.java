@@ -34,6 +34,7 @@ public class ParkingZoneService {
 
     public ParkingZoneResponse createParkingZone(AuthUser authUser, ParkingZoneCreateRequest request) {
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser.getId(), request.getParkingLotId());
+        validateNotPublicData(parkingLot);
         return ParkingZoneResponse.from(parkingZoneWriter.createParkingZone(request.getName(), defaultImageUrl, parkingLot));
     }
 
@@ -72,6 +73,12 @@ public class ParkingZoneService {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         validateOwner(parkingZone, authUser.getId());
         parkingZoneWriter.deleteParkingZone(parkingZoneId, deletedAt);
+    }
+
+    private static void validateNotPublicData(ParkingLot parkingLot) {
+        if (parkingLot.isPublicData()){
+            throw new ParkingEasyException(ParkingZoneErrorCode.PUBLIC_DATA_CREATION_NOT_ALLOWED);
+        }
     }
 
     private void validateOwner(ParkingZone parkingZone, Long ownerId) {

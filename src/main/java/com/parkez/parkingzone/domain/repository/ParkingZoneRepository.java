@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface ParkingZoneRepository extends JpaRepository<ParkingZone, Long> {
@@ -47,4 +48,13 @@ public interface ParkingZoneRepository extends JpaRepository<ParkingZone, Long> 
             WHERE pz.id = :parkingZoneId
         """)
     void softDeleteById(@Param("parkingZoneId") Long parkingZoneId, @Param("deletedAt") LocalDateTime deletedAt);
+
+    @Query("""
+           SELECT pz FROM ParkingZone pz
+           JOIN pz.parkingLot pl
+           WHERE pz.parkingLot.id = :parkingLotId
+           AND pl.deletedAt IS NULL
+           AND pz.deletedAt IS NULL
+       """)
+    List<ParkingZone> findAllByParkingLotId(@Param("parkingLotId") Long parkingLotId);
 }

@@ -4,6 +4,7 @@ import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.domain.enums.SourceType;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
@@ -158,6 +159,23 @@ class ParkingZoneServiceTest {
             assertThatThrownBy(() -> parkingZoneService.createParkingZone(authUser, createRequest))
                 .isInstanceOf(ParkingEasyException.class)
                 .hasMessage(ParkingLotErrorCode.NOT_FOUND.getDefaultMessage());
+        }
+
+        @Test
+        void 주차공간_생성_공공데이터로_생성된_주차장의_주차공간_생성시_PUBLIC_DATA_CREATION_NOT_ALLOWED_예외가_발생한다() {
+            // given
+            AuthUser authUser = getAuthUser();
+            ParkingLot parkingLot = getParkingLot();
+            ParkingZoneCreateRequest createRequest = getCreateRequest();
+
+            ReflectionTestUtils.setField(parkingLot, "sourceType", SourceType.PUBLIC_DATA);
+            given(parkingLotReader.getOwnedParkingLot(authUser.getId(), createRequest.getParkingLotId()))
+                    .willReturn(parkingLot);
+
+            // when & then
+            assertThatThrownBy(() -> parkingZoneService.createParkingZone(authUser, createRequest))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasMessage(ParkingZoneErrorCode.PUBLIC_DATA_CREATION_NOT_ALLOWED.getDefaultMessage());
         }
     }
 

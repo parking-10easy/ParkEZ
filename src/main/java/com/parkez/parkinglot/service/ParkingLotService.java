@@ -18,6 +18,10 @@ import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
+import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
+import com.parkez.parkingzone.service.ParkingZoneReader;
+import com.parkez.parkingzone.service.ParkingZoneService;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +31,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -37,6 +42,7 @@ public class ParkingLotService {
     private final ParkingLotReader parkingLotReader;
     private final UserReader userReader;
     private final KakaoGeocodeClient kakaoGeocodeClient;
+    private final ParkingZoneReader parkingZoneReader;
 
     @Value("${parking-lot.default-image-url}")
     private String defaultParkingLotImageUrl;
@@ -123,6 +129,11 @@ public class ParkingLotService {
             throw new ParkingEasyException(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS_CHANGE);
         }
 
+        if (newStatus == ParkingLotStatus.TEMPORARILY_CLOSED) {
+            List<ParkingZone> parkingZones = parkingZoneReader.findAllByParkingLotId(parkingLotId);
+            parkingZones.forEach(zone -> zone.updateParkingZoneStatus(ParkingZoneStatus.UNAVAILABLE));
+        }
+
         parkingLot.updateStatus(newStatus);
     }
 
@@ -148,6 +159,13 @@ public class ParkingLotService {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
         parkingLot.updateStatus(ParkingLotStatus.CLOSED);
+
+        List<ParkingZone> parkingZones = parkingZoneReader.findAllByParkingLotId(parkingLotId);
+        parkingZones.forEach(zone -> {
+            zone.updateParkingZoneStatus(ParkingZoneStatus.UNAVAILABLE);
+            zone.updateDeletedAt(LocalDateTime.now());
+        });
+
         parkingLotWriter.deleteParkingLot(parkingLot);
     }
 
