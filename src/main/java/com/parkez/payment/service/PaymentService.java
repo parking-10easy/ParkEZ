@@ -172,6 +172,8 @@ public class PaymentService {
             paymentWriter.cancelPayment(payment);
         }
 
+        alarmService.createPaymentAlarms(reservation, NotificationType.CANCELED);
+        alarmSender.processAlarms();
     }
 
     public void expirePayment() {

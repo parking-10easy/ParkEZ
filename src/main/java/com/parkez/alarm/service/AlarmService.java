@@ -39,8 +39,9 @@ public class AlarmService {
         Long userId = reservation.getUserId();
         Long reservationId = reservation.getId();
 
-        String title = "[결제] " + reservation.getId() +"결제 실패";
-        String message = "결제가 실패했습니다.";
+        String title = "[결제] " + reservation.getId() +
+                (notificationType == NotificationType.CANCELED ? "번 예약 결제 취소" : "번 예약 결제 실패");
+        String message = notificationType == NotificationType.CANCELED ? "결제가 취소되었습니다." : "결제가 실패했습니다.";
 
         // 이메일 알림 생성
         boolean emailExists = alarmRepository.existsAlarm(reservationId, AlarmTargetType.PAYMENT, notificationType, AlarmChannel.EMAIL);
