@@ -21,7 +21,6 @@ import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import com.parkez.parkingzone.service.ParkingZoneReader;
-import com.parkez.parkingzone.service.ParkingZoneService;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -127,6 +126,11 @@ public class ParkingLotService {
 
         if (newStatus == ParkingLotStatus.CLOSED) {
             throw new ParkingEasyException(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS_CHANGE);
+        }
+
+        if (newStatus == ParkingLotStatus.OPEN) {
+            List<ParkingZone> parkingZones = parkingZoneReader.findAllByParkingLotId(parkingLotId);
+            parkingZones.forEach(zone -> zone.updateParkingZoneStatus(ParkingZoneStatus.AVAILABLE));
         }
 
         if (newStatus == ParkingLotStatus.TEMPORARILY_CLOSED) {

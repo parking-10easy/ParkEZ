@@ -63,6 +63,10 @@ public class ReservationReader {
         return reservationRepository.existsReservationByConditions(parkingZone, startDateTime, endDateTime, statusList);
     }
 
+    public boolean existsActiveReservationByParkingZoneId(Long parkingZoneId) {
+        return reservationRepository.existsActiveReservationByParkingZoneId(parkingZoneId);
+    }
+
     /* Alarm 도메인에서 필요한 메서드 - 예약 만료 10분 전 알림 대상 */
     public List<Reservation> findUpcomingReservations(LocalDateTime now, LocalDateTime tenMinutesLater) {
         return reservationRepository.findConfirmedReservationsBetween(ReservationStatus.CONFIRMED, now, tenMinutesLater);

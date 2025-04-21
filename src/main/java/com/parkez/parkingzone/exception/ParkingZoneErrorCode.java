@@ -17,8 +17,9 @@ public enum ParkingZoneErrorCode implements ErrorCode {
 
     // BAD_REQUEST
     INVALID_PARKING_ZONE_STATUS(HttpStatus.BAD_REQUEST, "PARKING_ZONE_003", "잘못된 주차공간 상태입니다."),
-    PUBLIC_DATA_CREATION_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "PARKING_ZONE_004", "공공 데이터는 주차공간 생성이 불가합니다.");
-
+    PUBLIC_DATA_CREATION_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "PARKING_ZONE_004", "공공 데이터는 주차공간 생성이 불가합니다."),
+    RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN(HttpStatus.BAD_REQUEST,"PARKING_ZONE_005","이미 예약이 존재하여 주차공간을 이용불가 처리 및 삭제할 수 없습니다.")
+    ;
     private final HttpStatus httpStatus;
     private final String code;
     private final String defaultMessage;

@@ -13,6 +13,7 @@ import com.parkez.parkingzone.dto.request.ParkingZoneUpdateNameRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
+import com.parkez.reservation.service.ReservationReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,7 @@ public class ParkingZoneService {
     private final ParkingZoneWriter parkingZoneWriter;
     private final ParkingZoneReader parkingZoneReader;
     private final ParkingLotReader parkingLotReader;
+    private final ReservationReader reservationReader;
 
     @Value("${parking-zone.default-image-url}")
     private String defaultImageUrl;
@@ -59,6 +61,9 @@ public class ParkingZoneService {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         ParkingZoneStatus newStatus = ParkingZoneStatus.from(request.getStatus());
         validateOwner(parkingZone, authUser.getId());
+        if (newStatus == ParkingZoneStatus.UNAVAILABLE && reservationReader.existsActiveReservationByParkingZoneId(parkingZoneId)){
+            throw new ParkingEasyException(ParkingZoneErrorCode.RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN);
+        }
         parkingZone.updateParkingZoneStatus(newStatus);
     }
 
@@ -72,6 +77,9 @@ public class ParkingZoneService {
     public void deleteParkingZone(AuthUser authUser, Long parkingZoneId, LocalDateTime deletedAt) {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         validateOwner(parkingZone, authUser.getId());
+        if (reservationReader.existsActiveReservationByParkingZoneId(parkingZoneId)){
+            throw new ParkingEasyException(ParkingZoneErrorCode.RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN);
+        }
         parkingZoneWriter.deleteParkingZone(parkingZoneId, deletedAt);
     }
 

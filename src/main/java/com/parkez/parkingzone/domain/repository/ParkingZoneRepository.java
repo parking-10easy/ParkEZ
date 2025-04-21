@@ -1,6 +1,7 @@
 package com.parkez.parkingzone.domain.repository;
 
 import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -44,10 +45,16 @@ public interface ParkingZoneRepository extends JpaRepository<ParkingZone, Long> 
 
     @Modifying
     @Query("""
-            UPDATE ParkingZone pz SET pz.deletedAt = :deletedAt
+            UPDATE ParkingZone pz 
+            SET pz.deletedAt = :deletedAt,
+                pz.status = :unavailableStatus
             WHERE pz.id = :parkingZoneId
-        """)
-    void softDeleteById(@Param("parkingZoneId") Long parkingZoneId, @Param("deletedAt") LocalDateTime deletedAt);
+    """)
+    void softDeleteById(
+            @Param("parkingZoneId") Long parkingZoneId,
+            @Param("deletedAt") LocalDateTime deletedAt,
+            @Param("unavailableStatus") ParkingZoneStatus unavailableStatus
+    );
 
     @Query("""
            SELECT pz FROM ParkingZone pz
