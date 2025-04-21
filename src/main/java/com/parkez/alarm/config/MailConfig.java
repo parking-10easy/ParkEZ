@@ -35,7 +35,7 @@ public class MailConfig {
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.debug", "true");
         props.put("mail.smtp.ssl.enable", "true");
-        props.put("mail.smtp.ssl.trust", "smtp.test.com");
+        props.put("mail.smtp.ssl.trust", "smtp.naver.com");
 
         return mailSender;
     }
