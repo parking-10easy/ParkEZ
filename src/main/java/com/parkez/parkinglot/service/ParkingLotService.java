@@ -2,6 +2,7 @@ package com.parkez.parkinglot.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.parkez.common.config.RedisConfig;
 import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
@@ -47,8 +48,6 @@ public class ParkingLotService {
     private final KakaoGeocodeClient kakaoGeocodeClient;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper redisObjectMapper;
-
-    private static final long CACHE_TTL = 5L;
 
     @Value("${parking-lot.default-image-url}")
     private String defaultParkingLotImageUrl;
@@ -104,6 +103,7 @@ public class ParkingLotService {
 
             } catch (IllegalArgumentException e) {
                 log.error("Redis 역직렬화 오류 : {}", e.getMessage());
+                redisTemplate.delete(redisKey);
             }
         } else {
             log.info("Redis cache miss for key : {}", redisKey);
@@ -115,7 +115,7 @@ public class ParkingLotService {
                 pageRequest.getPage(), pageRequest.getSize());
 
         // 캐시 저장
-        redisTemplate.opsForValue().set(redisKey, RestPage.from(page), Duration.ofMinutes(CACHE_TTL));
+        redisTemplate.opsForValue().set(redisKey, RestPage.from(page), RedisConfig.PARKING_LOT_SEARCH_TTL);
 
         return page;
     }
