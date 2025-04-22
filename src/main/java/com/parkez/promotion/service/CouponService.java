@@ -37,7 +37,7 @@ public class CouponService {
 		return CouponResponse.from(coupon);
 	}
 
-	private static void validateDiscountPolicy(DiscountType discountType, Integer discountValue) {
+	private void validateDiscountPolicy(DiscountType discountType, Integer discountValue) {
 		if (discountType == DiscountType.PERCENT) {
 			if (discountValue > MAX_PERCENT_DISCOUNT) {
 				throw new ParkingEasyException(INVALID_DISCOUNT_PERCENT_VALUE);
