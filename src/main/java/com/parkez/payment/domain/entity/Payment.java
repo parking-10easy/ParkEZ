@@ -54,8 +54,6 @@ public class Payment extends BaseEntity {
 
     private String paymentKey;
 
-    private int cardFee;
-
     private LocalDateTime approvedAt;
 
     private LocalDateTime canceledAt;
@@ -63,7 +61,7 @@ public class Payment extends BaseEntity {
     @Builder
     public Payment(User user, Reservation reservation,
                    PaymentType paymentType, PaymentStatus paymentStatus,
-                   String paymentKey, String orderId, int cardFee, LocalDateTime approvedAt, LocalDateTime canceledAt) {
+                   String paymentKey, String orderId, LocalDateTime approvedAt, LocalDateTime canceledAt) {
         this.user = user;
         this.reservation = reservation;
         this.price = reservation.getPrice();
@@ -71,7 +69,6 @@ public class Payment extends BaseEntity {
         this.paymentStatus = paymentStatus;
         this.paymentKey = paymentKey;
         this.orderId = orderId;
-        this.cardFee = cardFee;
         this.approvedAt = approvedAt;
         this.canceledAt = canceledAt;
     }

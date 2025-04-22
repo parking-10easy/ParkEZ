@@ -1,5 +1,6 @@
 package com.parkez.user.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
@@ -46,5 +47,9 @@ public class UserReader {
         return userRepository.findByEmailAndRoleAndDeletedAtIsNull(email, role).orElseThrow(
                 () -> new ParkingEasyException(UserErrorCode.USER_NOT_FOUND)
         );
+    }
+
+    public List<User> findAllOwners() {
+        return userRepository.findAllByRole(UserRole.ROLE_OWNER);
     }
 }

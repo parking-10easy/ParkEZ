@@ -72,4 +72,12 @@ public class ReservationReader {
     public List<Reservation> findExpiredReservations(LocalDateTime now) {
         return reservationRepository.findExpiredReservations(ReservationStatus.CONFIRMED, now);
     }
+
+    public Reservation findReservation(Long reservationId) {
+
+        return reservationRepository.findById(reservationId).orElseThrow(
+                () -> new ParkingEasyException(ReservationErrorCode.NOT_FOUND_RESERVATION)
+        );
+
+    }
 }
