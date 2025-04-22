@@ -60,7 +60,6 @@ public class NaverClient implements OAuthClient {
                                 })
                 )
                 .bodyToMono(NaverTokenResponse.class)
-                .doOnNext(response -> log.info("✅ Naver Access Token: {}", response.getAccessToken()))
                 .blockOptional()
                 .map(NaverTokenResponse::getAccessToken)
                 .orElseThrow(() -> new ParkingEasyException(AuthErrorCode.OAUTH_ACCESS_TOKEN_FAILED));
