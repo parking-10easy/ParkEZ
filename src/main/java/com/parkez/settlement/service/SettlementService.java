@@ -48,7 +48,7 @@ public class SettlementService {
 
         User owner = userReader.getActiveUserById(authUser.getId());
 
-        List<Payment> payments = paymentReader.findApprovedAndCompletedPayments(owner, yearMonth);
+        List<Payment> payments = paymentReader.findApprovedPaymentsWithCompletedReservations(owner, yearMonth);
 
         SettlementAmounts settlementAmounts = calculateSettlementAmounts(payments);
 
@@ -79,7 +79,7 @@ public class SettlementService {
         settlementReader.validateNotSettled(owner, month);
 
         // 결제 완료 + 예약 완료된 Payment 리스트 조회
-        List<Payment> payments = paymentReader.findApprovedAndCompletedPayments(owner, month);
+        List<Payment> payments = paymentReader.findApprovedPaymentsWithCompletedReservations(owner, month);
 
         SettlementAmounts settlementAmounts = calculateSettlementAmounts(payments);
 

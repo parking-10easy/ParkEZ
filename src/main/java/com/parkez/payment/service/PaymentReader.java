@@ -36,12 +36,11 @@ public class PaymentReader {
         return paymentRepository.findPendingPaymentsToExpire(expiredTime);
     }
 
-
     public Payment getApprovedPaymentWithCompletedReservation(User owner, Long reservationId) {
         return paymentRepository.getApprovedPaymentWithCompletedReservation(owner, reservationId);
     }
 
-    public List<Payment> findApprovedAndCompletedPayments(User owner, YearMonth month) {
-        return paymentRepository.findApprovedAndCompletedPayments(owner, month);
+    public List<Payment> findApprovedPaymentsWithCompletedReservations(User owner, YearMonth month) {
+        return paymentRepository.findApprovedPaymentsWithCompletedReservations(owner, month);
     }
 }

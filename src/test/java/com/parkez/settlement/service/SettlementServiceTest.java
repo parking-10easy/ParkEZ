@@ -61,7 +61,7 @@ public class SettlementServiceTest {
                     mock(Payment.class)
             );
 
-            when(paymentReader.findApprovedAndCompletedPayments(owner, month)).thenReturn(payments);
+            when(paymentReader.findApprovedPaymentsWithCompletedReservations(owner, month)).thenReturn(payments);
             when(payments.get(0).getPrice()).thenReturn(new BigDecimal("10000"));
             when(payments.get(1).getPrice()).thenReturn(new BigDecimal("5000"));
 
@@ -70,7 +70,7 @@ public class SettlementServiceTest {
 
             // then
             verify(settlementReader).validateNotSettled(owner, month);
-            verify(paymentReader).findApprovedAndCompletedPayments(owner, month);
+            verify(paymentReader).findApprovedPaymentsWithCompletedReservations(owner, month);
             verify(settlementWriter).writeMonthlySettlement(eq(owner), eq(month), eq(payments),
                     eq(new BigDecimal("15000")), any(BigDecimal.class), any(BigDecimal.class));
         }
@@ -149,7 +149,7 @@ public class SettlementServiceTest {
             when(p2.getPrice()).thenReturn(new BigDecimal("5000"));
 
             when(userReader.getActiveUserById(userId)).thenReturn(owner);
-            when(paymentReader.findApprovedAndCompletedPayments(owner, month)).thenReturn(List.of(p1, p2));
+            when(paymentReader.findApprovedPaymentsWithCompletedReservations(owner, month)).thenReturn(List.of(p1, p2));
 
             // when
             SettlementPreviewResponse response = settlementService.getPreview(authUser, month);

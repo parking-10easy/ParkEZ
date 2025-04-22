@@ -25,7 +25,7 @@ public class PaymentRepositoryImpl implements PaymentQueryDslRepository{
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<Payment> findApprovedAndCompletedPayments(User owner, YearMonth month) {
+    public List<Payment> findApprovedPaymentsWithCompletedReservations(User owner, YearMonth month) {
         LocalDateTime start = month.atDay(1).atStartOfDay();
         LocalDateTime end = month.atEndOfMonth().atTime(LocalTime.MAX);
 

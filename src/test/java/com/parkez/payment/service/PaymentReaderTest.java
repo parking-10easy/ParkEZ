@@ -132,10 +132,10 @@ class PaymentReaderTest {
             YearMonth month = YearMonth.of(2025, 4);
             List<Payment> payments = List.of(mock(Payment.class));
 
-            when(paymentRepository.findApprovedAndCompletedPayments(owner, month)).thenReturn(payments);
+            when(paymentRepository.findApprovedPaymentsWithCompletedReservations(owner, month)).thenReturn(payments);
 
             // when
-            List<Payment> result = paymentReader.findApprovedAndCompletedPayments(owner, month);
+            List<Payment> result = paymentReader.findApprovedPaymentsWithCompletedReservations(owner, month);
 
             // then
             assertThat(result).isEqualTo(payments);
