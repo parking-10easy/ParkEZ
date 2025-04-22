@@ -28,7 +28,6 @@ public class PaymentWriter {
                 .reservation(reservation)
                 .paymentStatus(PaymentStatus.PENDING)
                 .orderId(orderId)
-                .cardFee(0)
                 .build();
 
         return paymentRepository.save(payment);

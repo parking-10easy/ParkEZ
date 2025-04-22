@@ -5,6 +5,7 @@ import com.parkez.payment.domain.entity.Payment;
 import com.parkez.payment.domain.repository.PaymentRepository;
 import com.parkez.payment.exception.PaymentErrorCode;
 import com.parkez.reservation.domain.entity.Reservation;
+import com.parkez.user.domain.entity.User;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
@@ -100,5 +102,43 @@ class PaymentReaderTest {
             verify(paymentRepository).findPendingPaymentsToExpire(expiredTime);
         }
 
+    }
+
+    @Nested
+    class getApprovedPaymentWithCompletedReservation {
+        @Test
+        void 완료된_예약에_대한_결제_정보를_조회한다() {
+            // given
+            User owner = mock(User.class);
+            Long reservationId = 1L;
+            Payment payment = mock(Payment.class);
+
+            when(paymentRepository.getApprovedPaymentWithCompletedReservation(owner, reservationId)).thenReturn(payment);
+
+            // when
+            Payment result = paymentReader.getApprovedPaymentWithCompletedReservation(owner, reservationId);
+
+            // then
+            assertThat(result).isEqualTo(payment);
+        }
+    }
+
+    @Nested
+    class findApprovedAndCompletedPayments {
+        @Test
+        void 특정_월의_결제완료_예약완료_내역을_조회한다() {
+            // given
+            User owner = mock(User.class);
+            YearMonth month = YearMonth.of(2025, 4);
+            List<Payment> payments = List.of(mock(Payment.class));
+
+            when(paymentRepository.findApprovedPaymentsWithCompletedReservations(owner, month)).thenReturn(payments);
+
+            // when
+            List<Payment> result = paymentReader.findApprovedPaymentsWithCompletedReservations(owner, month);
+
+            // then
+            assertThat(result).isEqualTo(payments);
+        }
     }
 }
