@@ -11,7 +11,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 
 import static org.mockito.Mockito.*;
 
-public class EmailServiceTest {
+public class SmtpEmailServiceTest {
 
     @Mock
     private JavaMailSender javaMailSender;
@@ -20,7 +20,7 @@ public class EmailServiceTest {
     private MimeMessage mimeMessage;
 
     @InjectMocks
-    private EmailService emailService;
+    private SmtpEmailService smtpEmailService;
 
     @BeforeEach
     void setUp() {
@@ -31,7 +31,7 @@ public class EmailServiceTest {
     @Test
     void 이메일전송_성공시_send가_호출된다() throws MessagingException {
         // when
-        emailService.sendEmail("to@email.com", "from@email.com", "제목", "본문");
+        smtpEmailService.sendEmail("to@email.com", "from@email.com", "제목", "본문");
 
         // then
         verify(javaMailSender).createMimeMessage();

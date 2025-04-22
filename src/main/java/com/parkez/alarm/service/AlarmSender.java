@@ -5,7 +5,6 @@ import com.parkez.alarm.domain.enums.AlarmChannel;
 import com.parkez.alarm.domain.repository.AlarmRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,11 +17,13 @@ import java.util.List;
 public class AlarmSender {
 
     private final AlarmRepository alarmRepository;
-    private final EmailService emailService;
+    private final SmtpEmailService smtpEmailService;
     private final PushService pushService;
+    private final SesEmailService sesEmailService;
 
-    @Value("${spring.mail.username}")
-    private String fromMail;
+    // SMTP 방식
+    /* @Value("${spring.mail.username}")
+    private String fromMail;*/
 
     @Transactional
     public void processAlarms() {
@@ -31,9 +32,16 @@ public class AlarmSender {
         for (Alarm alarm : pendingAlarms) {
             try {
                 if (alarm.getChannel() == AlarmChannel.EMAIL) {
-                    emailService.sendEmail(
+                    // SMTP 방식
+                    /* smtpEmailService.sendEmail(
                             alarm.getEmailAddress(),
                             fromMail,
+                            alarm.getTitle(),
+                            alarm.getMessage()
+                    );*/
+                    // SES 방식
+                    sesEmailService.sendEmail(
+                            alarm.getEmailAddress(),
                             alarm.getTitle(),
                             alarm.getMessage()
                     );

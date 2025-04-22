@@ -93,6 +93,9 @@ dependencies {
 
     // FCM
     implementation 'com.google.firebase:firebase-admin:9.2.0'
+
+    // AWS SDK for SES
+    implementation 'software.amazon.awssdk:ses:2.25.0'
 }
 
 clean {
