@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Secured(UserRole.Authority.OWNER)
 @CheckMemberStatus
-@Tag(name = "주차장 관리 API", description = "주차장 관리 및 조회 API입니다.")
+@Tag(name = "05. 주차장 관리 API", description = "주차장 관리 및 조회 API입니다.")
 public class ParkingLotController {
 
     private final ParkingLotService parkingLotService;

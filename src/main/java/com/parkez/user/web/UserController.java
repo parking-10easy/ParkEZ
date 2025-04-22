@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @CheckMemberStatus
-@Tag(name = "유저 API", description = "유저 프로필 조회, 수정, 탈퇴 관련 API")
+@Tag(name = "04. 유저 API", description = "유저 프로필 조회, 수정, 탈퇴 관련 API")
 public class UserController {
 
 	private final UserService userService;

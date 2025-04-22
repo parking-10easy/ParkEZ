@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/images")
 @RequiredArgsConstructor
-@Tag(name = "이미지 업로드/수정/삭제 API", description = "AWS S3와 연동된 이미지 업로드/수정/삭제 기능입니다.")
+@Tag(name = "12. 이미지 업로드/수정/삭제 API", description = "AWS S3와 연동된 이미지 업로드/수정/삭제 기능입니다.")
 public class ImageController {
 
     private final ImageService imageService;

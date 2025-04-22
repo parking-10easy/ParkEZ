@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Secured(UserRole.Authority.OWNER)
-@Tag(name = "주차공간 API")
+@Tag(name = "06. 주차공간 API")
 @CheckMemberStatus
 public class ParkingZoneController {
 
