@@ -5,13 +5,11 @@ import com.parkez.settlement.domain.enums.SettlementStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
-@RequiredArgsConstructor
 @Schema(description = "예약 건에 대한 정산 내역 조회 응답 dto")
 public class SettlementReservationResponse {
 
