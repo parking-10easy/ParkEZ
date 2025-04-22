@@ -3,6 +3,7 @@ package com.parkez.user.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Nested;
@@ -176,6 +177,22 @@ class UserReaderTest {
                     .isInstanceOf(ParkingEasyException.class)
                     .hasMessageContaining(UserErrorCode.USER_NOT_FOUND.getDefaultMessage());
 
+        }
+    }
+
+    @Nested
+    class findAllOwners {
+        @Test
+        void ROLE_OWNER_권한의_유저를_전체_조회한다() {
+            // given
+            List<User> owners = List.of(mock(User.class), mock(User.class));
+            when(userRepository.findAllByRole(UserRole.ROLE_OWNER)).thenReturn(owners);
+
+            // when
+            List<User> result = userReader.findAllOwners();
+
+            // then
+            assertThat(result).isEqualTo(owners);
         }
     }
 
