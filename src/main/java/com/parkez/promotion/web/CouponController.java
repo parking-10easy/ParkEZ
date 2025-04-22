@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api")
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "쿠폰 API", description = "쿠폰 API")
+@Tag(name = "14. 쿠폰 API", description = "쿠폰 API")
 public class CouponController {
 
 	private final CouponService couponService;
