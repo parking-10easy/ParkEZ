@@ -10,8 +10,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -35,4 +37,14 @@ public class Coupon extends BaseEntity {
 	@Column(nullable = false)
 	private Integer discountValue;
 
+	@Lob
+	private String description;
+
+	@Builder
+	private Coupon(String name, DiscountType discountType, Integer discountValue, String description) {
+		this.name = name;
+		this.discountType = discountType;
+		this.discountValue = discountValue;
+		this.description = description;
+	}
 }
