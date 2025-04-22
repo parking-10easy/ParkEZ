@@ -14,19 +14,15 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisConfig {
 
     @Bean
-    public ObjectMapper redisObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule()); // LocalDateTime, LocalDate, LocalTime 지원
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // 사람이 읽기 쉬운 ISO-8601 형식 유지
-        return mapper;
-    }
-
-    @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory, ObjectMapper redisObjectMapper) {
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
-
         template.setKeySerializer(new StringRedisSerializer());
+
+        ObjectMapper redisObjectMapper = new ObjectMapper();
+        redisObjectMapper.registerModule(new JavaTimeModule()); // LocalDateTime, LocalDate, LocalTime 지원
+        redisObjectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // 사람이 읽기 쉬운 ISO-8601 형식 유지
+
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper));
 
         return template;
