@@ -28,6 +28,14 @@ public class NaverClient implements OAuthClient {
     private final NaverProperties naverProperties;
     private final NaverProviderProperties naverProviderProperties;
 
+    private static final String naver = "naver";
+    private static final String grantType = "grant_type";
+    private static final String clientId = "client_id";
+    private static final String clientSecret = "client_secret";
+    private static final String redirectUri = "redirect_uri";
+    private static final String codeString = "code";
+    private static final String state = "state";
+
     @Override
     public OAuthUserInfo requestUserInfo(String code) {
         String accessToken = getAccessToken(code);
@@ -44,18 +52,18 @@ public class NaverClient implements OAuthClient {
                 .uri(naverProviderProperties.getTokenUri())
                 .header(HttpHeaders.CONTENT_TYPE, APPLICATION_FORM_URLENCODED_VALUE)
                 .body(
-                        BodyInserters.fromFormData("grant_type", naverProperties.getAuthorizationGrantType())
-                                .with("client_id", naverProperties.getClientId())
-                                .with("client_secret", naverProperties.getClientSecret())
-                                .with("redirect_uri", naverProperties.getRedirectUri())
-                                .with("code", code)
-                                .with("state", "naver")
+                        BodyInserters.fromFormData(grantType, naverProperties.getAuthorizationGrantType())
+                                .with(clientId, naverProperties.getClientId())
+                                .with(clientSecret, naverProperties.getClientSecret())
+                                .with(redirectUri, naverProperties.getRedirectUri())
+                                .with(codeString, code)
+                                .with(state, naver)
                 )
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                         clientResponse -> clientResponse.bodyToMono(String.class)
                                 .flatMap(errorBody -> {
-                                    log.error("❎네이버 OAuth 토큰 발급 실패. 응답: {}", errorBody);
+                                    log.error("네이버 OAuth 토큰 발급 실패. 응답: {}", errorBody);
                                     return Mono.error(new ParkingEasyException(AuthErrorCode.OAUTH_ACCESS_TOKEN_FAILED));
                                 })
                 )
