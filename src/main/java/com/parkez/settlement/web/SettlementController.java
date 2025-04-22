@@ -57,7 +57,7 @@ public class SettlementController {
 
     // 정산 완료 처리 API
     @PatchMapping("/{settlementId}/complete")
-    @Secured(UserRole.Authority.OWNER)
+    @Secured(UserRole.Authority.ADMIN)
     @Operation(summary = "정산 완료 처리", description = "정산 상태를 COMPLETED로 변경합니다.")
     public Response<Void> complete(@PathVariable Long settlementId) {
         settlementService.completeSettlement(settlementId);
