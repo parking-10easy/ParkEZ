@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@Tag(name = "오너 인증 API", description = "오너의 회원가입 및 로그인을 처리합니다.")
+@Tag(name = "01. 오너 인증 API", description = "오너의 회원가입 및 로그인을 처리합니다.")
 public class OwnerAuthController {
 
 	private final AuthService authService;

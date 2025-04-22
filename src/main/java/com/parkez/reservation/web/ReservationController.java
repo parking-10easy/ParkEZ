@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@Tag(name = "주차공간 예약 API", description = "주차공간에 대한 예약 API 입니다.")
+@Tag(name = "07. 주차공간 예약 API", description = "주차공간에 대한 예약 API 입니다.")
 @Secured(UserRole.Authority.USER)
 @CheckMemberStatus
 public class ReservationController {

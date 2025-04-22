@@ -24,7 +24,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@Tag(name = "결제 - 요청/조회 API", description = "결제 요청 생성, 결제 내역 조회 기능입니다.")
+@Tag(name = "08. 결제 - 요청/조회 API", description = "결제 요청 생성, 결제 내역 조회 기능입니다.")
 public class PaymentController {
 
     private final PaymentService paymentService;

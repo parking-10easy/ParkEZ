@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@Tag(name = "일반 사용자 인증 API", description = "일반 사용자의 회원가입 및 로그인을 처리합니다.")
+@Tag(name = "02. 일반 사용자 인증 API", description = "일반 사용자의 회원가입 및 로그인을 처리합니다.")
 public class UserAuthController {
 
 	private final AuthService authService;

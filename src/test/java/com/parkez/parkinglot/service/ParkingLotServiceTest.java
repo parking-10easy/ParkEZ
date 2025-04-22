@@ -1,5 +1,7 @@
 package com.parkez.parkinglot.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
@@ -16,8 +18,8 @@ import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
-import com.parkez.parkingzone.domain.entity.ParkingZone;
-import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
+import com.parkez.parkinglot.rediscache.ParkingLotSearchRedisKey;
+import com.parkez.parkinglot.rediscache.RestPage;
 import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
@@ -31,8 +33,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,6 +63,15 @@ public class ParkingLotServiceTest {
 
     @Mock
     private KakaoGeocodeClient kakaoGeocodeClient;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
+
+    @Mock
+    private ObjectMapper redisObjectMapper;
 
     @Mock
     private UserReader userReader;
@@ -149,6 +164,11 @@ public class ParkingLotServiceTest {
                 .build();
     }
 
+    private String generateRedisKey(ParkingLotSearchRequest request) {
+        return ParkingLotSearchRedisKey.generateRedisKey(request.getName(), request.getAddress(),
+                request.getUserLatitude(), request.getUserLongitude(), request.getRadiusInMeters(),
+                pageRequest.getPage() - 1, pageRequest.getSize());
+    }
 
     @Nested
     class CreateParkingLot {
@@ -218,223 +238,438 @@ public class ParkingLotServiceTest {
     @Nested
     class searchParkingLotsByConditions {
 
-        @Test
-        void 검색_조건이_없을_때_주차장을_조회한다() {
-            // given
-            ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
-            ParkingLotSearchResponse searchResponse2 = getParkingLotSearchResponse2();
+        @Nested
+        class RedisKeyHit {
 
-            List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1, searchResponse2);
-            Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+            @Test
+            void 검색_조건이_없을_때_주차장을_조회한다() {
+                // given
+                ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+                ParkingLotSearchResponse searchResponse2 = getParkingLotSearchResponse2();
 
-            ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
-                    .name(null)
-                    .address(null)
-                    .userLatitude(null)
-                    .userLongitude(null)
-                    .radiusInMeters(null)
-                    .build();
+                List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1, searchResponse2);
+                Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+                RestPage<ParkingLotSearchResponse> cachedPage = RestPage.from(page);
 
-            when(parkingLotReader.searchParkingLotsByConditions(
-                    searchRequest.getName(), searchRequest.getAddress(),
-                    searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
-                    searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
-            )).thenReturn(page);
+                ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                        .name(null)
+                        .address(null)
+                        .userLatitude(null)
+                        .userLongitude(null)
+                        .radiusInMeters(null)
+                        .build();
 
-            // when
-            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+                String redisKey = generateRedisKey(searchRequest);
 
-            // then
-            assertNotNull(result);
-            assertEquals(2, result.getTotalElements());
-            assertThat(result.getContent())
-                    .extracting("name", "address")
-                    .containsExactly(
-                            tuple(searchResponse1.getName(), searchResponse1.getAddress()),
-                            tuple(searchResponse2.getName(), searchResponse2.getAddress())
-                    );
+                when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                when(valueOperations.get(redisKey)).thenReturn(cachedPage);
+                when(redisObjectMapper.convertValue(any(Object.class), any(TypeReference.class))).thenReturn(cachedPage);
 
-            verify(parkingLotReader).searchParkingLotsByConditions(
-                    searchRequest.getName(),
-                    searchRequest.getAddress(),
-                    searchRequest.getUserLatitude(),
-                    searchRequest.getUserLongitude(),
-                    searchRequest.getRadiusInMeters(),
-                    pageRequest.getPage(),
-                    pageRequest.getSize()
-            );
+                // when
+                Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+
+                // then
+                assertNotNull(result);
+                assertEquals(2, result.getTotalElements());
+                assertThat(result.getContent())
+                        .extracting("name", "address")
+                        .containsExactly(
+                                tuple(searchResponse1.getName(), searchResponse1.getAddress()),
+                                tuple(searchResponse2.getName(), searchResponse2.getAddress())
+                        );
+            }
+
+            @Test
+            void 이름으로_주차장을_조회한다() {
+                // given
+                ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+                List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
+                Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+                RestPage<ParkingLotSearchResponse> cachedPage = RestPage.from(page);
+
+                ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                        .name(searchResponse1.getName())
+                        .address(null)
+                        .userLatitude(null)
+                        .userLongitude(null)
+                        .radiusInMeters(null)
+                        .build();
+
+                String redisKey = generateRedisKey(searchRequest);
+
+                when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                when(valueOperations.get(redisKey)).thenReturn(cachedPage);
+                when(redisObjectMapper.convertValue(any(Object.class), any(TypeReference.class))).thenReturn(cachedPage);
+
+                // when
+                Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+
+                // then
+                assertNotNull(result);
+                assertEquals(1, result.getTotalElements());
+                assertThat(result.getContent())
+                        .extracting("name", "address")
+                        .containsExactly(
+                                tuple(searchResponse1.getName(), searchResponse1.getAddress())
+                        );
+            }
+
+            @Test
+            void 주소로_주차장을_조회한다() {
+                // given
+                ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+                List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
+                Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+                RestPage<ParkingLotSearchResponse> cachedPage = RestPage.from(page);
+
+                ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                        .name(null)
+                        .address(searchResponse1.getAddress())
+                        .userLatitude(null)
+                        .userLongitude(null)
+                        .radiusInMeters(null)
+                        .build();
+
+                String redisKey = generateRedisKey(searchRequest);
+
+                when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                when(valueOperations.get(redisKey)).thenReturn(cachedPage);
+                when(redisObjectMapper.convertValue(any(Object.class), any(TypeReference.class))).thenReturn(cachedPage);
+
+                // when
+                Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+
+                // then
+                assertNotNull(result);
+                assertEquals(1, result.getTotalElements());
+                assertThat(result.getContent())
+                        .extracting("name", "address")
+                        .containsExactly(
+                                tuple(searchResponse1.getName(), searchResponse1.getAddress())
+                        );
+            }
+
+            @Test
+            void 이름과_주소로_주차장을_조회한다() {
+                // given
+                ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+                List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
+                Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+                RestPage<ParkingLotSearchResponse> cachedPage = RestPage.from(page);
+
+                ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                        .name(searchResponse1.getName())
+                        .address(searchResponse1.getAddress())
+                        .userLatitude(null)
+                        .userLongitude(null)
+                        .radiusInMeters(null)
+                        .build();
+
+                String redisKey = generateRedisKey(searchRequest);
+
+                when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                when(valueOperations.get(redisKey)).thenReturn(cachedPage);
+                when(redisObjectMapper.convertValue(any(Object.class), any(TypeReference.class))).thenReturn(cachedPage);
+
+                // when
+                Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+
+                // then
+                assertNotNull(result);
+                assertEquals(1, result.getTotalElements());
+                assertThat(result.getContent())
+                        .extracting("name", "address")
+                        .containsExactly(
+                                tuple(searchResponse1.getName(), searchResponse1.getAddress())
+                        );
+            }
+
+            @Test
+            void 이름과_주소_없이_사용자_위치로_주차장을_조회한다() {
+                // given
+                ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+                List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
+                Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+                RestPage<ParkingLotSearchResponse> cachedPage = RestPage.from(page);
+
+                ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                        .name(null)
+                        .address(null)
+                        .userLatitude(37.500066200)
+                        .userLongitude(127.032926912)
+                        .radiusInMeters(10000)
+                        .build();
+
+                String redisKey = generateRedisKey(searchRequest);
+
+                when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                when(valueOperations.get(redisKey)).thenReturn(cachedPage);
+                when(redisObjectMapper.convertValue(any(Object.class), any(TypeReference.class))).thenReturn(cachedPage);
+
+                // when
+                Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+
+                // then
+                assertNotNull(result);
+                assertEquals(1, result.getTotalElements());
+                assertThat(result.getContent())
+                        .extracting("name", "address")
+                        .containsExactly(
+                                tuple(searchResponse1.getName(), searchResponse1.getAddress())
+                        );
+            }
         }
 
-        @Test
-        void 이름으로_주차장을_조회한다() {
-            // given
-            ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
-            List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
-            Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+        @Nested
+        class RedisKeyMiss {
 
-            ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
-                    .name(searchResponse1.getName())
-                    .address(null)
-                    .userLatitude(null)
-                    .userLongitude(null)
-                    .radiusInMeters(null)
-                    .build();
+            @Test
+            void 검색_조건이_없을_때_주차장을_조회한다() {
+                // given
+                ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+                ParkingLotSearchResponse searchResponse2 = getParkingLotSearchResponse2();
 
-            when(parkingLotReader.searchParkingLotsByConditions(
-                    searchRequest.getName(), searchRequest.getAddress(),
-                    searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
-                    searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
-            )).thenReturn(page);
+                List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1, searchResponse2);
+                Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
 
-            // when
-            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+                ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                        .name(null)
+                        .address(null)
+                        .userLatitude(null)
+                        .userLongitude(null)
+                        .radiusInMeters(null)
+                        .build();
 
-            // then
-            assertNotNull(result);
-            assertEquals(1, result.getTotalElements());
-            assertThat(result.getContent())
-                    .extracting("name", "address")
-                    .containsExactly(
-                            tuple(searchResponse1.getName(), searchResponse1.getAddress())
-                    );
-            verify(parkingLotReader).searchParkingLotsByConditions(
-                    searchRequest.getName(),
-                    searchRequest.getAddress(),
-                    searchRequest.getUserLatitude(),
-                    searchRequest.getUserLongitude(),
-                    searchRequest.getRadiusInMeters(),
-                    pageRequest.getPage(),
-                    pageRequest.getSize()
-            );
-        }
+                String redisKey = generateRedisKey(searchRequest);
 
-        @Test
-        void 주소로_주차장을_조회한다() {
-            // given
-            ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
-            List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
-            Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+                when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                when(valueOperations.get(redisKey)).thenReturn(null);
+                doNothing().when(valueOperations).set(eq(redisKey), any(Object.class), any(Duration.class));
+                when(parkingLotReader.searchParkingLotsByConditions(
+                        searchRequest.getName(), searchRequest.getAddress(),
+                        searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
+                        searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
+                )).thenReturn(page);
 
-            ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
-                    .name(null)
-                    .address(searchResponse1.getAddress())
-                    .userLatitude(null)
-                    .userLongitude(null)
-                    .radiusInMeters(null)
-                    .build();
+                // when
+                Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
 
-            when(parkingLotReader.searchParkingLotsByConditions(
-                    searchRequest.getName(), searchRequest.getAddress(),
-                    searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
-                    searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
-            )).thenReturn(page);
+                // then
+                assertNotNull(result);
+                assertEquals(2, result.getTotalElements());
+                assertThat(result.getContent())
+                        .extracting("name", "address")
+                        .containsExactly(
+                                tuple(searchResponse1.getName(), searchResponse1.getAddress()),
+                                tuple(searchResponse2.getName(), searchResponse2.getAddress())
+                        );
+                verify(parkingLotReader).searchParkingLotsByConditions(
+                        searchRequest.getName(),
+                        searchRequest.getAddress(),
+                        searchRequest.getUserLatitude(),
+                        searchRequest.getUserLongitude(),
+                        searchRequest.getRadiusInMeters(),
+                        pageRequest.getPage(),
+                        pageRequest.getSize()
+                );
+                verify(valueOperations).set(eq(redisKey), any(Object.class), any(Duration.class));
+            }
 
-            // when
-            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+            @Test
+            void 이름으로_주차장을_조회한다() {
+                // given
+                ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+                List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
+                Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
 
-            // then
-            assertNotNull(result);
-            assertEquals(1, result.getTotalElements());
-            assertThat(result.getContent())
-                    .extracting("name", "address")
-                    .containsExactly(
-                            tuple(searchResponse1.getName(), searchResponse1.getAddress())
-                    );
-            verify(parkingLotReader).searchParkingLotsByConditions(
-                    searchRequest.getName(),
-                    searchRequest.getAddress(),
-                    searchRequest.getUserLatitude(),
-                    searchRequest.getUserLongitude(),
-                    searchRequest.getRadiusInMeters(),
-                    pageRequest.getPage(),
-                    pageRequest.getSize()
-            );
-        }
+                ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                        .name(searchResponse1.getName())
+                        .address(null)
+                        .userLatitude(null)
+                        .userLongitude(null)
+                        .radiusInMeters(null)
+                        .build();
 
-        @Test
-        void 이름과_주소로_주차장을_조회한다() {
-            // given
-            ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
-            List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
-            Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+                String redisKey = generateRedisKey(searchRequest);
 
-            ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
-                    .name(searchResponse1.getName())
-                    .address(searchResponse1.getAddress())
-                    .userLatitude(null)
-                    .userLongitude(null)
-                    .radiusInMeters(null)
-                    .build();
+                when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                when(valueOperations.get(redisKey)).thenReturn(null);
+                doNothing().when(valueOperations).set(eq(redisKey), any(Object.class), any(Duration.class));
+                when(parkingLotReader.searchParkingLotsByConditions(
+                        searchRequest.getName(), searchRequest.getAddress(),
+                        searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
+                        searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
+                )).thenReturn(page);
 
-            when(parkingLotReader.searchParkingLotsByConditions(
-                    searchRequest.getName(), searchRequest.getAddress(),
-                    searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
-                    searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
-            )).thenReturn(page);
+                // when
+                Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
 
-            // when
-            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+                // then
+                assertNotNull(result);
+                assertEquals(1, result.getTotalElements());
+                assertThat(result.getContent())
+                        .extracting("name", "address")
+                        .containsExactly(
+                                tuple(searchResponse1.getName(), searchResponse1.getAddress())
+                        );
+                verify(parkingLotReader).searchParkingLotsByConditions(
+                        searchRequest.getName(),
+                        searchRequest.getAddress(),
+                        searchRequest.getUserLatitude(),
+                        searchRequest.getUserLongitude(),
+                        searchRequest.getRadiusInMeters(),
+                        pageRequest.getPage(),
+                        pageRequest.getSize()
+                );
+                verify(valueOperations).set(eq(redisKey), any(Object.class), any(Duration.class));
+            }
 
-            // then
-            assertNotNull(result);
-            assertEquals(1, result.getTotalElements());
-            assertThat(result.getContent())
-                    .extracting("name", "address")
-                    .containsExactly(
-                            tuple(searchResponse1.getName(), searchResponse1.getAddress())
-                    );
-            verify(parkingLotReader).searchParkingLotsByConditions(
-                    searchRequest.getName(),
-                    searchRequest.getAddress(),
-                    searchRequest.getUserLatitude(),
-                    searchRequest.getUserLongitude(),
-                    searchRequest.getRadiusInMeters(),
-                    pageRequest.getPage(),
-                    pageRequest.getSize()
-            );
-        }
+            @Test
+            void 주소로_주차장을_조회한다() {
+                // given
+                ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+                List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
+                Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
 
-        @Test
-        void 이름과_주소_없이_사용자_위치로_주차장을_조회한다() {
-            // given
-            ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
-            List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
-            Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+                ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                        .name(null)
+                        .address(searchResponse1.getAddress())
+                        .userLatitude(null)
+                        .userLongitude(null)
+                        .radiusInMeters(null)
+                        .build();
 
-            ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
-                    .name(null)
-                    .address(null)
-                    .userLatitude(37.500066200)
-                    .userLongitude(127.032926912)
-                    .radiusInMeters(10000)
-                    .build();
+                String redisKey = generateRedisKey(searchRequest);
 
-            when(parkingLotReader.searchParkingLotsByConditions(
-                    searchRequest.getName(), searchRequest.getAddress(),
-                    searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
-                    searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
-            )).thenReturn(page);
+                when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                when(valueOperations.get(redisKey)).thenReturn(null);
+                doNothing().when(valueOperations).set(eq(redisKey), any(Object.class), any(Duration.class));
+                when(parkingLotReader.searchParkingLotsByConditions(
+                        searchRequest.getName(), searchRequest.getAddress(),
+                        searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
+                        searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
+                )).thenReturn(page);
 
-            // when
-            Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+                // when
+                Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
 
-            // then
-            assertNotNull(result);
-            assertEquals(1, result.getTotalElements());
-            assertThat(result.getContent())
-                    .extracting("name", "address")
-                    .containsExactly(
-                            tuple(searchResponse1.getName(), searchResponse1.getAddress())
-                    );
-            verify(parkingLotReader).searchParkingLotsByConditions(
-                    searchRequest.getName(),
-                    searchRequest.getAddress(),
-                    searchRequest.getUserLatitude(),
-                    searchRequest.getUserLongitude(),
-                    searchRequest.getRadiusInMeters(),
-                    pageRequest.getPage(),
-                    pageRequest.getSize()
-            );
+                // then
+                assertNotNull(result);
+                assertEquals(1, result.getTotalElements());
+                assertThat(result.getContent())
+                        .extracting("name", "address")
+                        .containsExactly(
+                                tuple(searchResponse1.getName(), searchResponse1.getAddress())
+                        );
+                verify(parkingLotReader).searchParkingLotsByConditions(
+                        searchRequest.getName(),
+                        searchRequest.getAddress(),
+                        searchRequest.getUserLatitude(),
+                        searchRequest.getUserLongitude(),
+                        searchRequest.getRadiusInMeters(),
+                        pageRequest.getPage(),
+                        pageRequest.getSize()
+                );
+                verify(valueOperations).set(eq(redisKey), any(Object.class), any(Duration.class));
+            }
+
+            @Test
+            void 이름과_주소로_주차장을_조회한다() {
+                // given
+                ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+                List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
+                Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+
+                ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                        .name(searchResponse1.getName())
+                        .address(searchResponse1.getAddress())
+                        .userLatitude(null)
+                        .userLongitude(null)
+                        .radiusInMeters(null)
+                        .build();
+
+                String redisKey = generateRedisKey(searchRequest);
+
+                when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                when(valueOperations.get(redisKey)).thenReturn(null);
+                doNothing().when(valueOperations).set(eq(redisKey), any(Object.class), any(Duration.class));
+                when(parkingLotReader.searchParkingLotsByConditions(
+                        searchRequest.getName(), searchRequest.getAddress(),
+                        searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
+                        searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
+                )).thenReturn(page);
+
+                // when
+                Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+
+                // then
+                assertNotNull(result);
+                assertEquals(1, result.getTotalElements());
+                assertThat(result.getContent())
+                        .extracting("name", "address")
+                        .containsExactly(
+                                tuple(searchResponse1.getName(), searchResponse1.getAddress())
+                        );
+                verify(parkingLotReader).searchParkingLotsByConditions(
+                        searchRequest.getName(),
+                        searchRequest.getAddress(),
+                        searchRequest.getUserLatitude(),
+                        searchRequest.getUserLongitude(),
+                        searchRequest.getRadiusInMeters(),
+                        pageRequest.getPage(),
+                        pageRequest.getSize()
+                );
+                verify(valueOperations).set(eq(redisKey), any(Object.class), any(Duration.class));
+            }
+
+            @Test
+            void 이름과_주소_없이_사용자_위치로_주차장을_조회한다() {
+                // given
+                ParkingLotSearchResponse searchResponse1 = getParkingLotSearchResponse1();
+                List<ParkingLotSearchResponse> responses = Arrays.asList(searchResponse1);
+                Page<ParkingLotSearchResponse> page = new PageImpl<>(responses, pageable, responses.size());
+
+                ParkingLotSearchRequest searchRequest = ParkingLotSearchRequest.builder()
+                        .name(null)
+                        .address(null)
+                        .userLatitude(37.500066200)
+                        .userLongitude(127.032926912)
+                        .radiusInMeters(10000)
+                        .build();
+
+                String redisKey = generateRedisKey(searchRequest);
+
+                when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                when(valueOperations.get(redisKey)).thenReturn(null);
+                doNothing().when(valueOperations).set(eq(redisKey), any(Object.class), any(Duration.class));
+                when(parkingLotReader.searchParkingLotsByConditions(
+                        searchRequest.getName(), searchRequest.getAddress(),
+                        searchRequest.getUserLatitude(), searchRequest.getUserLongitude(),
+                        searchRequest.getRadiusInMeters(), pageRequest.getPage(), pageRequest.getSize()
+                )).thenReturn(page);
+
+                // when
+                Page<ParkingLotSearchResponse> result = parkingLotService.searchParkingLotsByConditions(searchRequest, pageRequest);
+
+                // then
+                assertNotNull(result);
+                assertEquals(1, result.getTotalElements());
+                assertThat(result.getContent())
+                        .extracting("name", "address")
+                        .containsExactly(
+                                tuple(searchResponse1.getName(), searchResponse1.getAddress())
+                        );
+                verify(parkingLotReader).searchParkingLotsByConditions(
+                        searchRequest.getName(),
+                        searchRequest.getAddress(),
+                        searchRequest.getUserLatitude(),
+                        searchRequest.getUserLongitude(),
+                        searchRequest.getRadiusInMeters(),
+                        pageRequest.getPage(),
+                        pageRequest.getSize()
+                );
+                verify(valueOperations).set(eq(redisKey), any(Object.class), any(Duration.class));
+            }
         }
     }
 

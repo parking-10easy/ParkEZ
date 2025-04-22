@@ -105,7 +105,6 @@ public class Reservation extends BaseEntity {
         this.status = ReservationStatus.CONFIRMED;
     }
 
-
     public boolean isTimeout(LocalDateTime currentTime, long timeoutMinutes) {
         long elapsedMillis = Duration.between(this.getCreatedAt(), currentTime).toMillis();
         return elapsedMillis > timeoutMinutes * 60 * 1000;
