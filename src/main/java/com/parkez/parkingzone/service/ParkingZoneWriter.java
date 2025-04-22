@@ -2,6 +2,7 @@ package com.parkez.parkingzone.service;
 
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,8 +27,6 @@ public class ParkingZoneWriter {
     }
 
     public void deleteParkingZone(Long parkingZoneId, LocalDateTime deletedAt) {
-        parkingZoneRepository.softDeleteById(parkingZoneId, deletedAt);
+        parkingZoneRepository.softDeleteById(parkingZoneId, deletedAt, ParkingZoneStatus.UNAVAILABLE);
     }
-
-
 }

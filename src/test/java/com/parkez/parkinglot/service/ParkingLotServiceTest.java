@@ -20,6 +20,7 @@ import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkinglot.rediscache.ParkingLotSearchRedisKey;
 import com.parkez.parkinglot.rediscache.RestPage;
+import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
@@ -44,7 +45,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,6 +75,9 @@ public class ParkingLotServiceTest {
 
     @Mock
     private UserReader userReader;
+
+    @Mock
+    private ParkingZoneReader parkingZoneReader;
 
     private final PageRequest pageRequest = new PageRequest(1, 10);
     Pageable pageable = org.springframework.data.domain.PageRequest.of(pageRequest.getPage() - 1, pageRequest.getSize());
@@ -840,12 +845,13 @@ public class ParkingLotServiceTest {
             ParkingLot parkingLot = getParkingLot();
 
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
+            when(parkingZoneReader.findAllByParkingLotId(parkingLotId)).thenReturn(List.of());
 
             // when
             parkingLotService.updateParkingLotStatus(authUser, parkingLotId, request);
 
             // then
-            assertEquals(ParkingLotStatus.TEMPORARILY_CLOSED, parkingLot.getStatus());
+             assertEquals(ParkingLotStatus.TEMPORARILY_CLOSED, parkingLot.getStatus());
         }
 
         @Test
@@ -1027,6 +1033,7 @@ public class ParkingLotServiceTest {
             Long userId = getAuthUserOwner().getId();
             ParkingLot parkingLot = getParkingLot();
             when(parkingLotReader.getOwnedParkingLot(userId, parkingLotId)).thenReturn(parkingLot);
+            when(parkingZoneReader.findAllByParkingLotId(parkingLotId)).thenReturn(List.of());
 
             // when
             AuthUser authUser = getAuthUserOwner();

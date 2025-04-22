@@ -23,6 +23,9 @@ import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkinglot.rediscache.ParkingLotSearchRedisKey;
 import com.parkez.parkinglot.rediscache.RestPage;
+import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
+import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +37,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -46,6 +49,7 @@ public class ParkingLotService {
     private final ParkingLotReader parkingLotReader;
     private final UserReader userReader;
     private final KakaoGeocodeClient kakaoGeocodeClient;
+    private final ParkingZoneReader parkingZoneReader;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper redisObjectMapper;
 
@@ -108,7 +112,7 @@ public class ParkingLotService {
         } else {
             log.info("Redis cache miss for key : {}", redisKey);
         }
-        
+
         // DB 조회
         Page<ParkingLotSearchResponse> page = parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(),
                 request.getUserLatitude(), request.getUserLongitude(), request.getRadiusInMeters(),
@@ -161,6 +165,16 @@ public class ParkingLotService {
             throw new ParkingEasyException(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS_CHANGE);
         }
 
+        if (newStatus == ParkingLotStatus.OPEN) {
+            List<ParkingZone> parkingZones = parkingZoneReader.findAllByParkingLotId(parkingLotId);
+            parkingZones.forEach(zone -> zone.updateParkingZoneStatus(ParkingZoneStatus.AVAILABLE));
+        }
+
+        if (newStatus == ParkingLotStatus.TEMPORARILY_CLOSED) {
+            List<ParkingZone> parkingZones = parkingZoneReader.findAllByParkingLotId(parkingLotId);
+            parkingZones.forEach(zone -> zone.updateParkingZoneStatus(ParkingZoneStatus.UNAVAILABLE));
+        }
+
         parkingLot.updateStatus(newStatus);
     }
 
@@ -186,6 +200,13 @@ public class ParkingLotService {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
         parkingLot.updateStatus(ParkingLotStatus.CLOSED);
+
+        List<ParkingZone> parkingZones = parkingZoneReader.findAllByParkingLotId(parkingLotId);
+        parkingZones.forEach(zone -> {
+            zone.updateParkingZoneStatus(ParkingZoneStatus.UNAVAILABLE);
+            zone.updateDeletedAt(LocalDateTime.now());
+        });
+
         parkingLotWriter.deleteParkingLot(parkingLot);
     }
 
