@@ -13,6 +13,7 @@ import com.parkez.parkingzone.dto.request.ParkingZoneUpdateNameRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
+import com.parkez.reservation.service.ReservationReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -28,12 +29,14 @@ public class ParkingZoneService {
     private final ParkingZoneWriter parkingZoneWriter;
     private final ParkingZoneReader parkingZoneReader;
     private final ParkingLotReader parkingLotReader;
+    private final ReservationReader reservationReader;
 
     @Value("${parking-zone.default-image-url}")
     private String defaultImageUrl;
 
     public ParkingZoneResponse createParkingZone(AuthUser authUser, ParkingZoneCreateRequest request) {
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(authUser.getId(), request.getParkingLotId());
+        validateNotPublicData(parkingLot);
         return ParkingZoneResponse.from(parkingZoneWriter.createParkingZone(request.getName(), defaultImageUrl, parkingLot));
     }
 
@@ -58,6 +61,7 @@ public class ParkingZoneService {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         ParkingZoneStatus newStatus = ParkingZoneStatus.from(request.getStatus());
         validateOwner(parkingZone, authUser.getId());
+        validateCannotChangeToUnavailableWhenReserved(parkingZoneId,newStatus);
         parkingZone.updateParkingZoneStatus(newStatus);
     }
 
@@ -71,13 +75,33 @@ public class ParkingZoneService {
     public void deleteParkingZone(AuthUser authUser, Long parkingZoneId, LocalDateTime deletedAt) {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         validateOwner(parkingZone, authUser.getId());
+        validateNoActiveReservationsForDeletion(parkingZoneId);
         parkingZoneWriter.deleteParkingZone(parkingZoneId, deletedAt);
+    }
+
+    private void validateNotPublicData(ParkingLot parkingLot) {
+        if (parkingLot.isPublicData()){
+            throw new ParkingEasyException(ParkingZoneErrorCode.PUBLIC_DATA_CREATION_NOT_ALLOWED);
+        }
     }
 
     private void validateOwner(ParkingZone parkingZone, Long ownerId) {
         boolean isOwned = parkingZoneReader.isOwnedParkingZone(parkingZone.getId(), ownerId);
         if (!isOwned){
             throw new ParkingEasyException(ParkingZoneErrorCode.FORBIDDEN_TO_ACTION);
+        }
+    }
+
+    private void validateCannotChangeToUnavailableWhenReserved(Long parkingZoneId, ParkingZoneStatus newStatus) {
+        if (newStatus == ParkingZoneStatus.UNAVAILABLE &&
+                reservationReader.existsActiveReservationByParkingZoneId(parkingZoneId)) {
+            throw new ParkingEasyException(ParkingZoneErrorCode.RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN);
+        }
+    }
+
+    private void validateNoActiveReservationsForDeletion(Long parkingZoneId) {
+        if (reservationReader.existsActiveReservationByParkingZoneId(parkingZoneId)){
+            throw new ParkingEasyException(ParkingZoneErrorCode.RESERVED_ZONE_DELETE_FORBIDDEN);
         }
     }
 }
