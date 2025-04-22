@@ -19,7 +19,7 @@ public class PromotionCreateRequest {
 	@Schema(description = "프로모션 이름", example = "DAILY 2000")
 	private String name;
 
-	@NotBlank(message = "프로모션 타입은 필수 값입니다.")
+	@NotNull(message = "프로모션 타입은 필수 값입니다.")
 	@Schema(description = "프로모션 타입 (DAILY)", example = "DAILY")
 	private PromotionType promotionType;
 
