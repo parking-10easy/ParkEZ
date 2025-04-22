@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -16,8 +17,6 @@ import static com.parkez.parkinglot.domain.entity.QParkingLot.parkingLot;
 import static com.parkez.parkingzone.domain.entity.QParkingZone.parkingZone;
 import static com.parkez.payment.domain.entity.QPayment.payment;
 import static com.parkez.reservation.domain.entity.QReservation.reservation;
-
-
 
 @Repository
 @RequiredArgsConstructor
@@ -28,7 +27,7 @@ public class PaymentRepositoryImpl implements PaymentQueryDslRepository{
     @Override
     public List<Payment> findApprovedAndCompletedPayments(User owner, YearMonth month) {
         LocalDateTime start = month.atDay(1).atStartOfDay();
-        LocalDateTime end = month.atEndOfMonth().atTime(23, 59, 59);
+        LocalDateTime end = month.atEndOfMonth().atTime(LocalTime.MAX);
 
         return queryFactory
                 .selectFrom(payment)
