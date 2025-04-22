@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Secured(UserRole.Authority.OWNER)
-@Tag(name = "주차공간 API")
+@Tag(name = "06. 주차공간 API")
 @CheckMemberStatus
 public class ParkingZoneController {
 
@@ -41,7 +41,7 @@ public class ParkingZoneController {
         return Response.of(parkingZoneService.createParkingZone(authUser, request));
     }
 
-    @Secured({UserRole.Authority.OWNER, UserRole.Authority.USER})
+    @Secured({UserRole.Authority.ADMIN, UserRole.Authority.OWNER, UserRole.Authority.USER})
     @GetMapping("/v1/parking-lot/{parkingLotId}/parking-zones")
     @Operation(summary = "주차공간 다건 조회", description = "주차공간 다건 조회 기능입니다.")
     public Response<ParkingZoneResponse> getParkingZones(
@@ -51,7 +51,7 @@ public class ParkingZoneController {
         return Response.fromPage(parkingZoneService.getParkingZones(pageRequest, parkingLotId));
     }
 
-    @Secured({UserRole.Authority.OWNER, UserRole.Authority.USER})
+    @Secured({UserRole.Authority.ADMIN, UserRole.Authority.OWNER, UserRole.Authority.USER})
     @GetMapping("/v1/parking-zones/{parkingZoneId}")
     @Operation(summary = "주차공간 단건 조회", description = "주차공간 단건 조회 기능입니다.")
     public Response<ParkingZoneResponse> getParkingZone(

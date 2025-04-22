@@ -4,6 +4,7 @@ import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.domain.enums.SourceType;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
 import com.parkez.parkinglot.service.ParkingLotReader;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
@@ -14,6 +15,7 @@ import com.parkez.parkingzone.dto.request.ParkingZoneUpdateNameRequest;
 import com.parkez.parkingzone.dto.request.ParkingZoneUpdateStatusRequest;
 import com.parkez.parkingzone.dto.response.ParkingZoneResponse;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
+import com.parkez.reservation.service.ReservationReader;
 import com.parkez.user.domain.enums.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -45,6 +47,9 @@ class ParkingZoneServiceTest {
 
     @Mock
     private ParkingLotReader parkingLotReader;
+
+    @Mock
+    private ReservationReader reservationReader;
 
     @InjectMocks
     private ParkingZoneService parkingZoneService;
@@ -158,6 +163,23 @@ class ParkingZoneServiceTest {
             assertThatThrownBy(() -> parkingZoneService.createParkingZone(authUser, createRequest))
                 .isInstanceOf(ParkingEasyException.class)
                 .hasMessage(ParkingLotErrorCode.NOT_FOUND.getDefaultMessage());
+        }
+
+        @Test
+        void 주차공간_생성_공공데이터로_생성된_주차장의_주차공간_생성시_PUBLIC_DATA_CREATION_NOT_ALLOWED_예외가_발생한다() {
+            // given
+            AuthUser authUser = getAuthUser();
+            ParkingLot parkingLot = getParkingLot();
+            ParkingZoneCreateRequest createRequest = getCreateRequest();
+
+            ReflectionTestUtils.setField(parkingLot, "sourceType", SourceType.PUBLIC_DATA);
+            given(parkingLotReader.getOwnedParkingLot(authUser.getId(), createRequest.getParkingLotId()))
+                    .willReturn(parkingLot);
+
+            // when & then
+            assertThatThrownBy(() -> parkingZoneService.createParkingZone(authUser, createRequest))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasMessage(ParkingZoneErrorCode.PUBLIC_DATA_CREATION_NOT_ALLOWED.getDefaultMessage());
         }
     }
 
@@ -275,6 +297,7 @@ class ParkingZoneServiceTest {
 
             given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
             given(parkingZoneReader.isOwnedParkingZone(anyLong(),anyLong())).willReturn(true);
+            given(reservationReader.existsActiveReservationByParkingZoneId(anyLong())).willReturn(false);
 
             // when
             parkingZoneService.updateParkingZoneStatus(authUser, parkingZone.getId(), updateStatusRequest);
@@ -314,6 +337,23 @@ class ParkingZoneServiceTest {
             assertThatThrownBy(() -> parkingZoneService.updateParkingZoneStatus(nonOwner, parkingZone.getId(), updateStatusRequest))
                     .isInstanceOf(ParkingEasyException.class)
                     .hasMessage(ParkingZoneErrorCode.FORBIDDEN_TO_ACTION.getDefaultMessage());
+        }
+
+        @Test
+        void 주차공간_상태수정_UNAVAILABLE_변경시_기존_예약이_존재할_경우_RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN_예외가_발생한다() {
+            // given
+            AuthUser authUser = getAuthUser();
+            ParkingZone parkingZone = getParkingZone();
+            ParkingZoneUpdateStatusRequest updateStatusRequest = getUpdateStatusRequest();
+
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+            given(parkingZoneReader.isOwnedParkingZone(anyLong(), anyLong())).willReturn(true);
+            given(reservationReader.existsActiveReservationByParkingZoneId(anyLong())).willReturn(true);
+
+            // when & then
+            assertThatThrownBy(() -> parkingZoneService.updateParkingZoneStatus(authUser, parkingZone.getId(), updateStatusRequest))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasMessage(ParkingZoneErrorCode.RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN.getDefaultMessage());
         }
 
         @Test
@@ -415,6 +455,23 @@ class ParkingZoneServiceTest {
             assertThatThrownBy(() -> parkingZoneService.deleteParkingZone(nonOwner, parkingZone.getId(), LocalDateTime.now()))
                     .isInstanceOf(ParkingEasyException.class)
                     .hasMessage(ParkingZoneErrorCode.FORBIDDEN_TO_ACTION.getDefaultMessage());
+        }
+
+        @Test
+        void 주차공간_삭제_기존_예약이_존재할_경우_RESERVED_ZONE_DELETE_FORBIDDEN_예외가_발생한다() {
+
+            // given
+            AuthUser authUser = getAuthUser();
+            ParkingZone parkingZone = getParkingZone();
+
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+            given(parkingZoneReader.isOwnedParkingZone(anyLong(),anyLong())).willReturn(true);
+            given(reservationReader.existsActiveReservationByParkingZoneId(anyLong())).willReturn(true);
+
+            // when & then
+            assertThatThrownBy(() -> parkingZoneService.deleteParkingZone(authUser, parkingZone.getId(), LocalDateTime.now()))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasMessage(ParkingZoneErrorCode.RESERVED_ZONE_DELETE_FORBIDDEN.getDefaultMessage());
         }
     }
 }

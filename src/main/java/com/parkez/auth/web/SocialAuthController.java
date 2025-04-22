@@ -32,7 +32,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@Tag(name = "소셜 로그인 API", description = " 소셜 로그인을 처리합니다.")
+@Tag(name = "03. 소셜 로그인 API", description = " 소셜 로그인을 처리합니다.")
 public class SocialAuthController {
 
 	private final SocialAuthService socialAuthService;

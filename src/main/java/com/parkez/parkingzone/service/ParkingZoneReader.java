@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -37,4 +39,7 @@ public class ParkingZoneReader {
         return parkingZoneRepository.existsByIdAndOwnerId(parkingZoneId, ownerId);
     }
 
+    public List<ParkingZone> findAllByParkingLotId(Long parkingLotId) {
+        return parkingZoneRepository.findAllByParkingLotId(parkingLotId);
+    }
 }

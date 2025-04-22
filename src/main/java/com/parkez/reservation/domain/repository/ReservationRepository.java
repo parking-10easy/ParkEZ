@@ -49,6 +49,14 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     boolean existsByParkingZone_Id(Long parkingZoneId);
 
+    @Query("""
+    SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
+    FROM Reservation r
+    WHERE r.parkingZone.id = :parkingZoneId
+    AND r.status IN ('PENDING', 'CONFIRMED')
+""")
+    boolean existsActiveReservationByParkingZoneId(@Param("parkingZoneId") Long parkingZoneId);
+
     Page<Reservation> findAllByParkingZone_Id(Long parkingZoneId, Pageable pageable);
 
     @Query("""

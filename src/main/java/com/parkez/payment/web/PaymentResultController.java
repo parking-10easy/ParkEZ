@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/payment")
 @RequiredArgsConstructor
-@Tag(name = "결제 - 승인/실패 API", description = "결제 승인/실패 기능입니다. 실제로는 클라이언트 측에서 실행됩니다.")
+@Tag(name = "09. 결제 - 승인/실패 API", description = "결제 승인/실패 기능입니다. 실제로는 클라이언트 측에서 실행됩니다.")
 public class PaymentResultController {
 
     private final PaymentService paymentService;

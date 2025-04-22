@@ -1,6 +1,5 @@
 package com.parkez.parkingzone.service;
 
-import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.service.ParkingLotReader;
@@ -8,7 +7,6 @@ import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
 import com.parkez.parkingzone.dto.request.ParkingZoneCreateRequest;
-import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import org.junit.jupiter.api.Nested;
@@ -22,9 +20,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,15 +42,6 @@ class ParkingZoneWriterTest {
     private ParkingZoneWriter parkingZoneWriter;
 
     private String defaultImageUrl = "http://example.com/image.jpg";
-
-    private AuthUser getAuthUser() {
-        return AuthUser.builder()
-                .id(1L)
-                .email("owner@test.com")
-                .roleName(UserRole.ROLE_OWNER.name())
-                .nickname("테스트 소유자")
-                .build();
-    }
 
     private User getOwner() {
         User owner = User.builder()
@@ -121,14 +108,15 @@ class ParkingZoneWriterTest {
 
             doAnswer(invocation -> {
                 ReflectionTestUtils.setField(parkingZone, "deletedAt", LocalDateTime.now());
+                ReflectionTestUtils.setField(parkingZone, "status", ParkingZoneStatus.UNAVAILABLE);
                 return null;
-            }).when(parkingZoneRepository).softDeleteById(anyLong(), any(LocalDateTime.class));
+            }).when(parkingZoneRepository).softDeleteById(anyLong(), any(LocalDateTime.class), any());
 
             // when
             parkingZoneWriter.deleteParkingZone(parkingZone.getId(),  LocalDateTime.now());
 
             // then
-            verify(parkingZoneRepository).softDeleteById(eq(parkingZone.getId()), any(LocalDateTime.class));
+            verify(parkingZoneRepository).softDeleteById(eq(parkingZone.getId()), any(LocalDateTime.class), eq(ParkingZoneStatus.UNAVAILABLE));
             assertThat(ReflectionTestUtils.getField(parkingZone, "deletedAt")).isNotNull();
         }
     }

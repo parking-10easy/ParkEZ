@@ -136,4 +136,8 @@ public class ParkingLot extends BaseDeleteEntity {
         this.latitude = latitude;
         this.longitude = longitude;
     }
+
+    public boolean isPublicData() {
+        return Objects.equals(this.sourceType, SourceType.PUBLIC_DATA);
+    }
 }

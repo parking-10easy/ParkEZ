@@ -7,8 +7,10 @@ import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.ParkingLotStatus;
 import com.parkez.parkinglot.domain.enums.SourceType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
@@ -16,8 +18,8 @@ import java.util.List;
 
 @Getter
 @Schema(description = "주차장 조회 응답 DTO")
+@NoArgsConstructor
 public class ParkingLotSearchResponse {
-
 
     @Schema(description = "주차장 ID", example = "1")
     private Long parkingLotId;

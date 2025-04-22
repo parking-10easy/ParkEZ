@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@Tag(name = "Token API", description = "인증 토큰 재발급 API")
+@Tag(name = "00. Token API", description = "인증 토큰 재발급 API")
 public class TokenController {
 
 	private final AuthService authService;

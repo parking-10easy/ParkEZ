@@ -1,5 +1,8 @@
 package com.parkez.parkinglot.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.parkez.common.config.RedisConfig;
 import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
@@ -18,17 +21,26 @@ import com.parkez.parkinglot.dto.response.MyParkingLotSearchResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotResponse;
 import com.parkez.parkinglot.dto.response.ParkingLotSearchResponse;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
+import com.parkez.parkinglot.rediscache.ParkingLotSearchRedisKey;
+import com.parkez.parkinglot.rediscache.RestPage;
+import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
+import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ParkingLotService {
@@ -37,6 +49,9 @@ public class ParkingLotService {
     private final ParkingLotReader parkingLotReader;
     private final UserReader userReader;
     private final KakaoGeocodeClient kakaoGeocodeClient;
+    private final ParkingZoneReader parkingZoneReader;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper redisObjectMapper;
 
     @Value("${parking-lot.default-image-url}")
     private String defaultParkingLotImageUrl;
@@ -77,9 +92,36 @@ public class ParkingLotService {
 
     // 주차장 다건 조회 (이름, 주소)
     public Page<ParkingLotSearchResponse> searchParkingLotsByConditions(ParkingLotSearchRequest request, PageRequest pageRequest) {
-        return parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(),
+        String redisKey = ParkingLotSearchRedisKey.generateRedisKey(request.getName(), request.getAddress(),
+                request.getUserLatitude(), request.getUserLongitude(), request.getRadiusInMeters(),
+                pageRequest.getPage() - 1, pageRequest.getSize());
+
+        // 캐시 조회
+        Object cache = redisTemplate.opsForValue().get(redisKey);
+        if (cache != null) {
+            log.info("Redis cache hit for key : {}", redisKey);
+            // 역직렬화 타입 명시
+            try {
+                return redisObjectMapper.convertValue(cache, new TypeReference<RestPage<ParkingLotSearchResponse>>() {
+                });
+
+            } catch (IllegalArgumentException e) {
+                log.error("Redis 역직렬화 오류 : {}", e.getMessage());
+                redisTemplate.delete(redisKey);
+            }
+        } else {
+            log.info("Redis cache miss for key : {}", redisKey);
+        }
+
+        // DB 조회
+        Page<ParkingLotSearchResponse> page = parkingLotReader.searchParkingLotsByConditions(request.getName(), request.getAddress(),
                 request.getUserLatitude(), request.getUserLongitude(), request.getRadiusInMeters(),
                 pageRequest.getPage(), pageRequest.getSize());
+
+        // 캐시 저장
+        redisTemplate.opsForValue().set(redisKey, RestPage.from(page), RedisConfig.PARKING_LOT_SEARCH_TTL);
+
+        return page;
     }
 
     // 주차장 단건 조회
@@ -123,6 +165,16 @@ public class ParkingLotService {
             throw new ParkingEasyException(ParkingLotErrorCode.INVALID_PARKING_LOT_STATUS_CHANGE);
         }
 
+        if (newStatus == ParkingLotStatus.OPEN) {
+            List<ParkingZone> parkingZones = parkingZoneReader.findAllByParkingLotId(parkingLotId);
+            parkingZones.forEach(zone -> zone.updateParkingZoneStatus(ParkingZoneStatus.AVAILABLE));
+        }
+
+        if (newStatus == ParkingLotStatus.TEMPORARILY_CLOSED) {
+            List<ParkingZone> parkingZones = parkingZoneReader.findAllByParkingLotId(parkingLotId);
+            parkingZones.forEach(zone -> zone.updateParkingZoneStatus(ParkingZoneStatus.UNAVAILABLE));
+        }
+
         parkingLot.updateStatus(newStatus);
     }
 
@@ -148,6 +200,13 @@ public class ParkingLotService {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
         parkingLot.updateStatus(ParkingLotStatus.CLOSED);
+
+        List<ParkingZone> parkingZones = parkingZoneReader.findAllByParkingLotId(parkingLotId);
+        parkingZones.forEach(zone -> {
+            zone.updateParkingZoneStatus(ParkingZoneStatus.UNAVAILABLE);
+            zone.updateDeletedAt(LocalDateTime.now());
+        });
+
         parkingLotWriter.deleteParkingLot(parkingLot);
     }
 

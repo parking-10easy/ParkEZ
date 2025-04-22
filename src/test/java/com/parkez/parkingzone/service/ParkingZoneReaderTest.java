@@ -121,7 +121,7 @@ class ParkingZoneReaderTest {
     }
 
     @Nested
-    class isOwnedParkingZone {
+    class IsOwnedParkingZone {
         @Test
         void 주차공간_소유자_본인확인_특정_주차공간의_소유자_본인인지_확인한다() {
             // given
@@ -134,6 +134,24 @@ class ParkingZoneReaderTest {
 
             // then
             assertThat(result).isTrue();
+        }
+    }
+
+    @Nested
+    class FindAllByParkingLotId {
+        @Test
+        void 주차공간_특정_주차장_아이디로_주차공간_목록조회() {
+            // given
+            ParkingZone zone1 = mock(ParkingZone.class);
+            ParkingZone zone2 = mock(ParkingZone.class);
+            when(parkingZoneRepository.findAllByParkingLotId(1L)).thenReturn(List.of(zone1, zone2));
+
+            // when
+            List<ParkingZone> result = parkingZoneReader.findAllByParkingLotId(1L);
+
+            // then
+            assertThat(result).hasSize(2);
+            verify(parkingZoneRepository).findAllByParkingLotId(1L);
         }
     }
 }

@@ -219,6 +219,22 @@ class ReservationReaderTest {
     }
 
     @Nested
+    class ExistsActiveReservationByParkingZoneId {
+        @Test
+        void 특정_주차공간에_대한_예약존재시_true반환() {
+            // given
+            Long parkingZoneId = 1L;
+            given(reservationRepository.existsActiveReservationByParkingZoneId(parkingZoneId)).willReturn(true);
+
+            // when
+            boolean exists = reservationReader.existsActiveReservationByParkingZoneId(parkingZoneId);
+
+            // then
+            assertThat(exists).isTrue();
+        }
+    }
+
+    @Nested
     class FindReservationsForAlarm {
         @Test
         void 예약_만료_10분전_알림대상_조회() {
