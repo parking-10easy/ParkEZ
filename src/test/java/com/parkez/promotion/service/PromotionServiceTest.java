@@ -1,0 +1,206 @@
+package com.parkez.promotion.service;
+
+import static org.mockito.BDDMockito.*;
+
+import java.time.LocalDateTime;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.promotion.domain.entity.Coupon;
+import com.parkez.promotion.domain.entity.Promotion;
+import com.parkez.promotion.domain.enums.DiscountType;
+import com.parkez.promotion.domain.enums.PromotionStatus;
+import com.parkez.promotion.domain.enums.PromotionType;
+import com.parkez.promotion.dto.request.PromotionCreateRequest;
+import com.parkez.promotion.dto.response.PromotionCreateResponse;
+import com.parkez.promotion.excption.CouponErrorCode;
+import com.parkez.promotion.excption.PromotionErrorCode;
+
+@ExtendWith(MockitoExtension.class)
+class PromotionServiceTest {
+
+	@Mock
+	private PromotionWriter promotionWriter;
+
+	@Mock
+	private CouponReader couponReader;
+
+	@InjectMocks
+	private PromotionService promotionService;
+
+	@Nested
+	class CreatePromotion {
+
+		@Test
+		public void 프로모션_생성_프로모션_시작일이_과거이면_INVALID_START_DATE_예외_발생한다() {
+			//given
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 1000;
+			int limitPerUser = 1;
+			LocalDateTime wrongPromotionStartAt = LocalDateTime.now().minusDays(1);
+			LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(1);
+			long couponId = 1L;
+			int validDaysAfterIssue = 3;
+			PromotionCreateRequest request = createPromotionCreateRequest(promotionName, promotionType, couponId,
+				limitTotal, limitPerUser, wrongPromotionStartAt, promotionEndAt, validDaysAfterIssue);
+
+			//when & then
+			Assertions.assertThatThrownBy(() -> promotionService.createPromotion(request))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(PromotionErrorCode.INVALID_START_DATE.getDefaultMessage());
+
+		}
+
+		@Test
+		public void 프로모션_생성_프로모션_시작일이_종료일_이후이면_INVALID_DATE_RANGE_예외_발생한다() {
+			//given
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 1000;
+			int limitPerUser = 1;
+			LocalDateTime wrongPromotionStartAt = LocalDateTime.now().plusDays(2);
+			LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(1);
+			long couponId = 1L;
+			int validDaysAfterIssue = 3;
+			PromotionCreateRequest request = createPromotionCreateRequest(promotionName, promotionType, couponId,
+				limitTotal, limitPerUser, wrongPromotionStartAt, promotionEndAt, validDaysAfterIssue);
+
+			//when & then
+			Assertions.assertThatThrownBy(() -> promotionService.createPromotion(request))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(PromotionErrorCode.INVALID_DATE_RANGE.getDefaultMessage());
+
+		}
+
+		@Test
+		public void 프로모션_생성_존재하지_않는_쿠폰이면_COUPON_NOT_FOUND_예외_발생한다() {
+			//given
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 1000;
+			int limitPerUser = 1;
+			LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
+			LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
+			long wrongCouponId = -1;
+			int validDaysAfterIssue = 3;
+			PromotionCreateRequest request = createPromotionCreateRequest(promotionName, promotionType, wrongCouponId,
+				limitTotal, limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
+
+			given(couponReader.getById(anyLong())).willThrow(
+				new ParkingEasyException(CouponErrorCode.COUPON_NOT_FOUND));
+
+			//when & then
+			Assertions.assertThatThrownBy(() -> promotionService.createPromotion(request))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(CouponErrorCode.COUPON_NOT_FOUND.getDefaultMessage());
+
+		}
+
+		@Test
+		public void 프로모션_생성_유효한_요청값으로_프로모션을_생성하고_응답을_반환한다() {
+			//given
+			long promotionId = 1L;
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 1000;
+			int limitPerUser = 1;
+			LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
+			LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
+
+			long couponId = 1L;
+			int validDaysAfterIssue = 3;
+			String couponName = "신규가입 2000원 할인 쿠폰";
+			DiscountType discountType = DiscountType.PERCENT;
+			int discountValue = 10;
+			String description = "신규 유저 전용, 1회만 사용 가능";
+
+			PromotionCreateRequest request = createPromotionCreateRequest(promotionName, promotionType, couponId,
+				limitTotal,
+				limitPerUser,
+				promotionStartAt, promotionEndAt, validDaysAfterIssue);
+			Coupon coupon = createCoupon(couponId, couponName, discountType, discountValue, description);
+
+			Promotion promotion = createPromotion(promotionId, promotionName, promotionType, coupon, limitTotal,
+				limitPerUser,
+				promotionStartAt, promotionEndAt,
+				validDaysAfterIssue, PromotionStatus.ACTIVE);
+
+			given(couponReader.getById(anyLong())).willReturn(coupon);
+			given(promotionWriter.create(any(Coupon.class), anyString(), any(PromotionType.class), anyInt(), anyInt(),
+				any(
+					LocalDateTime.class), any(LocalDateTime.class), anyInt())).willReturn(promotion);
+
+			//when
+			PromotionCreateResponse promotionCreateResponse = promotionService.createPromotion(request);
+
+			//then
+			Assertions.assertThat(promotionCreateResponse)
+				.extracting(
+					"id", "name", "promotionType", "couponResponse.id", "couponResponse.name",
+					"couponResponse.discountType", "couponResponse.discountValue", "limitTotal", "limitPerUser",
+					"promotionStartAt", "promotionEndAt", "validDaysAfterIssue"
+				)
+				.containsExactly(
+					promotionId, promotionName, promotionType, couponId, couponName, discountType, discountValue,
+					limitTotal, limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue
+				);
+		}
+
+	}
+
+	private Promotion createPromotion(Long promotionId, String promotionName, PromotionType promotionType,
+		Coupon coupon, int limitTotal,
+		int limitPerUser, LocalDateTime promotionStartAt, LocalDateTime promotionEndAt, int validDaysAfterIssue,
+		PromotionStatus promotionStatus) {
+		Promotion promotion = Promotion.builder()
+			.name(promotionName)
+			.promotionType(promotionType)
+			.coupon(coupon)
+			.limitTotal(limitTotal)
+			.limitPerUser(limitPerUser)
+			.promotionStartAt(promotionStartAt)
+			.promotionEndAt(promotionEndAt)
+			.validDaysAfterIssue(validDaysAfterIssue)
+			.build();
+		ReflectionTestUtils.setField(promotion, "id", promotionId);
+		ReflectionTestUtils.setField(promotion, "promotionStatus", promotionStatus);
+		return promotion;
+	}
+
+	private PromotionCreateRequest createPromotionCreateRequest(String name, PromotionType promotionType,
+		long couponId, int limitTotal, int limitPerUser, LocalDateTime promotionStartAt, LocalDateTime promotionEndAt,
+		int validDaysAfterIssue) {
+		return PromotionCreateRequest.builder()
+			.name(name)
+			.promotionType(promotionType)
+			.couponId(couponId)
+			.limitTotal(limitTotal)
+			.limitPerUser(limitPerUser)
+			.promotionStartAt(promotionStartAt)
+			.promotionEndAt(promotionEndAt)
+			.validDaysAfterIssue(validDaysAfterIssue)
+			.build();
+	}
+
+	private Coupon createCoupon(Long id, String name, DiscountType discountType, int discountValue,
+		String description) {
+		Coupon coupon = Coupon.builder()
+			.name(name)
+			.discountType(discountType)
+			.discountValue(discountValue)
+			.description(description)
+			.build();
+		ReflectionTestUtils.setField(coupon, "id", id);
+		return coupon;
+	}
+
+}
