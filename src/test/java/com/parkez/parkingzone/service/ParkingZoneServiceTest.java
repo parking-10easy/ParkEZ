@@ -458,7 +458,7 @@ class ParkingZoneServiceTest {
         }
 
         @Test
-        void 주차공간_삭제_기존_예약이_존재할_경우_RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN_예외가_발생한다() {
+        void 주차공간_삭제_기존_예약이_존재할_경우_RESERVED_ZONE_DELETE_FORBIDDEN_예외가_발생한다() {
 
             // given
             AuthUser authUser = getAuthUser();
@@ -471,7 +471,7 @@ class ParkingZoneServiceTest {
             // when & then
             assertThatThrownBy(() -> parkingZoneService.deleteParkingZone(authUser, parkingZone.getId(), LocalDateTime.now()))
                     .isInstanceOf(ParkingEasyException.class)
-                    .hasMessage(ParkingZoneErrorCode.RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN.getDefaultMessage());
+                    .hasMessage(ParkingZoneErrorCode.RESERVED_ZONE_DELETE_FORBIDDEN.getDefaultMessage());
         }
     }
 }

@@ -61,9 +61,7 @@ public class ParkingZoneService {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         ParkingZoneStatus newStatus = ParkingZoneStatus.from(request.getStatus());
         validateOwner(parkingZone, authUser.getId());
-        if (newStatus == ParkingZoneStatus.UNAVAILABLE && reservationReader.existsActiveReservationByParkingZoneId(parkingZoneId)){
-            throw new ParkingEasyException(ParkingZoneErrorCode.RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN);
-        }
+        validateCannotChangeToUnavailableWhenReserved(parkingZoneId,newStatus);
         parkingZone.updateParkingZoneStatus(newStatus);
     }
 
@@ -77,13 +75,11 @@ public class ParkingZoneService {
     public void deleteParkingZone(AuthUser authUser, Long parkingZoneId, LocalDateTime deletedAt) {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
         validateOwner(parkingZone, authUser.getId());
-        if (reservationReader.existsActiveReservationByParkingZoneId(parkingZoneId)){
-            throw new ParkingEasyException(ParkingZoneErrorCode.RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN);
-        }
+        validateNoActiveReservationsForDeletion(parkingZoneId);
         parkingZoneWriter.deleteParkingZone(parkingZoneId, deletedAt);
     }
 
-    private static void validateNotPublicData(ParkingLot parkingLot) {
+    private void validateNotPublicData(ParkingLot parkingLot) {
         if (parkingLot.isPublicData()){
             throw new ParkingEasyException(ParkingZoneErrorCode.PUBLIC_DATA_CREATION_NOT_ALLOWED);
         }
@@ -93,6 +89,19 @@ public class ParkingZoneService {
         boolean isOwned = parkingZoneReader.isOwnedParkingZone(parkingZone.getId(), ownerId);
         if (!isOwned){
             throw new ParkingEasyException(ParkingZoneErrorCode.FORBIDDEN_TO_ACTION);
+        }
+    }
+
+    private void validateCannotChangeToUnavailableWhenReserved(Long parkingZoneId, ParkingZoneStatus newStatus) {
+        if (newStatus == ParkingZoneStatus.UNAVAILABLE &&
+                reservationReader.existsActiveReservationByParkingZoneId(parkingZoneId)) {
+            throw new ParkingEasyException(ParkingZoneErrorCode.RESERVED_ZONE_STATUS_CHANGE_FORBIDDEN);
+        }
+    }
+
+    private void validateNoActiveReservationsForDeletion(Long parkingZoneId) {
+        if (reservationReader.existsActiveReservationByParkingZoneId(parkingZoneId)){
+            throw new ParkingEasyException(ParkingZoneErrorCode.RESERVED_ZONE_DELETE_FORBIDDEN);
         }
     }
 }
