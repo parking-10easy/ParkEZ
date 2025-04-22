@@ -10,16 +10,15 @@ import java.math.BigDecimal;
 import java.time.YearMonth;
 
 @Getter
-@RequiredArgsConstructor
 @Schema(description = "소유자(나)의 예상 정산 내역 조회 응답 dto")
 public class SettlementPreviewResponse {
 
-    private YearMonth settlementMonth;
-    private BigDecimal totalAmount;
-    private BigDecimal totalFee;
-    private BigDecimal netAmount;
-    private Long reservationCount;
-    private SettlementStatus status;
+    private final YearMonth settlementMonth;
+    private final BigDecimal totalAmount;
+    private final BigDecimal totalFee;
+    private final BigDecimal netAmount;
+    private final Long reservationCount;
+    private final SettlementStatus status;
 
     @Builder
     public SettlementPreviewResponse(YearMonth settlementMonth, BigDecimal totalAmount, BigDecimal totalFee, BigDecimal netAmount, Long reservationCount, SettlementStatus status) {
@@ -31,7 +30,7 @@ public class SettlementPreviewResponse {
         this.status = status;
     }
 
-    public static SettlementPreviewResponse from(YearMonth settlementMonth, BigDecimal totalAmount, BigDecimal totalFee, BigDecimal netAmount, Long reservationCount){
+    public static SettlementPreviewResponse of(YearMonth settlementMonth, BigDecimal totalAmount, BigDecimal totalFee, BigDecimal netAmount, Long reservationCount){
         return SettlementPreviewResponse.builder()
                 .settlementMonth(settlementMonth)
                 .totalAmount(totalAmount)

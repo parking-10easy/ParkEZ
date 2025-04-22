@@ -34,7 +34,7 @@ public class SettlementReservationResponse {
         this.status = status;
     }
 
-    public static SettlementReservationResponse from(Payment payment, double feeRate, SettlementStatus status) {
+    public static SettlementReservationResponse of(Payment payment, double feeRate, SettlementStatus status) {
         BigDecimal amount = payment.getPrice();
         BigDecimal fee = amount.multiply(BigDecimal.valueOf(feeRate));
         BigDecimal netAmount = amount.subtract(fee);

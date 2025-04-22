@@ -54,7 +54,7 @@ public class SettlementService {
 
         long reservationCount = payments.size();
 
-        return SettlementPreviewResponse.from(yearMonth, settlementAmounts.getTotalAmount(), settlementAmounts.getTotalFee(), settlementAmounts.getNetAmount(), reservationCount);
+        return SettlementPreviewResponse.of(yearMonth, settlementAmounts.getTotalAmount(), settlementAmounts.getTotalFee(), settlementAmounts.getNetAmount(), reservationCount);
     }
 
     public SettlementReservationResponse getReservationSettlement(AuthUser authUser, Long reservationId) {
@@ -71,7 +71,7 @@ public class SettlementService {
 
         SettlementStatus status = settlementReader.findSettlementStatus(payment.getReservationId());
 
-        return SettlementReservationResponse.from(payment, FEE_PERCENTAGE, status);
+        return SettlementReservationResponse.of(payment, FEE_PERCENTAGE, status);
     }
 
     public void generateMonthlySettlement(User owner, YearMonth month) {

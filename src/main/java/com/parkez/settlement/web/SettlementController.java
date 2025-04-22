@@ -25,7 +25,6 @@ import java.time.YearMonth;
 @RequestMapping("/api/v1/settlement")
 @RequiredArgsConstructor
 @Tag(name = "11. 정산 API", description = "정산 내역 조회 및 정산 확정 API 입니다.")
-@Secured(UserRole.Authority.OWNER)
 @CheckMemberStatus
 public class SettlementController {
 
