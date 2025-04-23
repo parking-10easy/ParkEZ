@@ -3,14 +3,19 @@ package com.parkez.promotion.service;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.parkez.common.exception.ParkingEasyException;
@@ -19,7 +24,9 @@ import com.parkez.promotion.domain.entity.Promotion;
 import com.parkez.promotion.domain.enums.DiscountType;
 import com.parkez.promotion.domain.enums.PromotionStatus;
 import com.parkez.promotion.domain.enums.PromotionType;
+import com.parkez.promotion.domain.repository.projection.ActivePromotionProjection;
 import com.parkez.promotion.dto.request.PromotionCreateRequest;
+import com.parkez.promotion.dto.response.ActivePromotionResponse;
 import com.parkez.promotion.dto.response.PromotionCreateResponse;
 import com.parkez.promotion.excption.CouponErrorCode;
 import com.parkez.promotion.excption.PromotionErrorCode;
@@ -32,6 +39,9 @@ class PromotionServiceTest {
 
 	@Mock
 	private CouponReader couponReader;
+
+	@Mock
+	private PromotionReader promotionReader;
 
 	@InjectMocks
 	private PromotionService promotionService;
@@ -113,11 +123,12 @@ class PromotionServiceTest {
 			PromotionType promotionType = PromotionType.DAILY;
 			int limitTotal = 1000;
 			int limitPerUser = 1;
+			int validDaysAfterIssue = 3;
+
 			LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
 			LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
 
 			long couponId = 1L;
-			int validDaysAfterIssue = 3;
 			String couponName = "신규가입 2000원 할인 쿠폰";
 			DiscountType discountType = DiscountType.PERCENT;
 			int discountValue = 10;
@@ -130,9 +141,7 @@ class PromotionServiceTest {
 			Coupon coupon = createCoupon(couponId, couponName, discountType, discountValue, description);
 
 			Promotion promotion = createPromotion(promotionId, promotionName, promotionType, coupon, limitTotal,
-				limitPerUser,
-				promotionStartAt, promotionEndAt,
-				validDaysAfterIssue, PromotionStatus.ACTIVE);
+				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue, PromotionStatus.ACTIVE);
 
 			given(couponReader.getById(anyLong())).willReturn(coupon);
 			given(promotionWriter.create(any(Coupon.class), anyString(), any(PromotionType.class), anyInt(), anyInt(),
@@ -155,6 +164,64 @@ class PromotionServiceTest {
 				);
 		}
 
+	}
+
+	@Nested
+	class GetActivePromotions {
+
+		@Test
+		public void 진행중인_프로모션_조회_한건_정상적으로_조회_할_수_있다() {
+			//given
+			int page = 1;
+			int size = 10;
+			PageRequest pageRequest = PageRequest.of(page - 1, size);
+
+			Long id = 1L;
+			String promotionName = "신규가입 프로모션";
+			PromotionType promotionType = PromotionType.DAILY;
+			Integer limitPerUser = 1;
+			LocalDateTime promotionStartAt = LocalDateTime.now().minusDays(1);
+			LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(1);
+			String couponName = "신규가입 쿠폰";
+			Integer discountValue = 2000;
+
+			ActivePromotionProjection projection = getActivePromotionProjection(id, promotionName, promotionType,
+				limitPerUser, promotionStartAt, promotionEndAt, couponName, discountValue);
+
+			given(promotionReader.findActivePromotions(anyInt(),anyInt())).willReturn(new PageImpl<>(List.of(projection), pageRequest, 0));
+
+			//when
+			Page<ActivePromotionResponse> activePromotions = promotionService.getActivePromotions(page, size);
+
+			//then
+			Assertions.assertThat(activePromotions).size().isEqualTo(1);
+			Assertions.assertThat(activePromotions.getContent())
+				.extracting(
+					"id", "promotionName", "promotionType", "limitPerUser", "promotionStartAt", "promotionEndAt",
+					"discountValue", "couponName"
+				).containsExactly(
+					Tuple.tuple(id, promotionName, promotionType, limitPerUser, promotionStartAt, promotionEndAt,
+						discountValue, couponName)
+				);
+
+		}
+
+		@Test
+		public void 진행중인_프로모션_조회_없으면_빈_배열_반환() {
+			//given
+			int page = 1;
+			int size = 10;
+			PageRequest pageRequest = PageRequest.of(page - 1, size);
+
+			given(promotionReader.findActivePromotions(anyInt(),anyInt())).willReturn(new PageImpl<>(List.of(), pageRequest, 0));
+
+			//when
+			Page<ActivePromotionResponse> activePromotions = promotionService.getActivePromotions(page, size);
+
+			//then
+			Assertions.assertThat(activePromotions.getContent()).isEmpty();
+
+		}
 	}
 
 	private Promotion createPromotion(Long promotionId, String promotionName, PromotionType promotionType,
@@ -201,6 +268,44 @@ class PromotionServiceTest {
 			.build();
 		ReflectionTestUtils.setField(coupon, "id", id);
 		return coupon;
+	}
+
+	private ActivePromotionProjection getActivePromotionProjection(Long id, String promotionName,
+		PromotionType promotionType, Integer limitPerUser, LocalDateTime promotionStartAt, LocalDateTime promotionEndAt,
+		String couponName, Integer discountValue) {
+		return new ActivePromotionProjection() {
+			public Long getId() {
+				return id;
+			}
+
+			public String getPromotionName() {
+				return promotionName;
+			}
+
+			public PromotionType getPromotionType() {
+				return promotionType;
+			}
+
+			public Integer getLimitPerUser() {
+				return limitPerUser;
+			}
+
+			public LocalDateTime getPromotionStartAt() {
+				return promotionStartAt;
+			}
+
+			public LocalDateTime getPromotionEndAt() {
+				return promotionEndAt;
+			}
+
+			public String getCouponName() {
+				return couponName;
+			}
+
+			public Integer getDiscountValue() {
+				return discountValue;
+			}
+		};
 	}
 
 }

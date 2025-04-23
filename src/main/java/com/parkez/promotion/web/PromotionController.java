@@ -1,12 +1,16 @@
 package com.parkez.promotion.web;
 
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.dto.response.Response;
 import com.parkez.promotion.dto.request.PromotionCreateRequest;
+import com.parkez.promotion.dto.response.ActivePromotionResponse;
 import com.parkez.promotion.dto.response.PromotionCreateResponse;
 import com.parkez.promotion.service.PromotionService;
 
@@ -30,5 +34,11 @@ public class PromotionController {
 		@Valid @RequestBody PromotionCreateRequest request) {
 
 		return Response.of(promotionService.createPromotion(request));
+	}
+
+	@GetMapping("/v1/promotions")
+	@Operation(summary = "진행중인 프로모션 목록 조회", description = "진행중인 프로모션을 조회합니다.")
+	public Response<ActivePromotionResponse> getActivePromotions(@Valid @ParameterObject PageRequest pageRequest) {
+		return Response.fromPage(promotionService.getActivePromotions(pageRequest.getPage(), pageRequest.getSize()));
 	}
 }

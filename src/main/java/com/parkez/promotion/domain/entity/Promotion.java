@@ -75,4 +75,8 @@ public class Promotion extends BaseEntity {
 		this.validDaysAfterIssue = validDaysAfterIssue;
 		this.promotionStatus = PromotionStatus.ACTIVE;
 	}
+
+	public void updateStatus(PromotionStatus promotionStatus) {
+		this.promotionStatus = promotionStatus;
+	}
 }
