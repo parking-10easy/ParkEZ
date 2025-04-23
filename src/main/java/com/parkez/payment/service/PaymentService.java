@@ -1,8 +1,8 @@
 package com.parkez.payment.service;
 
 import com.parkez.alarm.domain.enums.NotificationType;
-import com.parkez.alarm.service.AlarmSender;
-import com.parkez.alarm.service.AlarmService;
+import com.parkez.alarm.dto.ReservationAlarmInfo;
+import com.parkez.alarm.event.PaymentEvent;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.payment.domain.entity.Payment;
@@ -23,7 +23,7 @@ import com.parkez.reservation.service.ReservationWriter;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -32,7 +32,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class PaymentService {
 
     private final PaymentWriter paymentWriter;
@@ -43,8 +42,7 @@ public class PaymentService {
     private final ReservationWriter reservationWriter;
     private final WebClient tossWebClient;
     private final TossPaymentService tossPaymentService;
-    private final AlarmService alarmService;
-    private final AlarmSender alarmSender;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     private static final long TIME_OUT_MINUTE = 10;
     private static final long EXPIRATION_TIME = 10L;
@@ -146,8 +144,7 @@ public class PaymentService {
 
         reservationWriter.cancel(reservation);
 
-        alarmService.createPaymentAlarms(reservation, NotificationType.FAILED);
-        alarmSender.processAlarms();
+        applicationEventPublisher.publishEvent(new PaymentEvent(ReservationAlarmInfo.from(reservation), NotificationType.FAILED));
     }
 
     public void cancelPayment(Reservation reservation, ReservationCancelRequest request){
@@ -171,9 +168,7 @@ public class PaymentService {
 
             paymentWriter.cancelPayment(payment);
         }
-
-        alarmService.createPaymentAlarms(reservation, NotificationType.CANCELED);
-        alarmSender.processAlarms();
+        applicationEventPublisher.publishEvent(new PaymentEvent(ReservationAlarmInfo.from(reservation), NotificationType.CANCELED));
     }
 
     public void expirePayment() {

@@ -6,6 +6,7 @@ import com.parkez.alarm.domain.enums.AlarmTargetType;
 import com.parkez.alarm.domain.enums.NotificationType;
 import com.parkez.alarm.domain.repository.AlarmRepository;
 import com.parkez.alarm.domain.repository.FcmDeviceRepository;
+import com.parkez.alarm.dto.ReservationAlarmInfo;
 import com.parkez.reservation.domain.entity.Reservation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,18 +43,18 @@ public class AlarmService {
         });
     }
 
-    public void createPaymentAlarms(Reservation reservation, NotificationType notificationType) {
-        Long userId = reservation.getUserId();
-        Long reservationId = reservation.getId();
+    public void createPaymentAlarms(ReservationAlarmInfo reservationAlarmInfo, NotificationType notificationType) {
+        Long userId = reservationAlarmInfo.getUserId();
+        Long reservationId = reservationAlarmInfo.getReservationId();
 
-        String title = "[결제] " + reservation.getId() +
+        String title = "[결제] " + reservationAlarmInfo.getReservationId() +
                 (notificationType == NotificationType.CANCELED ? "번 예약 결제 취소" : "번 예약 결제 실패");
         String message = notificationType == NotificationType.CANCELED ? "결제가 취소되었습니다." : "결제가 실패했습니다.";
 
         // 이메일 알림 생성
         boolean emailExists = alarmRepository.existsAlarm(reservationId, AlarmTargetType.PAYMENT, notificationType, AlarmChannel.EMAIL);
         if (!emailExists) {
-            Alarm emailAlarm = Alarm.createEmailAlarm(userId, reservationId, AlarmTargetType.PAYMENT, reservation.getUserEmail(), title, message, notificationType);
+            Alarm emailAlarm = Alarm.createEmailAlarm(userId, reservationId, AlarmTargetType.PAYMENT, reservationAlarmInfo.getUserEmail(), title, message, notificationType);
             alarmRepository.save(emailAlarm);
         }
 
