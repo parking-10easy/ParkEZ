@@ -1,4 +1,4 @@
-package com.parkez.alarm.service;
+package com.parkez.alarm.service.fcm;
 
 import com.parkez.alarm.domain.entity.FcmDevice;
 import com.parkez.alarm.domain.repository.FcmDeviceRepository;

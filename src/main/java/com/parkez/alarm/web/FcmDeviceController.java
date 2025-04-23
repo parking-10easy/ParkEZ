@@ -1,7 +1,7 @@
 package com.parkez.alarm.web;
 
 import com.parkez.alarm.dto.request.DeviceRegistrationRequest;
-import com.parkez.alarm.service.FcmDeviceService;
+import com.parkez.alarm.service.fcm.FcmDeviceService;
 import com.parkez.common.dto.response.Response;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;

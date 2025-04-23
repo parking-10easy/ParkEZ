@@ -1,4 +1,4 @@
-package com.parkez.alarm.service;
+package com.parkez.alarm.service.fcm;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
@@ -28,12 +28,12 @@ public class PushService {
                 .build();
         try {
             String response = FirebaseMessaging.getInstance().send(message);
-            log.info("푸쉬 알림 전송 성공 response={} ",response);
+            log.info("푸시 알림 전송 성공 response={} ",response);
             alarm.updateSent(true);
             alarm.updateSentAt(LocalDateTime.now());
 
         } catch (FirebaseMessagingException e) {
-            log.info("푸쉬 알림 전송 실패 e.getMessage={} ",e.getMessage());
+            log.info("푸시 알림 전송 실패 e.getMessage={} ",e.getMessage());
             alarm.updateFailReason(e.getMessage());
             alarmRepository.flush();
         }
