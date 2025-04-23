@@ -30,6 +30,7 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 				p.promotionStatus = :promotionStatus
 				and p.promotionStartAt <= :now
 				and p.promotionEndAt >= :now
+			order by p.promotionEndAt asc, p.promotionStartAt desc
 			""",
 		countQuery = """
 			select count(p)
