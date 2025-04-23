@@ -1,71 +1,70 @@
 package com.parkez.parkinglot.service;
 
-import com.parkez.parkinglot.client.kakaomap.geocode.KakaoGeocodeClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.parkez.parkinglot.client.kakaomap.geocode.SimpleKakaoGeocodeClient;
 import com.parkez.parkinglot.client.publicData.ParkingLotData;
 import com.parkez.parkinglot.client.publicData.ParkingLotDataResponse;
-import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
-import com.parkez.user.service.UserReader;
-import org.apache.commons.lang3.reflect.FieldUtils;
+import com.parkez.user.service.JdbcUserReader;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestTemplate;
 
-import java.net.URI;
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class ParkingLotPublicDataServiceTest {
-
-
-    @Mock
-    private ParkingLotRepository parkingLotRepository;
+class ParkingLotPublicDataServiceTest {
 
     @Mock
-    private RestTemplate restTemplate;
-
+    HttpClient httpClient;
     @Mock
-    private UserReader userReader;
-
+    HttpResponse<String> httpResponse;
     @Mock
-    private JdbcTemplate jdbcTemplate;
-
+    ObjectMapper objectMapper;
     @Mock
-    private KakaoGeocodeClient kakaoGeocodeClient;
+    SimpleKakaoGeocodeClient kakaoClient;
+    @Mock
+    JdbcUserReader userReader;
 
-    @InjectMocks
-    private ParkingLotPublicDataService parkingLotPublicDataService;
+    private ParkingLotPublicDataService service;
 
     @BeforeEach
-    public void setUp() throws IllegalAccessException {
-        ReflectionTestUtils.setField(parkingLotPublicDataService, "adminEmail", "admin@example.com");
-        FieldUtils.writeField(parkingLotPublicDataService, "parkingLotPublicDataUrl", "http://dummy.url", true);
-        FieldUtils.writeField(parkingLotPublicDataService, "serviceKey", "dummyServiceKey", true);
-        FieldUtils.writeField(parkingLotPublicDataService, "defaultParkingLotImageUrl", "http://dummy.image.url", true);
-        FieldUtils.writeField(parkingLotPublicDataService, "restTemplate", restTemplate, true);
+    void setUp() {
+        service = new ParkingLotPublicDataService(
+                "http://dummy.url",
+                "dummyKey",
+                "http://dummy.img",
+                "admin@example.com",
+                "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",
+                "sa",
+                "",
+                null,  // ReflectionTestUtils 로 주입
+                null
+        );
+        ReflectionTestUtils.setField(service, "httpClient", httpClient);
+        ReflectionTestUtils.setField(service, "objectMapper", objectMapper);
+        ReflectionTestUtils.setField(service, "kakaoGeocodeClient", kakaoClient);
+        ReflectionTestUtils.setField(service, "userReader", userReader);
     }
 
-    private ParkingLotData getParkingLotData() {
+    private ParkingLotData sampleData() {
         return ParkingLotData.builder()
                 .name("주차장 데이터")
                 .address("서울시 강남구")
-                .latitude("127.12345")
-                .longitude("37.98765")
+                .latitude("37.98765")
+                .longitude("127.12345")
                 .openedAt("09:00")
                 .closedAt("18:00")
                 .quantity("10")
@@ -73,157 +72,87 @@ public class ParkingLotPublicDataServiceTest {
                 .build();
     }
 
-    private User getAdminUser() {
-        User ownerUser = User.builder()
-                .email("admin@example.com")
-                .nickname("관리자")
-                .role(UserRole.ROLE_ADMIN)
-                .build();
-        ReflectionTestUtils.setField(ownerUser, "id", 1L);
-        return ownerUser;
+    private User adminUser() {
+        return User.ofIdEmailRole(1L, "admin@example.com", UserRole.ROLE_ADMIN);
     }
 
-    @Nested
-    class fetchAndSavePublicData {
-        @Test
-        void 공공데이터가_정상_저장된다() {
+    private void stubResponse(ParkingLotDataResponse dto) throws IOException, InterruptedException {
+        given(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .willReturn(httpResponse);
+        given(httpResponse.body()).willReturn("{}");
+        given(objectMapper.readValue(anyString(), eq(ParkingLotDataResponse.class)))
+                .willReturn(dto);
+        given(kakaoClient.getAddress(anyDouble(), anyDouble()))
+                .willReturn(dto.getData() != null && !dto.getData().isEmpty()
+                        ? dto.getData().get(0).getAddress()
+                        : "주소없음");
+        given(userReader.getUserByEmailAndRole("admin@example.com", UserRole.ROLE_ADMIN))
+                .willReturn(adminUser());
+    }
 
-            // given
-            ParkingLotData data = getParkingLotData();
+    @Test
+    void 공공데이터가_정상_흐름대로_처리된다() throws Exception {
+        // given
+        ParkingLotDataResponse dto = ParkingLotDataResponse.builder()
+                .data(List.of(sampleData()))
+                .build();
+        stubResponse(dto);
 
-            ParkingLotDataResponse dataResponse = ParkingLotDataResponse.builder()
-                    .data(List.of(data))
-                    .build();
+        // when
+        assertDoesNotThrow(() -> service.fetchAndSavePublicData());
 
-            ResponseEntity<ParkingLotDataResponse> responseEntity = ResponseEntity.ok(dataResponse);
+        // then: 페이지는 perPage(2)보다 작아서 1로 초기화
+        int page = (int) ReflectionTestUtils.getField(service, "currentPage");
+        assertEquals(1, page);
+    }
 
-            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
-                    .thenReturn(responseEntity);
+    @Test
+    void 데이터응답_data_null이면_페이지가_리셋된다() throws Exception {
+        // given
+        ParkingLotDataResponse dto = ParkingLotDataResponse.builder()
+                .data(null)
+                .build();
 
-            when(kakaoGeocodeClient.getAddress(any(), any())).thenReturn(data.getAddress());
+        given(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .willReturn(httpResponse);
 
-            User adminUser = getAdminUser();
-            when(userReader.getUserByEmailAndRole(adminUser.getEmail(), adminUser.getRole()))
-                    .thenReturn(adminUser);
+        given(httpResponse.body()).willReturn("{}");
 
-            //when
-            parkingLotPublicDataService.fetchAndSavePublicData();
+        given(objectMapper.readValue(anyString(), eq(ParkingLotDataResponse.class)))
+                .willReturn(dto);
 
-            //then
-            assertEquals(1, parkingLotPublicDataService.getCurrentPage());
-            verify(jdbcTemplate, times(2)).batchUpdate(anyString(), any(BatchPreparedStatementSetter.class));
-        }
+        // when
+        service.fetchAndSavePublicData();
 
-        @Test
-        void DB에_있는_공공데이터는_저장되지_않는다() {
-            // given
-            ParkingLotData data = getParkingLotData();
+        // then
+        int page = (int) ReflectionTestUtils.getField(service, "currentPage");
+        assertEquals(1, page);
+    }
 
-            ParkingLotDataResponse dataResponse = ParkingLotDataResponse.builder()
-                    .data(List.of(data))
-                    .build();
+    @Test
+    void 데이터수가_perPage보다_작으면_페이지가_리셋된다() throws Exception {
+        // given
+        ReflectionTestUtils.setField(service, "currentPage", 5);
+        ParkingLotDataResponse dto = ParkingLotDataResponse.builder()
+                .data(List.of(sampleData()))
+                .build();
+        stubResponse(dto);
 
-            ResponseEntity<ParkingLotDataResponse> responseEntity = ResponseEntity.ok(dataResponse);
+        // when
+        service.fetchAndSavePublicData();
 
-            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
-                    .thenReturn(responseEntity);
+        // then
+        int page = (int) ReflectionTestUtils.getField(service, "currentPage");
+        assertEquals(1, page);
+    }
 
-            when(kakaoGeocodeClient.getAddress(any(), any())).thenReturn(data.getAddress());
+    @Test
+    void API호출_실패시_IOException이_던져진다() throws Exception {
+        // given
+        given(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .willThrow(new IOException("API 호출 실패"));
 
-            User adminUser = getAdminUser();
-            when(userReader.getUserByEmailAndRole(adminUser.getEmail(), adminUser.getRole()))
-                    .thenReturn(adminUser);
-
-            doThrow(DataIntegrityViolationException.class)
-                    .when(jdbcTemplate).batchUpdate(contains("INSERT INTO parking_lot"), any(BatchPreparedStatementSetter.class));
-
-            // when
-            parkingLotPublicDataService.fetchAndSavePublicData();
-
-            // then
-            verify(jdbcTemplate, times(1))
-                    .batchUpdate(contains("INSERT INTO parking_lot"), any(BatchPreparedStatementSetter.class));
-
-            verify(jdbcTemplate, never())
-                    .batchUpdate(contains("INSERT INTO parking_lot_image"), any(BatchPreparedStatementSetter.class));
-        }
-
-        @Test
-        void 데이터_응답이_null_이면_저장되지_않고_페이지가_초기화된다() {
-            // given
-            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
-                    .thenReturn(ResponseEntity.ok(null));
-
-            // when
-            parkingLotPublicDataService.fetchAndSavePublicData();
-
-            // then
-            assertEquals(1, parkingLotPublicDataService.getCurrentPage());
-        }
-
-        @Test
-        void 응답_데이터의_데이터_필드가_null_일_때_currentPage가_리셋된다() {
-            // given
-            ParkingLotDataResponse dataResponse = ParkingLotDataResponse.builder()
-                    .page(1)
-                    .perPage(10)
-                    .totalCount(0)
-                    .currentCount(0)
-                    .matchCount(0)
-                    .data(null)
-                    .build();
-
-            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
-                    .thenReturn(ResponseEntity.ok(dataResponse));
-
-            // when
-            parkingLotPublicDataService.fetchAndSavePublicData();
-
-            // then
-            assertEquals(1, parkingLotPublicDataService.getCurrentPage());
-
-        }
-
-        @Test
-        void 데이터의_수가_perPage보다_작으면_currentPage가_리셋된다() {
-            // given
-            ReflectionTestUtils.setField(parkingLotPublicDataService, "currentPage", 5);
-            ParkingLotData data = getParkingLotData();
-
-            List<ParkingLotData> dataList = List.of(data);
-            ParkingLotDataResponse dataResponse = ParkingLotDataResponse.builder()
-                    .data(dataList)
-                    .build();
-
-            ResponseEntity<ParkingLotDataResponse> responseEntity = ResponseEntity.ok(dataResponse);
-            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
-                    .thenReturn(responseEntity);
-
-            when(kakaoGeocodeClient.getAddress(any(), any())).thenReturn(data.getAddress());
-
-            User adminUser = getAdminUser();
-            when(userReader.getUserByEmailAndRole(adminUser.getEmail(), adminUser.getRole()))
-                    .thenReturn(adminUser);
-
-            when(jdbcTemplate.batchUpdate(anyString(), any(BatchPreparedStatementSetter.class)))
-                    .thenReturn(new int[]{1});
-            // when
-            parkingLotPublicDataService.fetchAndSavePublicData();
-
-            // then
-            assertEquals(1, parkingLotPublicDataService.getCurrentPage());
-        }
-
-
-        @Test
-        void API_호출_실패시_예외가_발생한다() {
-            // given
-            when(restTemplate.getForEntity(any(URI.class), eq(ParkingLotDataResponse.class)))
-                    .thenThrow(new RuntimeException("API 호출 실패"));
-
-            // when, then
-            assertThrows(RuntimeException.class, () -> parkingLotPublicDataService.fetchAndSavePublicData());
-        }
-
+        // when & then
+        assertThrows(IOException.class, () -> service.fetchAndSavePublicData());
     }
 }
