@@ -129,4 +129,8 @@ public class Reservation extends BaseEntity {
     public String getUserEmail() {
         return user.getEmail();
     }
+
+    public String getUserNickName() {
+        return user.getNickname();
+    }
 }

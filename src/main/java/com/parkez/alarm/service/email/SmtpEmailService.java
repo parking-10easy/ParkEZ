@@ -1,4 +1,4 @@
-package com.parkez.alarm.service;
+package com.parkez.alarm.service.email;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;

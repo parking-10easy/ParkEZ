@@ -1,8 +1,9 @@
 package com.parkez.alarm.service;
 
 import com.parkez.alarm.domain.entity.Alarm;
-import com.parkez.alarm.domain.enums.AlarmChannel;
 import com.parkez.alarm.domain.repository.AlarmRepository;
+import com.parkez.alarm.service.processor.EmailAlarmProcessor;
+import com.parkez.alarm.service.processor.FcmAlarmProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,13 +18,8 @@ import java.util.List;
 public class AlarmSender {
 
     private final AlarmRepository alarmRepository;
-    private final SmtpEmailService smtpEmailService;
-    private final PushService pushService;
-    private final SesEmailService sesEmailService;
-
-    // SMTP 방식
-    /* @Value("${spring.mail.username}")
-    private String fromMail;*/
+    private final EmailAlarmProcessor emailAlarmProcessor;
+    private final FcmAlarmProcessor fcmAlarmProcessor;
 
     @Transactional
     public void processAlarms() {
@@ -31,26 +27,13 @@ public class AlarmSender {
 
         for (Alarm alarm : pendingAlarms) {
             try {
-                if (alarm.getChannel() == AlarmChannel.EMAIL) {
-                    // SMTP 방식
-                    /* smtpEmailService.sendEmail(
-                            alarm.getEmailAddress(),
-                            fromMail,
-                            alarm.getTitle(),
-                            alarm.getMessage()
-                    );*/
-                    // SES 방식
-                    sesEmailService.sendEmail(
-                            alarm.getEmailAddress(),
-                            alarm.getTitle(),
-                            alarm.getMessage()
-                    );
-                    alarm.updateSent(true);
-                    alarm.updateSentAt(LocalDateTime.now());
-                } else if (alarm.getChannel() == AlarmChannel.FCM) {
-                    pushService.sendPush(alarm, alarm.getDeviceToken(), alarm.getTitle(), alarm.getMessage());
+                switch (alarm.getChannel()) {
+                    case EMAIL -> emailAlarmProcessor.process(alarm);
+                    case FCM -> fcmAlarmProcessor.process(alarm);
+                    default -> throw new IllegalArgumentException("지원하지 않는 알림 채널입니다: " + alarm.getChannel());
                 }
-
+                alarm.updateSent(true);
+                alarm.updateSentAt(LocalDateTime.now());
             } catch (Exception e) {
                 alarm.updateFailReason(e.getMessage());
                 log.error("알림 전송 실패: alarmId={}, reason={}", alarm.getId(), e.getMessage(), e);

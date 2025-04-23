@@ -1,4 +1,4 @@
-package com.parkez.alarm.service;
+package com.parkez.alarm.service.email;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +26,7 @@ public class SesEmailService {
                 .message(Message.builder()
                         .subject(Content.builder().data(subject).charset("UTF-8").build())
                         .body(Body.builder()
-                                .text(Content.builder().data(body).charset("UTF-8").build())
+                                .html(Content.builder().data(body).charset("UTF-8").build())
                                 .build())
                         .build())
                 .build();
