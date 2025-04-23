@@ -10,9 +10,11 @@ import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.promotion.domain.entity.Coupon;
 import com.parkez.promotion.domain.entity.Promotion;
 import com.parkez.promotion.domain.repository.projection.ActivePromotionProjection;
+import com.parkez.promotion.domain.repository.projection.PromotionDetailProjection;
 import com.parkez.promotion.dto.request.PromotionCreateRequest;
 import com.parkez.promotion.dto.response.ActivePromotionResponse;
 import com.parkez.promotion.dto.response.PromotionCreateResponse;
+import com.parkez.promotion.dto.response.PromotionDetailResponse;
 import com.parkez.promotion.excption.PromotionErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,13 @@ public class PromotionService {
 
 		Page<ActivePromotionProjection> activePromotions = promotionReader.findActivePromotions(page, size);
 		return activePromotions.map(ActivePromotionResponse::from);
+	}
+
+	public PromotionDetailResponse getActivePromotion(Long userId, Long promotionId) {
+
+		PromotionDetailProjection activePromotion = promotionReader.getActivePromotion(userId, promotionId);
+
+		return PromotionDetailResponse.from(activePromotion);
 	}
 
 	private void validateDateRange(LocalDateTime promotionStartAt, LocalDateTime promotionEndAt) {
