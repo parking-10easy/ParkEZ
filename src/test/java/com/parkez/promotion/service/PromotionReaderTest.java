@@ -61,7 +61,7 @@ class PromotionReaderTest {
 			Page<ActivePromotionProjection> activePromotions = promotionReader.findActivePromotions(page, size);
 
 			//then
-			Assertions.assertThat(activePromotions).size().isEqualTo(1);
+			Assertions.assertThat(activePromotions.getContent()).hasSize(1);
 			Assertions.assertThat(activePromotions.getContent())
 				.extracting(
 					"id", "promotionName", "promotionType", "limitPerUser", "promotionStartAt", "promotionEndAt",

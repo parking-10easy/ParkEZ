@@ -68,7 +68,7 @@ class PromotionRepositoryTest {
 				PromotionStatus.ACTIVE, PageRequest.of(0, 10));
 
 			//then
-			assertThat(activePromotions).isEmpty();
+			assertThat(activePromotions.getContent()).isEmpty();
 
 		}
 
@@ -101,7 +101,7 @@ class PromotionRepositoryTest {
 				PromotionStatus.ACTIVE, PageRequest.of(0, 10));
 
 			//then
-			assertThat(activePromotions).isEmpty();
+			assertThat(activePromotions.getContent()).isEmpty();
 
 		}
 
@@ -134,7 +134,7 @@ class PromotionRepositoryTest {
 				PromotionStatus.ACTIVE, PageRequest.of(0, 10));
 
 			//then
-			assertThat(activePromotions).isEmpty();
+			assertThat(activePromotions.getContent()).isEmpty();
 
 		}
 
@@ -150,7 +150,7 @@ class PromotionRepositoryTest {
 				promotionStatus, pageable);
 
 			//then
-			assertThat(activePromotions).isEmpty();
+			assertThat(activePromotions.getContent()).isEmpty();
 
 		}
 
@@ -183,7 +183,7 @@ class PromotionRepositoryTest {
 				PromotionStatus.ACTIVE, PageRequest.of(0, 10));
 
 			//then
-			assertThat(activePromotions).size().isEqualTo(1);
+			assertThat(activePromotions.getContent()).hasSize(1);
 			assertThat(activePromotions.getContent())
 				.extracting(
 					"id","promotionName", "promotionType", "limitPerUser", "promotionStartAt", "promotionEndAt", "discountValue", "couponName"
