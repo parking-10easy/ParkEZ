@@ -41,10 +41,4 @@ public class UserReader {
     public Optional<User> findActiveUser(String email, UserRole role, LoginType loginType) {
         return userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(email, role, loginType);
     }
-
-    public User getUserByEmailAndRole(String email, UserRole role) {
-        return userRepository.findByEmailAndRoleAndDeletedAtIsNull(email, role).orElseThrow(
-                () -> new ParkingEasyException(UserErrorCode.USER_NOT_FOUND)
-        );
-    }
 }

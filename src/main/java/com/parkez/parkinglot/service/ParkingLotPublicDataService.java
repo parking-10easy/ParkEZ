@@ -1,130 +1,135 @@
 package com.parkez.parkinglot.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkez.parkinglot.client.kakaomap.geocode.KakaoGeocodeClient;
+import com.parkez.parkinglot.client.kakaomap.geocode.SimpleKakaoGeocodeClient;
 import com.parkez.parkinglot.client.publicData.ParkingLotData;
 import com.parkez.parkinglot.client.publicData.ParkingLotDataResponse;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.entity.ParkingLotImage;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.SourceType;
-import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
-import com.parkez.user.service.UserReader;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import com.parkez.user.service.JdbcUserReader;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.apache.http.client.utils.URIBuilder;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.sql.*;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
-
-@Service
-@Getter
 @Slf4j
-@RequiredArgsConstructor
 public class ParkingLotPublicDataService {
 
-    private final ObjectMapper mapper = new ObjectMapper();
 
-    @Value("${parking-lot.public-data.url}")
-    private String parkingLotPublicDataUrl;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
 
-    @Value("${parking-lot.public-data.serviceKey}")
-    private String serviceKey;
+    private final String parkingLotPublicDataUrl;
+    private final String serviceKey;
+    private final String defaultParkingLotImageUrl;
+    private final String adminEmail;
+    private final String jdbcUrl;
+    private final String dbUser;
+    private final String dbPassword;
+    private final SimpleKakaoGeocodeClient kakaoGeocodeClient;
 
-    @Value("${parking-lot.default-image-url}")
-    private String defaultParkingLotImageUrl;
-
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final ParkingLotRepository parkingLotRepository;
-    private final UserReader userReader;
-
-    private final JdbcTemplate jdbcTemplate;
+    private final JdbcUserReader userReader;
 
     private static final String description = "공공데이터로 등록한 주차장입니다.";
     private int currentPage = 1;
     private final int perPage = 2;
 
-    @Value("${parking-lot.public-data.admin-email}")
-    private String adminEmail;
+    public ParkingLotPublicDataService(
+            String dataUrl,
+            String serviceKey,
+            String defaultImg,
+            String adminEmail,
+            String jdbcUrl,
+            String dbUser,
+            String dbPassword,
+            SimpleKakaoGeocodeClient kakaoClient,
+            JdbcUserReader userReader
+    ) {
+        this.parkingLotPublicDataUrl = dataUrl;
+        this.serviceKey = serviceKey;
+        this.defaultParkingLotImageUrl = defaultImg;
+        this.adminEmail = adminEmail;
+        this.jdbcUrl = jdbcUrl;
+        this.dbUser = dbUser;
+        this.dbPassword = dbPassword;
+        this.httpClient = HttpClient.newHttpClient();
+        this.objectMapper = new ObjectMapper();
+        this.kakaoGeocodeClient = kakaoClient;
+        this.userReader = userReader;
+    }
 
-    private final KakaoGeocodeClient kakaoGeocodeClient;
-
-    @Transactional
-    public void fetchAndSavePublicData() {
+    public void fetchAndSavePublicData() throws IOException, InterruptedException, URISyntaxException {
         try {
-            URI uri = UriComponentsBuilder.fromUriString(parkingLotPublicDataUrl)
-                    .queryParam("page", currentPage)
-                    .queryParam("perPage", perPage)
-                    .queryParam("serviceKey", serviceKey)
-                    .build()
-                    .encode()
-                    .toUri();
-            log.info("공공데이터 요청 URL : {}", uri);
+            URI uri = new URIBuilder(parkingLotPublicDataUrl)
+                    .addParameter("page", String.valueOf(currentPage))
+                    .addParameter("perPage", String.valueOf(perPage))
+                    .addParameter("serviceKey", serviceKey)
+                    .build();
 
-            ResponseEntity<ParkingLotDataResponse> responseEntity = restTemplate.getForEntity(uri, ParkingLotDataResponse.class);
-            ParkingLotDataResponse dataResponse = responseEntity.getBody();
+            // HTTP 호출
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(uri)
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (dataResponse == null || dataResponse.getData() == null) {
+            // json -> dto로 변환
+            ParkingLotDataResponse dataResponse = objectMapper.readValue(
+                    response.body(),
+                    ParkingLotDataResponse.class
+            );
+
+            // 페이지 초기화
+            List<ParkingLotData> dataList = dataResponse.getData();
+            if (dataList == null || dataList.isEmpty()) {
                 currentPage = 1;
-                log.info("받은 데이터가 없으므로, 인덱스를 1로 초기화");
                 return;
             }
 
-            List<ParkingLotData> dataList = dataResponse.getData();
+            // dto -> entity 변환
             List<ParkingLot> parkingLots = dataList.stream()
                     .map(this::convertToParkingLot)
                     .toList();
 
-            long start = System.currentTimeMillis();
-            int totalCount = parkingLots.size();
-            boolean hasDuplicate = false;
-
-            try {
-//            parkingLotRepository.saveAll(parkingLots);
-                bulkInsertParkingLots(parkingLots);
-                bulkInsertImages(parkingLots);
-            } catch (DataIntegrityViolationException e) {
-                hasDuplicate = true;;
-                log.warn("중복된 위/경도를 가진 주차장이 있어 일부 저장되지 않았습니다: {}", e.getMessage());
+            // db에 저장
+            try (Connection connection = DriverManager.getConnection(jdbcUrl, dbUser, dbPassword)) {
+                connection.setAutoCommit(false);
+                try {
+                    bulkInsertParkingLots(connection, parkingLots);
+                    bulkInsertImages(connection, parkingLots);
+                    connection.commit();
+                    log.info("DB 저장 완료: {}건", parkingLots.size());
+                } catch (SQLException e) {
+                    connection.rollback();
+                    log.warn("DB 저장 중 오류, 롤백 처리함", e);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("공공데이터 fetch & save 실패", e);
             }
 
-            long end = System.currentTimeMillis();
-
-            if (hasDuplicate) {
-                log.info("불러온 공공데이터 {}건 중 일부는 중복으로 저장되지 않음, 수행시간 : {}ms", totalCount, (end - start));
-            } else {
-                log.info("불러온 공공데이터 {}건 전부 저장 완료, 수행시간 : {}ms", totalCount, (end - start));
-            }
-
+            // 페이지 인덱스 갱신
             currentPage = (dataList.size() < perPage) ? 1 : currentPage + 1;
 
         } catch (Exception e) {
-            log.error("API 호출 중 에러 발생", e);
             throw e;
         }
     }
 
-    private void bulkInsertParkingLots(List<ParkingLot> parkingLots) {
+    private void bulkInsertParkingLots(Connection connection, List<ParkingLot> parkingLots) throws SQLException {
         String sql = """
                 INSERT INTO parking_lot
                   (owner_id, name, address, latitude, longitude,
@@ -132,12 +137,11 @@ public class ParkingLotPublicDataService {
                    description, quantity, charge_type,
                    source_type, status, created_at,  modified_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE id = id
                 """;
 
-        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-            @Override
-            public void setValues(PreparedStatement ps, int i) throws SQLException {
-                ParkingLot pl = parkingLots.get(i);
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            for (ParkingLot pl : parkingLots) {
                 ps.setLong(1, pl.getOwner().getId());
                 ps.setString(2, pl.getName());
                 ps.setString(3, pl.getAddress());
@@ -154,16 +158,13 @@ public class ParkingLotPublicDataService {
                 Timestamp now = new Timestamp(System.currentTimeMillis());
                 ps.setTimestamp(14, now);
                 ps.setTimestamp(15, now);
+                ps.addBatch();
             }
-
-            @Override
-            public int getBatchSize() {
-                return parkingLots.size();
-            }
-        });
+            ps.executeBatch();
+        }
     }
 
-    private void bulkInsertImages(List<ParkingLot> parkingLots) {
+    private void bulkInsertImages(Connection connection, List<ParkingLot> parkingLots) throws SQLException {
         String sql = """
                 INSERT INTO parking_lot_image
                   (parking_lot_id, image_url, created_at, modified_at)
@@ -171,22 +172,18 @@ public class ParkingLotPublicDataService {
                   FROM parking_lot pl
                  WHERE pl.longitude = ?
                   AND pl.latitude = ?
+                 ON DUPLICATE KEY UPDATE id = id
                 """;
 
-        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-            @Override
-            public void setValues(PreparedStatement ps, int i) throws SQLException {
-                ParkingLot pl = parkingLots.get(i);
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            for (ParkingLot pl : parkingLots) {
                 ps.setString(1, pl.getImages().get(0).getImageUrl());
                 ps.setDouble(2, pl.getLongitude());
                 ps.setDouble(3, pl.getLatitude());
+                ps.addBatch();
             }
-
-            @Override
-            public int getBatchSize() {
-                return parkingLots.size();
-            }
-        });
+            ps.executeBatch();
+        }
     }
 
     // 받아온 정보를 엔티티로 변경
@@ -195,7 +192,7 @@ public class ParkingLotPublicDataService {
         Double longitude = parseDouble(data.getLongitude());
 
         String getAddress = kakaoGeocodeClient.getAddress(longitude, latitude);
-        String address = !StringUtils.hasText(data.getAddress()) ? getAddress : data.getAddress();
+        String address = (data.getAddress() != null && !data.getAddress().isBlank()) ? data.getAddress() : getAddress;
         Integer quantity = parseInteger(data.getQuantity());
         LocalTime openedAt = parseTime(data.getOpenedAt());
         LocalTime closedAt = parseTime(data.getClosedAt());
@@ -233,7 +230,7 @@ public class ParkingLotPublicDataService {
     }
 
     private LocalTime parseTime(String timeStr) {
-        if (!StringUtils.hasText(timeStr)) {
+        if (timeStr == null || timeStr.isEmpty()) {
             return LocalTime.of(0, 0);
         }
         return LocalTime.parse(timeStr);
@@ -243,7 +240,6 @@ public class ParkingLotPublicDataService {
         try {
             return Double.valueOf(value);
         } catch (Exception e) {
-            log.error("Double로 변환 실패, 입력 값 : {}", value, e);
             return null;
         }
     }
@@ -252,7 +248,6 @@ public class ParkingLotPublicDataService {
         try {
             return Integer.valueOf(value);
         } catch (Exception e) {
-            log.error("Integer로 변환 실패, 입력 값 : {}", value, e);
             return null;
         }
     }

@@ -88,9 +88,13 @@ dependencies {
     //actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-
     // JavaMailSender
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // AWS Lambda
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.1'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.2'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
 }
 
 clean {
