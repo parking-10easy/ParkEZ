@@ -60,7 +60,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 1000;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now;
 			LocalDateTime promotionEndAt = now.plusDays(1);
 
@@ -94,7 +94,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 1000;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.plusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(2);
 
@@ -127,7 +127,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 1000;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.minusDays(3);
 			LocalDateTime promotionEndAt = now.minusDays(1);
 
@@ -155,7 +155,7 @@ class PromotionRepositoryTest {
 		@Test
 		public void 진행중인_프로모션_조회_없으면_빈배열_반환() {
 			//given
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			PromotionStatus promotionStatus = PromotionStatus.ACTIVE;
 			Pageable pageable = PageRequest.of(0, 10);
 
@@ -221,7 +221,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 100;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.minusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(1);
 
@@ -264,7 +264,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 100;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.plusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(2);
 
@@ -306,7 +306,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 100;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.minusDays(3);
 			LocalDateTime promotionEndAt = now.minusDays(1);
 
@@ -348,7 +348,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 1000;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.minusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(1);
 
@@ -388,7 +388,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 1000;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.minusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(1);
 
@@ -434,7 +434,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 100;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.minusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(1);
 
@@ -480,7 +480,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 100;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.minusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(1);
 
@@ -526,7 +526,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 100;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.minusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(1);
 
@@ -566,7 +566,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 100;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.minusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(1);
 
