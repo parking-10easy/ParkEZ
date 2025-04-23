@@ -177,7 +177,7 @@ class PromotionRepositoryTest {
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
 			LocalDateTime now = LocalDateTime.now();
-			LocalDateTime promotionStartAt = now;
+			LocalDateTime promotionStartAt = now.minusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(1);
 
 			String couponName = "신규가입 2000원 할인 쿠폰";
