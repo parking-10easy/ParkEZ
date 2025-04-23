@@ -8,10 +8,9 @@ import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
 import com.parkez.payment.domain.entity.Payment;
 import com.parkez.payment.domain.enums.PaymentStatus;
-import com.parkez.payment.domain.enums.PaymentType;
 import com.parkez.payment.domain.repository.PaymentRepository;
+import com.parkez.payment.service.PaymentReader;
 import com.parkez.reservation.domain.entity.Reservation;
-import com.parkez.reservation.domain.enums.ReservationStatus;
 import com.parkez.reservation.domain.repository.ReservationRepository;
 import com.parkez.settlement.domain.entity.Settlement;
 import com.parkez.settlement.domain.entity.SettlementDetail;
@@ -35,12 +34,13 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,6 +68,8 @@ class SettlementJobTest {
     private ReservationRepository reservationRepository;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private PaymentReader paymentReader;
 
     private static final LocalTime OPENED_AT = LocalTime.of(9, 0, 0);
     private static final LocalTime CLOSED_AT = LocalTime.of(21, 0, 0);
@@ -131,7 +133,8 @@ class SettlementJobTest {
                 .endDateTime(RESERVATION_END_DATE_TIME)
                 .price(price)
                 .build());
-        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.COMPLETED);
+        reservation.complete(RESERVATION_END_DATE_TIME);
+        reservationRepository.saveAndFlush(reservation);
 
         payment = paymentRepository.save(Payment.builder()
                 .user(user)
@@ -157,14 +160,11 @@ class SettlementJobTest {
 
         // 정산 결과 확인
         List<Settlement> settlements = settlementRepository.findAll();
-        assertThat(settlements).isNotEmpty();
-        System.out.println("payment Price : " + payment.getPrice());
-        System.out.println("totalAmount : " + settlements.get(0).getTotalAmount());
+        Settlement settlement = settlements.get(0);
+        assertThat(settlement.getStatus()).isEqualTo(SettlementStatus.CONFIRMED);
 
-//        Settlement settlement = settlements.get(0);
-//        assertThat(settlement.getStatus()).isEqualTo(SettlementStatus.CONFIRMED);
-//
-//        List<SettlementDetail> details = settlementDetailRepository.findAll();
-//        assertThat(details).isNotEmpty();
+        List<SettlementDetail> details = settlementDetailRepository.findAll();
+        SettlementDetail settlementDetail = details.get(0);
+        assertThat(settlementDetail.getReservation().getId()).isEqualTo(reservation.getId());
     }
 }
