@@ -176,7 +176,7 @@ class PromotionRepositoryTest {
 			int limitTotal = 1000;
 			int limitPerUser = 1;
 			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
 			LocalDateTime promotionStartAt = now.minusDays(1);
 			LocalDateTime promotionEndAt = now.plusDays(1);
 
