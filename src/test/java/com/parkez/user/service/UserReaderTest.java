@@ -19,6 +19,7 @@ import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.domain.repository.UserRepository;
 import com.parkez.user.exception.UserErrorCode;
+import org.springframework.data.domain.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserReaderTest {
@@ -185,11 +186,16 @@ class UserReaderTest {
         @Test
         void ROLE_OWNER_권한의_유저를_전체_조회한다() {
             // given
+            int page = 0;
+            int size = 10;
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+
             List<User> owners = List.of(mock(User.class), mock(User.class));
-            when(userRepository.findAllByRole(UserRole.ROLE_OWNER)).thenReturn(owners);
+            Page<User> ownersPage = new PageImpl<>(owners);
+            when(userRepository.findAllByRole(UserRole.ROLE_OWNER, pageable)).thenReturn(ownersPage);
 
             // when
-            List<User> result = userReader.findAllOwners();
+            List<User> result = userReader.findAllOwnersByPage(page, size);
 
             // then
             assertThat(result).isEqualTo(owners);

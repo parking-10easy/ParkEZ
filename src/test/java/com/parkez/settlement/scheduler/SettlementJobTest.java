@@ -1,0 +1,170 @@
+package com.parkez.settlement.scheduler;
+
+import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkinglot.domain.enums.ChargeType;
+import com.parkez.parkinglot.domain.enums.SourceType;
+import com.parkez.parkinglot.domain.repository.ParkingLotRepository;
+import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
+import com.parkez.payment.domain.entity.Payment;
+import com.parkez.payment.domain.enums.PaymentStatus;
+import com.parkez.payment.domain.enums.PaymentType;
+import com.parkez.payment.domain.repository.PaymentRepository;
+import com.parkez.reservation.domain.entity.Reservation;
+import com.parkez.reservation.domain.enums.ReservationStatus;
+import com.parkez.reservation.domain.repository.ReservationRepository;
+import com.parkez.settlement.domain.entity.Settlement;
+import com.parkez.settlement.domain.entity.SettlementDetail;
+import com.parkez.settlement.domain.enums.SettlementStatus;
+import com.parkez.settlement.domain.repository.SettlementDetailRepository;
+import com.parkez.settlement.domain.repository.SettlementRepository;
+import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.LoginType;
+import com.parkez.user.domain.enums.UserRole;
+import com.parkez.user.domain.enums.UserStatus;
+import com.parkez.user.domain.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.BatchStatus;
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@Slf4j
+@SpringBootTest
+@ActiveProfiles("test")
+class SettlementJobTest {
+
+    @Autowired
+    private JobLauncher jobLauncher;
+    @Autowired
+    private JobRegistry jobRegistry;
+    @Autowired
+    private SettlementRepository settlementRepository;
+    @Autowired
+    private SettlementDetailRepository settlementDetailRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private ParkingLotRepository parkingLotRepository;
+    @Autowired
+    private ParkingZoneRepository parkingZoneRepository;
+    @Autowired
+    private ReservationRepository reservationRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
+
+    private static final LocalTime OPENED_AT = LocalTime.of(9, 0, 0);
+    private static final LocalTime CLOSED_AT = LocalTime.of(21, 0, 0);
+    private static final LocalDateTime RESERVATION_START_DATE_TIME = LocalDateTime.of(LocalDate.now().minusMonths(1), OPENED_AT);
+    private static final LocalDateTime RESERVATION_END_DATE_TIME = LocalDateTime.of(LocalDate.now().minusMonths(1), CLOSED_AT);
+
+    private User user;
+    private User owner;
+    private ParkingLot parkingLot;
+    private ParkingZone parkingZone;
+    private Reservation reservation;
+    private Payment payment;
+    private BigDecimal price = BigDecimal.valueOf(10000);
+
+    @BeforeEach
+    void setUp() {
+
+        user = userRepository.save(User.builder()
+                .email("test@example.com")
+                .password("Qwer123!")
+                .nickname("test")
+                .phone("010-1234-5678")
+                .role(UserRole.ROLE_USER)
+                .loginType(LoginType.NORMAL)
+                .status(UserStatus.COMPLETED)
+                .build());
+
+        owner = userRepository.save(User.builder()
+                .email("test@example.com")
+                .password("Qwer123!")
+                .nickname("test")
+                .phone("010-1234-5678")
+                .role(UserRole.ROLE_OWNER)
+                .loginType(LoginType.NORMAL)
+                .status(UserStatus.COMPLETED)
+                .build());
+
+        parkingLot = parkingLotRepository.save(ParkingLot.builder()
+                .owner(owner)
+                .name("테스트 주차장")
+                .address("서울시 강남구")
+                .pricePerHour(BigDecimal.valueOf(2000))
+                .openedAt(OPENED_AT)
+                .closedAt(CLOSED_AT)
+                .description("설명")
+                .quantity(10)
+                .chargeType(ChargeType.PAID)
+                .sourceType(SourceType.OWNER_REGISTERED)
+                .build());
+
+        parkingZone = parkingZoneRepository.save(ParkingZone.builder()
+                .parkingLot(parkingLot)
+                .name("A구역")
+                .build());
+
+        reservation = reservationRepository.save(Reservation.builder()
+                .user(user)
+                .parkingZone(parkingZone)
+                .parkingLotName(parkingLot.getName())
+                .startDateTime(RESERVATION_START_DATE_TIME)
+                .endDateTime(RESERVATION_END_DATE_TIME)
+                .price(price)
+                .build());
+        ReflectionTestUtils.setField(reservation, "status", ReservationStatus.COMPLETED);
+
+        payment = paymentRepository.save(Payment.builder()
+                .user(user)
+                .reservation(reservation)
+                .paymentStatus(PaymentStatus.APPROVED)
+                .orderId("orderId")
+                .build());
+    }
+
+    @Test
+    void 스프링_배치를_이용한_정산_테스트() throws Exception {
+        // given
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("runtime", LocalDateTime.now().toString())
+                .toJobParameters();
+
+        // when
+        log.info("settlement batch start");
+        JobExecution execution = jobLauncher.run(jobRegistry.getJob("settlementJob"), jobParameters);
+
+        // then
+        assertThat(execution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
+
+        // 정산 결과 확인
+        List<Settlement> settlements = settlementRepository.findAll();
+        assertThat(settlements).isNotEmpty();
+        System.out.println("payment Price : " + payment.getPrice());
+        System.out.println("totalAmount : " + settlements.get(0).getTotalAmount());
+
+//        Settlement settlement = settlements.get(0);
+//        assertThat(settlement.getStatus()).isEqualTo(SettlementStatus.CONFIRMED);
+//
+//        List<SettlementDetail> details = settlementDetailRepository.findAll();
+//        assertThat(details).isNotEmpty();
+    }
+}

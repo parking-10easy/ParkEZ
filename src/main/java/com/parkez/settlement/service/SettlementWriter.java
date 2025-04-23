@@ -55,11 +55,9 @@ public class SettlementWriter {
                 .toList();
 
         settlementDetailRepository.saveAll(details);
-
     }
 
     public void completeSettlement(Settlement settlement) {
         settlement.complete(LocalDateTime.now());
     }
-
 }

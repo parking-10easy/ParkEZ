@@ -5,6 +5,9 @@ import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,7 +52,8 @@ public class UserReader {
         );
     }
 
-    public List<User> findAllOwners() {
-        return userRepository.findAllByRole(UserRole.ROLE_OWNER);
+    public List<User> findAllOwnersByPage(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+        return userRepository.findAllByRole(UserRole.ROLE_OWNER, pageable).getContent();
     }
 }

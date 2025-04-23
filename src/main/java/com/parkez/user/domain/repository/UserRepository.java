@@ -3,6 +3,8 @@ package com.parkez.user.domain.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.parkez.user.domain.entity.User;
@@ -19,5 +21,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 	Optional<User> findByEmailAndRoleAndDeletedAtIsNull(String email, UserRole role);
 
-    List<User> findAllByRole(UserRole role);
+    Page<User> findAllByRole(UserRole role, Pageable pageable);
 }

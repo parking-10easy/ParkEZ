@@ -88,9 +88,12 @@ dependencies {
     //actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-
     // JavaMailSender
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // spring batch
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    testImplementation 'org.springframework.batch:spring-batch-test'
 }
 
 clean {
