@@ -35,7 +35,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -68,11 +71,13 @@ class SettlementJobTest {
     private PaymentRepository paymentRepository;
     @Autowired
     private PaymentReader paymentReader;
+    @Autowired
+    private DataSource dataSource;
 
     private static final LocalTime OPENED_AT = LocalTime.of(9, 0, 0);
     private static final LocalTime CLOSED_AT = LocalTime.of(21, 0, 0);
-    private static final LocalDateTime RESERVATION_START_DATE_TIME = LocalDateTime.of(LocalDate.now().minusMonths(1), OPENED_AT);
-    private static final LocalDateTime RESERVATION_END_DATE_TIME = LocalDateTime.of(LocalDate.now().minusMonths(1), CLOSED_AT);
+    private static final LocalDateTime RESERVATION_START_DATE_TIME = LocalDateTime.of(LocalDate.of(2025,3,10), OPENED_AT);
+    private static final LocalDateTime RESERVATION_END_DATE_TIME = LocalDateTime.of(LocalDate.of(2025,3,10), CLOSED_AT);
 
     private User user;
     private User owner;
@@ -83,10 +88,25 @@ class SettlementJobTest {
     private BigDecimal price = BigDecimal.valueOf(10000);
 
     @BeforeEach
+    void clearBatchMetadata() throws Exception {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("SET FOREIGN_KEY_CHECKS=0");
+            stmt.execute("TRUNCATE TABLE BATCH_STEP_EXECUTION_CONTEXT");
+            stmt.execute("TRUNCATE TABLE BATCH_JOB_EXECUTION_CONTEXT");
+            stmt.execute("TRUNCATE TABLE BATCH_STEP_EXECUTION");
+            stmt.execute("TRUNCATE TABLE BATCH_JOB_EXECUTION_PARAMS");
+            stmt.execute("TRUNCATE TABLE BATCH_JOB_EXECUTION");
+            stmt.execute("TRUNCATE TABLE BATCH_JOB_INSTANCE");
+            stmt.execute("SET FOREIGN_KEY_CHECKS=1");
+        }
+    }
+
+    @BeforeEach
     void setUp() {
 
         user = userRepository.save(User.builder()
-                .email("test@example.com")
+                .email("SettlementTest@example.com")
                 .password("Qwer123!")
                 .nickname("test")
                 .phone("010-1234-5678")
@@ -96,7 +116,7 @@ class SettlementJobTest {
                 .build());
 
         owner = userRepository.save(User.builder()
-                .email("test@example.com")
+                .email("SettlementTest@example.com")
                 .password("Qwer123!")
                 .nickname("test")
                 .phone("010-1234-5678")
@@ -145,9 +165,9 @@ class SettlementJobTest {
     @Test
     void 스프링_배치를_이용한_정산_테스트() throws Exception {
         // given
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime runtime = LocalDateTime.of(2025, 4, 1, 0, 0);
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("runtime", now.toString())
+                .addString("runtime", runtime.toString())
                 .toJobParameters();
 
         // when

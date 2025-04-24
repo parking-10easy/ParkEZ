@@ -66,7 +66,7 @@ class ReservationServiceConcurrencyTest {
     void setUp() {
 
         user = userRepository.save(User.builder()
-                .email("test@example.com")
+                .email("ReservationConcurrencyTest@example.com")
                 .password("Qwer123!")
                 .nickname("test")
                 .phone("010-1234-5678")
