@@ -52,13 +52,11 @@ public class PromotionIssue extends BaseEntity {
 	private PromotionIssueStatus status;
 
 	@Builder
-	private PromotionIssue(Promotion promotion, User user, LocalDateTime issuedAt, LocalDateTime expiresAt,
-		LocalDateTime usedAt) {
+	private PromotionIssue(Promotion promotion, User user, LocalDateTime issuedAt, LocalDateTime expiresAt) {
 		this.promotion = promotion;
 		this.user = user;
 		this.issuedAt = issuedAt;
 		this.expiresAt = expiresAt;
-		this.usedAt = usedAt;
 		this.status = PromotionIssueStatus.ISSUED;
 	}
 }

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.util.StringUtils;
 
 import com.parkez.common.entity.BaseDeleteEntity;
+import com.parkez.common.principal.AuthUser;
 import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.domain.enums.UserStatus;
@@ -67,6 +68,13 @@ public class User extends BaseDeleteEntity {
 	@Enumerated(EnumType.STRING)
 	private UserStatus status;
 
+	private User(Long id, String email, String nickname, UserRole role) {
+		this.id = id;
+		this.email = email;
+		this.nickname = nickname;
+		this.role = role;
+	}
+
 	@Builder
 	private User(String email, String password, String nickname, String phone,
 		BusinessAccountInfo businessAccountInfo,
@@ -123,6 +131,10 @@ public class User extends BaseDeleteEntity {
 			.loginType(loginType)
 			.status(UserStatus.PENDING)
 			.build();
+	}
+
+	public static User from(AuthUser authUser) {
+		return new User(authUser.getId(), authUser.getEmail(), authUser.getNickname(), UserRole.of(authUser.getFirstAuthority()));
 	}
 
 	public boolean isDeleted() {

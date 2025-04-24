@@ -79,4 +79,20 @@ public class Promotion extends BaseEntity {
 	public void updateStatus(PromotionStatus promotionStatus) {
 		this.promotionStatus = promotionStatus;
 	}
+
+	public boolean hasRemainingQuantity(int issuedCount) {
+		return issuedCount < this.limitTotal;
+	}
+
+	public boolean canUserIssueMore(int userIssuedCount) {
+		return userIssuedCount < this.limitPerUser;
+	}
+
+	public Long getCouponId() {
+		return this.coupon.getId();
+	}
+
+	public String getCouponName() {
+		return this.coupon.getName();
+	}
 }

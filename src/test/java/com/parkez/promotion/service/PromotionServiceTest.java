@@ -7,6 +7,8 @@ import static org.mockito.BDDMockito.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import javax.management.relation.Role;
+
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Nested;
@@ -21,19 +23,24 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.common.principal.AuthUser;
 import com.parkez.promotion.domain.entity.Coupon;
 import com.parkez.promotion.domain.entity.Promotion;
+import com.parkez.promotion.domain.entity.PromotionIssue;
 import com.parkez.promotion.domain.enums.DiscountType;
 import com.parkez.promotion.domain.enums.PromotionStatus;
 import com.parkez.promotion.domain.enums.PromotionType;
 import com.parkez.promotion.domain.repository.projection.ActivePromotionProjection;
-import com.parkez.promotion.domain.repository.projection.PromotionDetailProjection;
+import com.parkez.promotion.domain.repository.projection.PromotionDetail;
 import com.parkez.promotion.dto.request.PromotionCreateRequest;
 import com.parkez.promotion.dto.response.ActivePromotionResponse;
 import com.parkez.promotion.dto.response.PromotionCreateResponse;
 import com.parkez.promotion.dto.response.PromotionDetailResponse;
+import com.parkez.promotion.dto.response.PromotionIssueResponse;
 import com.parkez.promotion.excption.CouponErrorCode;
 import com.parkez.promotion.excption.PromotionErrorCode;
+import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.UserRole;
 
 @ExtendWith(MockitoExtension.class)
 class PromotionServiceTest {
@@ -46,6 +53,12 @@ class PromotionServiceTest {
 
 	@Mock
 	private PromotionReader promotionReader;
+
+	@Mock
+	private PromotionIssueReader promotionIssueReader;
+
+	@Mock
+	private PromotionIssueWriter promotionIssueWriter;
 
 	@InjectMocks
 	private PromotionService promotionService;
@@ -192,7 +205,7 @@ class PromotionServiceTest {
 			ActivePromotionProjection projection = getActivePromotionProjection(id, promotionName, promotionType,
 				limitPerUser, promotionStartAt, promotionEndAt, couponName, discountValue);
 
-			given(promotionReader.findActivePromotions(anyInt(),anyInt())).willReturn(new PageImpl<>(List.of(projection), pageRequest, 0));
+			given(promotionReader.findAllCurrentlyActive(anyInt(),anyInt())).willReturn(new PageImpl<>(List.of(projection), pageRequest, 0));
 
 			//when
 			Page<ActivePromotionResponse> activePromotions = promotionService.getActivePromotions(page, size);
@@ -217,7 +230,7 @@ class PromotionServiceTest {
 			int size = 10;
 			PageRequest pageRequest = PageRequest.of(page - 1, size);
 
-			given(promotionReader.findActivePromotions(anyInt(),anyInt())).willReturn(new PageImpl<>(List.of(), pageRequest, 0));
+			given(promotionReader.findAllCurrentlyActive(anyInt(),anyInt())).willReturn(new PageImpl<>(List.of(), pageRequest, 0));
 
 			//when
 			Page<ActivePromotionResponse> activePromotions = promotionService.getActivePromotions(page, size);
@@ -237,7 +250,7 @@ class PromotionServiceTest {
 			Long userId = 1L;
 			Long promotionId = -1L;
 
-			given(promotionReader.getActivePromotion(anyLong(), anyLong())).willThrow(
+			given(promotionReader.getActivePromotionDetailForUser(anyLong(), anyLong())).willThrow(
 				new ParkingEasyException(PROMOTION_NOT_FOUND));
 
 			//when & then
@@ -267,10 +280,10 @@ class PromotionServiceTest {
 			int remainingQuantity = 22;
 			int availableIssueCount = 1;
 			LocalDateTime expiresAtIfIssuedNow = LocalDateTime.now().plusDays(3);
-			PromotionDetailProjection promotionDetailProjection = getPromotionDetailProjection(id, promotionName,
+			PromotionDetail promotionDetail = getPromotionDetailProjection(id, promotionName,
 				promotionType, promotionStartAt, promotionEndAt, validDaysAfterIssue, limitTotal, limitPerUser, couponName,
 				discountValue, isAvailableToIssue, remainingQuantity, availableIssueCount, expiresAtIfIssuedNow);
-			given(promotionReader.getActivePromotion(anyLong(), anyLong())).willReturn(promotionDetailProjection);
+			given(promotionReader.getActivePromotionDetailForUser(anyLong(), anyLong())).willReturn(promotionDetail);
 
 			//when
 			PromotionDetailResponse activePromotion = promotionService.getActivePromotion(userId, promotionId);
@@ -290,6 +303,170 @@ class PromotionServiceTest {
 				);
 
 		}
+	}
+
+	@Nested
+	class IssueCoupon {
+
+		@Test
+		public void 쿠폰_발급_존재하지_않는_프로모션이면_PROMOTION_NOT_FOUND_예외_발생한다() {
+			//given
+			AuthUser authUser = creatAuthUser();
+			Long promotionId = -1L;
+
+
+			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willThrow(new ParkingEasyException(PROMOTION_NOT_FOUND));
+
+			//when & then
+			Assertions.assertThatThrownBy(()-> promotionService.issueCoupon(authUser, promotionId))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(PROMOTION_NOT_FOUND.getDefaultMessage());
+
+		}
+
+		@Test
+		public void 쿠폰_발급_남은_쿠폰개수가_0이면_QUANTITY_EXCEEDED_예외_발생한다() {
+			//given
+			AuthUser authUser = creatAuthUser();
+			Long promotionId = 1L;
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 100;
+			int limitPerUser = 1;
+			int validDaysAfterIssue = 3;
+
+			LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
+			LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
+
+			long couponId = 1L;
+			String couponName = "신규가입 2000원 할인 쿠폰";
+			DiscountType discountType = DiscountType.PERCENT;
+			int discountValue = 10;
+			String description = "신규 유저 전용, 1회만 사용 가능";
+
+
+
+			Coupon coupon = createCoupon(couponId,couponName,discountType,discountValue,description);
+			Promotion promotion = createPromotion(promotionId,promotionName,promotionType,coupon,limitTotal,limitPerUser,promotionStartAt,promotionEndAt,validDaysAfterIssue,PromotionStatus.ACTIVE);
+
+			int issuedCount = 100;
+
+			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willReturn(promotion);
+			given(promotionIssueReader.countByPromotionId(anyLong())).willReturn(issuedCount);
+
+			//when & then
+			Assertions.assertThatThrownBy(()-> promotionService.issueCoupon(authUser, promotionId))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(QUANTITY_EXCEEDED.getDefaultMessage());
+
+		}
+
+		@Test
+		public void 쿠폰_발급_유저당_1회로_제한된_상황에서_중복_요청시_ALREADY_ISSUED_예외_발생() {
+			//given
+			AuthUser authUser = creatAuthUser();
+			Long promotionId = 1L;
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 100;
+			int limitPerUser = 1;
+			int validDaysAfterIssue = 3;
+
+			LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
+			LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
+
+			long couponId = 1L;
+			String couponName = "신규가입 2000원 할인 쿠폰";
+			DiscountType discountType = DiscountType.PERCENT;
+			int discountValue = 10;
+			String description = "신규 유저 전용, 1회만 사용 가능";
+
+
+
+			Coupon coupon = createCoupon(couponId,couponName,discountType,discountValue,description);
+			Promotion promotion = createPromotion(promotionId,promotionName,promotionType,coupon,limitTotal,limitPerUser,promotionStartAt,promotionEndAt,validDaysAfterIssue,PromotionStatus.ACTIVE);
+
+			int issuedCount = 99;
+			int userIssuedCount = 1;
+
+			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willReturn(promotion);
+			given(promotionIssueReader.countByPromotionId(anyLong())).willReturn(issuedCount);
+			given(promotionIssueReader.countByPromotionIdAndUserId(anyLong(),anyLong())).willReturn(userIssuedCount);
+
+			//when & then
+			Assertions.assertThatThrownBy(()-> promotionService.issueCoupon(authUser, promotionId))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(ALREADY_ISSUED.getDefaultMessage());
+
+		}
+
+		@Test
+		public void 쿠폰_발급_정상적으로_발급할_수_있다() {
+			//given
+			AuthUser authUser = creatAuthUser();
+			Long promotionId = 1L;
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 100;
+			int limitPerUser = 1;
+			int validDaysAfterIssue = 3;
+
+			LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
+			LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
+
+			long couponId = 1L;
+			String couponName = "신규가입 2000원 할인 쿠폰";
+			DiscountType discountType = DiscountType.PERCENT;
+			int discountValue = 10;
+			String description = "신규 유저 전용, 1회만 사용 가능";
+
+
+
+			Coupon coupon = createCoupon(couponId,couponName,discountType,discountValue,description);
+			Promotion promotion = createPromotion(promotionId,promotionName,promotionType,coupon,limitTotal,limitPerUser,promotionStartAt,promotionEndAt,validDaysAfterIssue,PromotionStatus.ACTIVE);
+
+			LocalDateTime issuedAt = LocalDateTime.now();
+			LocalDateTime expiresAt = issuedAt.plusDays(promotion.getValidDaysAfterIssue());
+			PromotionIssue promotionIssue = createPromotionIssue(promotion, authUser, issuedAt, expiresAt);
+
+			int issuedCount = 99;
+			int userIssuedCount = 0;
+
+			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willReturn(promotion);
+			given(promotionIssueReader.countByPromotionId(anyLong())).willReturn(issuedCount);
+			given(promotionIssueReader.countByPromotionIdAndUserId(anyLong(),anyLong())).willReturn(userIssuedCount);
+			given(promotionIssueWriter.create(any(Promotion.class), any(User.class))).willReturn(promotionIssue);
+
+
+			//when
+			PromotionIssueResponse promotionIssueResponse = promotionService.issueCoupon(authUser, promotionId);
+
+			//then
+			Assertions.assertThat(promotionIssueResponse)
+				.extracting(
+					"promotionId", "couponId", "couponName","issuedAt","expiresAt"
+				).containsExactly(
+					promotionId, couponId, couponName, issuedAt, expiresAt
+				);
+
+		}
+	}
+
+	private static PromotionIssue createPromotionIssue(Promotion promotion, AuthUser authUser, LocalDateTime issuedAt,
+		LocalDateTime expiresAt) {
+		return PromotionIssue.builder()
+			.promotion(promotion)
+			.user(User.from(authUser))
+			.issuedAt(issuedAt)
+			.expiresAt(expiresAt)
+			.build();
+	}
+
+	private static AuthUser creatAuthUser() {
+		return AuthUser.builder().email("user@example.com")
+			.roleName(UserRole.ROLE_USER.name())
+			.nickname("nickname")
+			.id(1L).build();
 	}
 
 	private Promotion createPromotion(Long promotionId, String promotionName, PromotionType promotionType,
@@ -376,12 +553,12 @@ class PromotionServiceTest {
 		};
 	}
 
-	private PromotionDetailProjection getPromotionDetailProjection(long id, String promotionName,
+	private PromotionDetail getPromotionDetailProjection(long id, String promotionName,
 		PromotionType promotionType, LocalDateTime promotionStartAt, LocalDateTime promotionEndAt,
 		int validDaysAfterIssue, int limitTotal, int limitPerUser, String couponName,
 		int discountValue, Boolean isAvailableToIssue, int remainingQuantity,
 		int availableIssueCount, LocalDateTime expiresAtIfIssuedNow) {
-		return new PromotionDetailProjection() {
+		return new PromotionDetail() {
 			@Override
 			public Long getId() {
 				return id;

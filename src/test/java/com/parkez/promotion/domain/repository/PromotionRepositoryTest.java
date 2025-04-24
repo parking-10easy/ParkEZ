@@ -27,7 +27,7 @@ import com.parkez.promotion.domain.enums.DiscountType;
 import com.parkez.promotion.domain.enums.PromotionStatus;
 import com.parkez.promotion.domain.enums.PromotionType;
 import com.parkez.promotion.domain.repository.projection.ActivePromotionProjection;
-import com.parkez.promotion.domain.repository.projection.PromotionDetailProjection;
+import com.parkez.promotion.domain.repository.projection.PromotionDetail;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.repository.UserRepository;
 
@@ -241,15 +241,14 @@ class PromotionRepositoryTest {
 			promotion.updateStatus(PromotionStatus.ENDED);
 			Promotion savedPromotion = promotionRepository.save(promotion);
 
-			LocalDateTime issuedAt = LocalDateTime.now();
-			LocalDateTime usedAt = null;
-			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion, usedAt);
+			LocalDateTime issuedAt = now;
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion);
 
 			promotionIssueRepository.save(promotionIssue);
 
 			//when
-			Optional<PromotionDetailProjection> activePromotionDetailById = promotionRepository.findActivePromotionDetailById(
-				savedUser.getId(), savedPromotion.getId(), LocalDateTime.now(), PromotionStatus.ACTIVE.name());
+			Optional<PromotionDetail> activePromotionDetailById = promotionRepository.findActivePromotionDetail(
+				savedUser.getId(), savedPromotion.getId(), now, PromotionStatus.ACTIVE.name());
 
 			//then
 			assertThat(activePromotionDetailById).isEmpty();
@@ -283,15 +282,14 @@ class PromotionRepositoryTest {
 				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
 			Promotion savedPromotion = promotionRepository.save(promotion);
 
-			LocalDateTime issuedAt = LocalDateTime.now();
-			LocalDateTime usedAt = null;
-			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion, usedAt);
+			LocalDateTime issuedAt = now;
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion);
 
 			promotionIssueRepository.save(promotionIssue);
 
 			//when
-			Optional<PromotionDetailProjection> activePromotionDetailById = promotionRepository.findActivePromotionDetailById(
-				savedUser.getId(), savedPromotion.getId(), LocalDateTime.now(), PromotionStatus.ACTIVE.name());
+			Optional<PromotionDetail> activePromotionDetailById = promotionRepository.findActivePromotionDetail(
+				savedUser.getId(), savedPromotion.getId(), now, PromotionStatus.ACTIVE.name());
 
 			//then
 			assertThat(activePromotionDetailById).isEmpty();
@@ -325,15 +323,14 @@ class PromotionRepositoryTest {
 				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
 			Promotion savedPromotion = promotionRepository.save(promotion);
 
-			LocalDateTime issuedAt = LocalDateTime.now();
-			LocalDateTime usedAt = null;
-			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion, usedAt);
+			LocalDateTime issuedAt = now;
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion);
 
 			promotionIssueRepository.save(promotionIssue);
 
 			//when
-			Optional<PromotionDetailProjection> activePromotionDetailById = promotionRepository.findActivePromotionDetailById(
-				savedUser.getId(), savedPromotion.getId(), LocalDateTime.now(), PromotionStatus.ACTIVE.name());
+			Optional<PromotionDetail> activePromotionDetailById = promotionRepository.findActivePromotionDetail(
+				savedUser.getId(), savedPromotion.getId(), now, PromotionStatus.ACTIVE.name());
 
 			//then
 			assertThat(activePromotionDetailById).isEmpty();
@@ -368,8 +365,8 @@ class PromotionRepositoryTest {
 			Promotion savedPromotion = promotionRepository.save(promotion);
 
 			//when
-			Optional<PromotionDetailProjection> activePromotionDetailById = promotionRepository.findActivePromotionDetailById(
-				savedUser.getId(), savedPromotion.getId(), LocalDateTime.now(), PromotionStatus.ACTIVE.name());
+			Optional<PromotionDetail> activePromotionDetailById = promotionRepository.findActivePromotionDetail(
+				savedUser.getId(), savedPromotion.getId(), now, PromotionStatus.ACTIVE.name());
 
 			//then
 			Assertions.assertThat(activePromotionDetailById).isNotEmpty();
@@ -407,15 +404,14 @@ class PromotionRepositoryTest {
 				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
 			Promotion savedPromotion = promotionRepository.save(promotion);
 
-			LocalDateTime issuedAt = LocalDateTime.now();
-			LocalDateTime usedAt = null;
-			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion, usedAt);
+			LocalDateTime issuedAt = now;
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion);
 
 			promotionIssueRepository.save(promotionIssue);
 
 			//when
-			Optional<PromotionDetailProjection> activePromotionDetailById = promotionRepository.findActivePromotionDetailById(
-				savedUser.getId(), savedPromotion.getId(), LocalDateTime.now(), PromotionStatus.ACTIVE.name());
+			Optional<PromotionDetail> activePromotionDetailById = promotionRepository.findActivePromotionDetail(
+				savedUser.getId(), savedPromotion.getId(), now, PromotionStatus.ACTIVE.name());
 
 			//then
 			Assertions.assertThat(activePromotionDetailById).isNotEmpty();
@@ -453,15 +449,14 @@ class PromotionRepositoryTest {
 				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
 			Promotion savedPromotion = promotionRepository.save(promotion);
 
-			LocalDateTime issuedAt = LocalDateTime.now();
-			LocalDateTime usedAt = null;
-			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion, usedAt);
+			LocalDateTime issuedAt = now;
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion);
 
 			promotionIssueRepository.save(promotionIssue);
 
 			//when
-			Optional<PromotionDetailProjection> activePromotionDetailById = promotionRepository.findActivePromotionDetailById(
-				savedUser.getId(), savedPromotion.getId(), LocalDateTime.now(), PromotionStatus.ACTIVE.name());
+			Optional<PromotionDetail> activePromotionDetailById = promotionRepository.findActivePromotionDetail(
+				savedUser.getId(), savedPromotion.getId(), now, PromotionStatus.ACTIVE.name());
 
 			//then
 			Assertions.assertThat(activePromotionDetailById).isNotEmpty();
@@ -499,15 +494,14 @@ class PromotionRepositoryTest {
 				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
 			Promotion savedPromotion = promotionRepository.save(promotion);
 
-			LocalDateTime issuedAt = LocalDateTime.now();
-			LocalDateTime usedAt = null;
-			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion, usedAt);
+			LocalDateTime issuedAt = now;
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion);
 
 			promotionIssueRepository.save(promotionIssue);
 
 			//when
-			Optional<PromotionDetailProjection> activePromotionDetailById = promotionRepository.findActivePromotionDetailById(
-				savedUser.getId(), savedPromotion.getId(), LocalDateTime.now(), PromotionStatus.ACTIVE.name());
+			Optional<PromotionDetail> activePromotionDetailById = promotionRepository.findActivePromotionDetail(
+				savedUser.getId(), savedPromotion.getId(), now, PromotionStatus.ACTIVE.name());
 
 			//then
 			Assertions.assertThat(activePromotionDetailById).isNotEmpty();
@@ -546,8 +540,8 @@ class PromotionRepositoryTest {
 			Promotion savedPromotion = promotionRepository.save(promotion);
 
 			//when
-			Optional<PromotionDetailProjection> activePromotionDetailById = promotionRepository.findActivePromotionDetailById(
-				savedUser.getId(), savedPromotion.getId(), LocalDateTime.now(), PromotionStatus.ACTIVE.name());
+			Optional<PromotionDetail> activePromotionDetailById = promotionRepository.findActivePromotionDetail(
+				savedUser.getId(), savedPromotion.getId(), now, PromotionStatus.ACTIVE.name());
 
 			//then
 			Assertions.assertThat(activePromotionDetailById).isNotEmpty();
@@ -555,7 +549,6 @@ class PromotionRepositoryTest {
 				.extracting(
 					"availableIssueCount"
 				).isEqualTo(1);
-
 		}
 
 		@Test
@@ -588,7 +581,7 @@ class PromotionRepositoryTest {
 			LocalDateTime issuedAt = LocalDateTime.of(2025, 4, 23, 17, 26, 0);
 
 			//when
-			Optional<PromotionDetailProjection> activePromotionDetailById = promotionRepository.findActivePromotionDetailById(
+			Optional<PromotionDetail> activePromotionDetailById = promotionRepository.findActivePromotionDetail(
 				savedUser.getId(), savedPromotion.getId(), issuedAt, PromotionStatus.ACTIVE.name());
 
 			//then
@@ -602,13 +595,12 @@ class PromotionRepositoryTest {
 	}
 
 	private PromotionIssue createPromotionIssue(Promotion savedPromotion, User savedUser, LocalDateTime issuedAt,
-		Promotion promotion, LocalDateTime usedAt) {
+		Promotion promotion) {
 		return PromotionIssue.builder()
 			.promotion(savedPromotion)
 			.user(savedUser)
 			.issuedAt(issuedAt)
 			.expiresAt(issuedAt.plusDays(promotion.getValidDaysAfterIssue()))
-			.usedAt(usedAt)
 			.build();
 	}
 
