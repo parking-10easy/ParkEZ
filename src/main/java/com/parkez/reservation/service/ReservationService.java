@@ -7,6 +7,11 @@ import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.payment.service.PaymentService;
+import com.parkez.queue.domain.enums.JoinQueueResult;
+import com.parkez.queue.dto.WaitingUserDto;
+import com.parkez.queue.exception.QueueErrorCode;
+import com.parkez.queue.redis.QueueKey;
+import com.parkez.queue.service.QueueService;
 import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
@@ -19,15 +24,16 @@ import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReservationService {
@@ -39,6 +45,7 @@ public class ReservationService {
     private final ParkingZoneReader parkingZoneReader;
     private final ReviewReader reviewReader;
     private final PaymentService paymentService;
+    private final QueueService queueService;
 
     private static final long CANCEL_LIMIT_HOURS = 1L;
     private static final long EXPIRATION_TIME = 10L;
@@ -65,11 +72,18 @@ public class ReservationService {
                 throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
             }
 
-            // 이미 해당 시간에 예약이 존재할 경우
+            // 이미 해당 시간에 예약이 존재할 경우 -> 대기열에 추가
             List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
             boolean existed = reservationReader.existsReservationByConditions(parkingZone, request.getStartDateTime(), request.getEndDateTime(), statusList);
+
             if (existed) {
-                throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED);
+                JoinQueueResult result = queueService.joinWaitingQueue(user.getId(), request);
+
+                switch (result) {
+                    case JOINED -> throw new ParkingEasyException(QueueErrorCode.JOINED_WAITING_QUEUE); // 대기열 저장 성공
+                    case ALREADY_JOINED -> throw new ParkingEasyException(QueueErrorCode.ALREADY_IN_QUEUE); // 이미 사용자가 대기열에 존재
+                }
+
             }
 
             Reservation reservation = reservationWriter.create(
@@ -150,6 +164,8 @@ public class ReservationService {
         paymentService.cancelPayment(reservation, request);
 
         reservationWriter.cancel(reservation);
+
+        handleNextInQueue(reservation);
     }
 
     public void expireReservation() {
@@ -165,4 +181,44 @@ public class ReservationService {
                 && startDateTime.isAfter(LocalDateTime.now())
                 && startDateTime.toLocalDate().equals(endDateTime.toLocalDate());
     }
+
+    private void handleNextInQueue(Reservation reservation) {
+        String key = QueueKey.generateKey(
+                reservation.getParkingZone().getId(), //todo 수정
+                reservation.getStartDateTime(),
+                reservation.getEndDateTime()
+        );
+
+        WaitingUserDto dto = queueService.dequeueConvertToDto(key);
+        log.info("[대기열] ReservationService에서 받은 WaitingUserDto ={}", dto);
+        if (dto == null) {
+            log.info("[대기열] 대기자 없음 → key={}", key);
+            return;
+        }
+
+        User user = userReader.getActiveUserById(dto.getUserId());
+
+        ReservationRequest request = new ReservationRequest(
+                dto.getParkingZoneId(),
+                dto.getStartDateTime(),
+                dto.getEndDateTime()
+        );
+
+        createFromQueue(user, request);
+        log.info("[대기열] 대기자 예약 확정 완료 → userId={}", user.getId()); // todo 메일 전송
+    }
+
+    // 대기열에 있는 사용자의 예약 생성 : 락 적용이 필요없기 때문에 메서드 분리함
+    public void createFromQueue(User user, ReservationRequest request) {
+        ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
+
+        reservationWriter.create(
+                user,
+                parkingZone,
+                request.getStartDateTime(),
+                request.getEndDateTime()
+        );
+
+    }
+
 }
