@@ -16,6 +16,7 @@ import com.parkez.promotion.dto.response.PromotionDetailResponse;
 import com.parkez.promotion.dto.request.PromotionCreateRequest;
 import com.parkez.promotion.dto.response.ActivePromotionResponse;
 import com.parkez.promotion.dto.response.PromotionCreateResponse;
+import com.parkez.promotion.dto.response.PromotionIssueResponse;
 import com.parkez.promotion.service.PromotionService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,5 +52,11 @@ public class PromotionController {
 	@Operation(summary = "진행중인 프로모션 상세 조회", description = "진행중인 프로모션의 상세 정보를 조회합니다.")
 	public Response<PromotionDetailResponse> getActivePromotion(@AuthenticatedUser @Parameter(hidden = true)  AuthUser authUser, @PathVariable Long promotionId) {
 		return Response.of(promotionService.getActivePromotion(authUser.getId(), promotionId));
+	}
+
+	@PostMapping("/v1/promotions/{promotionId}/issue")
+	@Operation(summary = "프로모션 쿠폰 발급", description = "지정된 프로모션에 대해 쿠폰을 발급받습니다.")
+	public Response<PromotionIssueResponse> issuePromotionCoupon(@PathVariable Long promotionId, @AuthenticatedUser @Parameter(hidden = true)  AuthUser authUser) {
+		return Response.of(promotionService.issueCoupon(authUser, promotionId));
 	}
 }
