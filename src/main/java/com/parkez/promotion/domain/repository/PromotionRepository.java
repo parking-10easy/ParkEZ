@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -13,6 +14,8 @@ import com.parkez.promotion.domain.entity.Promotion;
 import com.parkez.promotion.domain.enums.PromotionStatus;
 import com.parkez.promotion.domain.repository.projection.ActivePromotionProjection;
 import com.parkez.promotion.domain.repository.projection.PromotionDetail;
+
+import jakarta.persistence.LockModeType;
 
 public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 
@@ -87,6 +90,7 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 		""", nativeQuery = true)
 	Optional<PromotionDetail> findActivePromotionDetail(@Param("userId") Long userId,@Param("promotionId") Long promotionId,@Param("issuedAt") LocalDateTime issuedAt, @Param("activeStatus") String activeStatus);
 
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query(value = """
 		select p
 		from Promotion p join fetch p.coupon
@@ -96,5 +100,6 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 			and p.promotionStartAt <= :now
 			and p.promotionEndAt >= :now
 	""")
-	Optional<Promotion> findActivePromotion(@Param("promotionId") Long promotionId, @Param("now") LocalDateTime now, @Param("activeStatus") PromotionStatus activeStatus);
+	Optional<Promotion> findActivePromotionWithPessimisticLock(@Param("promotionId") Long promotionId, @Param("now") LocalDateTime now, @Param("activeStatus") PromotionStatus activeStatus);
+
 }

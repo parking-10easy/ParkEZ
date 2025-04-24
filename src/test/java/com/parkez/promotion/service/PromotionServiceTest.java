@@ -7,8 +7,6 @@ import static org.mockito.BDDMockito.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import javax.management.relation.Role;
-
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Nested;
@@ -315,7 +313,7 @@ class PromotionServiceTest {
 			Long promotionId = -1L;
 
 
-			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willThrow(new ParkingEasyException(PROMOTION_NOT_FOUND));
+			given(promotionReader.getActivePromotionWithCouponForUpdate(anyLong())).willThrow(new ParkingEasyException(PROMOTION_NOT_FOUND));
 
 			//when & then
 			Assertions.assertThatThrownBy(()-> promotionService.issueCoupon(authUser, promotionId))
@@ -351,7 +349,7 @@ class PromotionServiceTest {
 
 			int issuedCount = 100;
 
-			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willReturn(promotion);
+			given(promotionReader.getActivePromotionWithCouponForUpdate(anyLong())).willReturn(promotion);
 			given(promotionIssueReader.countByPromotionId(anyLong())).willReturn(issuedCount);
 
 			//when & then
@@ -389,7 +387,7 @@ class PromotionServiceTest {
 			int issuedCount = 99;
 			int userIssuedCount = 1;
 
-			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willReturn(promotion);
+			given(promotionReader.getActivePromotionWithCouponForUpdate(anyLong())).willReturn(promotion);
 			given(promotionIssueReader.countByPromotionId(anyLong())).willReturn(issuedCount);
 			given(promotionIssueReader.countByPromotionIdAndUserId(anyLong(),anyLong())).willReturn(userIssuedCount);
 
@@ -432,7 +430,7 @@ class PromotionServiceTest {
 			int issuedCount = 99;
 			int userIssuedCount = 0;
 
-			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willReturn(promotion);
+			given(promotionReader.getActivePromotionWithCouponForUpdate(anyLong())).willReturn(promotion);
 			given(promotionIssueReader.countByPromotionId(anyLong())).willReturn(issuedCount);
 			given(promotionIssueReader.countByPromotionIdAndUserId(anyLong(),anyLong())).willReturn(userIssuedCount);
 			given(promotionIssueWriter.create(any(Promotion.class), any(User.class))).willReturn(promotionIssue);

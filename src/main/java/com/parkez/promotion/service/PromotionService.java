@@ -65,7 +65,7 @@ public class PromotionService {
 	@Transactional
 	public PromotionIssueResponse issueCoupon(AuthUser authUser, Long promotionId) {
 
-		Promotion promotion =  promotionReader.getActiveByIdWithCoupon(promotionId);
+		Promotion promotion =  promotionReader.getActivePromotionWithCouponForUpdate(promotionId);
 
 		// TODO 카운트 쿼리 묶을지
 		int issuedCount = promotionIssueReader.countByPromotionId(promotionId);
