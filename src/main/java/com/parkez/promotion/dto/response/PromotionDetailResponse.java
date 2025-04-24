@@ -3,7 +3,7 @@ package com.parkez.promotion.dto.response;
 import java.time.LocalDateTime;
 
 import com.parkez.promotion.domain.enums.PromotionType;
-import com.parkez.promotion.domain.repository.projection.PromotionDetailProjection;
+import com.parkez.promotion.domain.repository.projection.PromotionDetail;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -76,7 +76,7 @@ public class PromotionDetailResponse {
 		this.expiresAtIfIssuedNow = expiresAtIfIssuedNow;
 	}
 
-	public static PromotionDetailResponse from(PromotionDetailProjection activePromotion) {
+	public static PromotionDetailResponse from(PromotionDetail activePromotion) {
 		return PromotionDetailResponse.builder()
 			.id(activePromotion.getId())
 			.promotionName(activePromotion.getPromotionName())
