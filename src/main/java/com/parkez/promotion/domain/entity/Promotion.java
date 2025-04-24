@@ -18,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -61,4 +62,21 @@ public class Promotion extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	private PromotionStatus promotionStatus;
 
+	@Builder
+	private Promotion(String name, PromotionType promotionType, Coupon coupon, Integer limitTotal, Integer limitPerUser,
+		LocalDateTime promotionStartAt, LocalDateTime promotionEndAt, Integer validDaysAfterIssue) {
+		this.name = name;
+		this.promotionType = promotionType;
+		this.coupon = coupon;
+		this.limitTotal = limitTotal;
+		this.limitPerUser = limitPerUser;
+		this.promotionStartAt = promotionStartAt;
+		this.promotionEndAt = promotionEndAt;
+		this.validDaysAfterIssue = validDaysAfterIssue;
+		this.promotionStatus = PromotionStatus.ACTIVE;
+	}
+
+	public void updateStatus(PromotionStatus promotionStatus) {
+		this.promotionStatus = promotionStatus;
+	}
 }
