@@ -28,6 +28,7 @@ jacoco {
     toolVersion = "0.8.12"
 }
 
+
 dependencies {
     //spring data jpa
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -101,6 +102,13 @@ clean {
     delete file('src/main/generated')
 }
 
+tasks.register('buildZip', Zip) {
+    into('lib') {
+        from(jar)
+        from(configurations.runtimeClasspath)
+    }
+}
+
 tasks.named('test') {
     useJUnitPlatform()
     finalizedBy jacocoTestReport
@@ -114,13 +122,15 @@ jacocoTestReport {
     }
     afterEvaluate {
         classDirectories.setFrom(
-                files(classDirectories.files.collect { fileTree(dir: it, exclude: [
-                        "**/controller/**",
-                        "**/config/**",
-                        "**/dto/**",
-                        "**/exception/**",
-                        "**/Q*.class"
-                ]) })
+                files(classDirectories.files.collect {
+                    fileTree(dir: it, exclude: [
+                            "**/controller/**",
+                            "**/config/**",
+                            "**/dto/**",
+                            "**/exception/**",
+                            "**/Q*.class"
+                    ])
+                })
         )
     }
 }

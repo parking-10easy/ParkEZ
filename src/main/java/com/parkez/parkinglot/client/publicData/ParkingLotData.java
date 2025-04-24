@@ -1,10 +1,12 @@
 package com.parkez.parkinglot.client.publicData;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ParkingLotData {
 
     @JsonProperty("주차장명")
@@ -30,6 +32,9 @@ public class ParkingLotData {
 
     @JsonProperty("요금정보")
     private String chargeType;
+
+    public ParkingLotData() {
+    }
 
     @Builder
     private ParkingLotData(String name, String address, String latitude, String longitude,
