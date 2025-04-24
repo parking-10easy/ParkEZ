@@ -13,7 +13,10 @@ public enum CouponErrorCode implements ErrorCode {
 
 	// 400 BadRequest
 	INVALID_DISCOUNT_PERCENT_VALUE(HttpStatus.BAD_REQUEST, "COUPON_001", "할인율은 20%를 초과할 수 없습니다"),
-	INVALID_DISCOUNT_FIXED_VALUE(HttpStatus.BAD_REQUEST,"COUPON_002","고정 할인 금액은 최소 1,000원 이상이어야 합니다.");
+	INVALID_DISCOUNT_FIXED_VALUE(HttpStatus.BAD_REQUEST,"COUPON_002","고정 할인 금액은 최소 1,000원 이상이어야 합니다."),
+
+	//404
+	COUPON_NOT_FOUND(HttpStatus.NOT_FOUND,"COUPON_003","쿠폰을 찾을 수 없습니다.");
 
 	private final HttpStatus httpStatus;
 	private final String code;
