@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -34,5 +35,20 @@ public class QueueRepository {
     //대기열 삭제
     public void deleteQueue(String key) {
         redisTemplate.delete(key);
+    }
+
+    // 예약 대기열 중복 확인 로직
+    public boolean isAlreadyInQueue(String key, Long userId) {
+        List<Object> waitingList = getAll(key);
+
+        return waitingList.stream()
+                .anyMatch(obj -> {
+                    if (obj instanceof Map map) {
+                        Object id = map.get("userId");
+                        return id != null && id.toString().equals(userId.toString());
+                    }
+                    return false;
+                });
+
     }
 }

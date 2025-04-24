@@ -39,7 +39,7 @@ public class QueueService {
                 request.getEndDateTime()
         );
 
-        if (isAlreadyInQueue(key, userId)) {
+        if (queueRepository.isAlreadyInQueue(key, userId)) {
             return JoinQueueResult.ALREADY_JOINED;
         }
 
@@ -58,20 +58,7 @@ public class QueueService {
 
     }
 
-    // 예약 대기열 중복 확인 로직
-    private boolean isAlreadyInQueue(String key, Long userId) {
-        List<Object> waitingList = queueRepository.getAll(key);
 
-        return waitingList.stream()
-                .anyMatch(obj -> {
-                    if (obj instanceof Map map) {
-                        Object id = map.get("userId");
-                        return id != null && id.toString().equals(userId.toString());
-                    }
-                    return false;
-                });
-
-    }
 
     // 예약 취소 시 → 대기열에서 다음 사용자 꺼내 waitingUserDto로 변환
     public WaitingUserDto dequeueConvertToDto(String key) {
