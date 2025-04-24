@@ -25,8 +25,9 @@ public class SettlementScheduler {
 
         log.info("settlement schedule start");
 
+        LocalDateTime now = LocalDateTime.now();
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("runtime", LocalDateTime.now().toString())
+                .addString("runtime", now.toString())
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("settlementJob"), jobParameters);

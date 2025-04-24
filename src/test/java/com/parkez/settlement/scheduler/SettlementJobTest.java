@@ -34,13 +34,11 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,8 +145,9 @@ class SettlementJobTest {
     @Test
     void 스프링_배치를_이용한_정산_테스트() throws Exception {
         // given
+        LocalDateTime now = LocalDateTime.now();
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("runtime", LocalDateTime.now().toString())
+                .addString("runtime", now.toString())
                 .toJobParameters();
 
         // when

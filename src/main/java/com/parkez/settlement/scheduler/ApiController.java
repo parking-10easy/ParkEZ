@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "15. 배치 API", description = "주차공간에 대한 예약 API 입니다.")
+@Tag(name = "15. 배치 API", description = "배치 실행 api")
 @Secured(UserRole.Authority.OWNER)
 @CheckMemberStatus
 public class ApiController {
@@ -26,8 +26,9 @@ public class ApiController {
 
     @GetMapping("api/v1/batch")
     public String SettlementApi() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("runtime", LocalDateTime.now().toString())
+                .addString("runtime", now.toString())
                 .toJobParameters();
         jobLauncher.run(jobRegistry.getJob("settlementJob"), jobParameters);
         return "success";
