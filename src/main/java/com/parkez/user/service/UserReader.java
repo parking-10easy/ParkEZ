@@ -1,5 +1,6 @@
 package com.parkez.user.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
@@ -40,5 +41,9 @@ public class UserReader {
 
     public Optional<User> findActiveUser(String email, UserRole role, LoginType loginType) {
         return userRepository.findByEmailAndRoleAndLoginTypeAndDeletedAtIsNull(email, role, loginType);
+    }
+
+    public List<User> findAllOwners() {
+        return userRepository.findAllByRole(UserRole.ROLE_OWNER);
     }
 }

@@ -24,8 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -269,6 +268,36 @@ class ReservationReaderTest {
             // then
             verify(reservationRepository).findExpiredReservations(ReservationStatus.CONFIRMED, now);
             assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    class findReservation{
+        @Test
+        void 예약ID로_예약을_정상적으로_조회한다() {
+            // given
+            Long reservationId = 1L;
+            Reservation reservation = mock(Reservation.class);
+
+            when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+
+            // when
+            Reservation result = reservationReader.findReservation(reservationId);
+
+            // then
+            assertThat(result).isEqualTo(reservation);
+        }
+
+        @Test
+        void 예약ID로_조회시_존재하지_않으면_NOT_FOUND_RESERVATION_예외발생() {
+            // given
+            Long reservationId = 1L;
+            when(reservationRepository.findById(reservationId)).thenReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> reservationReader.findReservation(reservationId))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasMessageContaining(ReservationErrorCode.NOT_FOUND_RESERVATION.getDefaultMessage());
         }
     }
 }

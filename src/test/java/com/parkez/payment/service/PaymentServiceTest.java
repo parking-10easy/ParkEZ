@@ -156,7 +156,6 @@ public class PaymentServiceTest {
                 .paymentStatus(PaymentStatus.PENDING)
                 .orderId(orderId)
                 .paymentKey("")
-                .cardFee(0)
                 .build();
         ReflectionTestUtils.setField(payment, "id", id);
 
@@ -446,7 +445,6 @@ public class PaymentServiceTest {
                     .paymentStatus(PaymentStatus.APPROVED)
                     .orderId(orderId)
                     .paymentKey(paymentKey)
-                    .cardFee(0)
                     .approvedAt(LocalDateTime.of(2025, 4, 16, 14, 30))
                     .build();
             ReflectionTestUtils.setField(payment, "id", 1L);
