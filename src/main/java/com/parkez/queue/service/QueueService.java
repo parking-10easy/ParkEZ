@@ -26,6 +26,7 @@ public class QueueService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final QueueRepository queueRepository;
 
+    private static final String QUEUE_KEY_PREFIX = "reservation:queue:";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
     private static final long CANCEL_LIMIT_HOURS = 1L;
 
@@ -87,22 +88,20 @@ public class QueueService {
     }
 
     public void deleteExpiredQueues() {
-        Set<String> keys = redisTemplate.keys("reservation:queue:*"); //todo key값 하드코딩 말고 상수로
+        Set<String> queueKeys = redisTemplate.keys(QUEUE_KEY_PREFIX + "*");
 
-        if (keys.isEmpty()) return;
+        if (queueKeys.isEmpty()) return;
 
-        for (String key : keys) { //todo key 변수명 더 명확하게 수정
+        for (String queueKey : queueKeys) {
             try {
-                String[] parts = key.split(":");
-                String[] timeRange = parts[3].split("-");
 
-                LocalDateTime startTime = LocalDateTime.parse(timeRange[0], FORMATTER); //todo LocalDateTime 매개변수로 받아오기
+                LocalDateTime startTime = extractStartTimeFromKey(queueKey);
 
-                if (startTime.minusHours(CANCEL_LIMIT_HOURS).isBefore(LocalDateTime.now())) {
-                    log.info("[대기열 만료] key={} → 1시간 전 도달, 대기열 삭제 진행", key);
+                if (isQueueExpired(startTime)) {
+                    log.info("[대기열 만료] queueKey={} → 1시간 전 도달, 대기열 삭제 진행", queueKey);
 
-                    List<Object> waitingList = queueRepository.getAll(key);
-                    queueRepository.deleteQueue(key);
+                    List<Object> waitingList = queueRepository.getAll(queueKey);
+                    queueRepository.deleteQueue(queueKey);
 
                     for (Object obj : waitingList) {
                         WaitingUserDto dto = convertToDto(obj);
@@ -110,9 +109,19 @@ public class QueueService {
                     }
                 }
             } catch (Exception e) {
-                log.error("[대기열 스케줄러] 키 파싱 실패: key={}", key, e);
+                log.error("[대기열 스케줄러] 키 파싱 실패: key={}", queueKey, e);
             }
         }
+    }
+
+    private LocalDateTime extractStartTimeFromKey(String key) {
+        String[] parts = key.split(":");
+        String[] timeRange = parts[3].split("-");
+        return LocalDateTime.parse(timeRange[0], FORMATTER);
+    }
+
+    private boolean isQueueExpired(LocalDateTime startTime) {
+        return startTime.minusHours(CANCEL_LIMIT_HOURS).isBefore(LocalDateTime.now());
     }
 
 }

@@ -184,7 +184,7 @@ public class ReservationService {
 
     private void handleNextInQueue(Reservation reservation) {
         String key = QueueKey.generateKey(
-                reservation.getParkingZone().getId(), //todo 수정
+                reservation.getParkingZoneId(),
                 reservation.getStartDateTime(),
                 reservation.getEndDateTime()
         );
