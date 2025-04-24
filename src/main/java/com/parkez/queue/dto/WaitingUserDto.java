@@ -11,8 +11,8 @@ public class WaitingUserDto{
 
     private Long parkingZoneId;
 
-    private LocalDateTime startDateTime;
-    private LocalDateTime endDateTime;
+    private LocalDateTime reservationStartDateTime;
+    private LocalDateTime reservationEndDateTime;
 
     public WaitingUserDto(
             Long userId,
@@ -22,8 +22,8 @@ public class WaitingUserDto{
     ) {
         this.userId = userId;
         this.parkingZoneId = parkingZoneId;
-        this.startDateTime = startDateTime;
-        this.endDateTime = endDateTime;
+        this.reservationStartDateTime = startDateTime;
+        this.reservationEndDateTime = endDateTime;
     }
 
 }

@@ -200,8 +200,8 @@ public class ReservationService {
 
         ReservationRequest request = new ReservationRequest(
                 dto.getParkingZoneId(),
-                dto.getStartDateTime(),
-                dto.getEndDateTime()
+                dto.getReservationStartDateTime(),
+                dto.getReservationEndDateTime()
         );
 
         createFromQueue(user, request);
