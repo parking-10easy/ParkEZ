@@ -1,5 +1,6 @@
 package com.parkez.promotion.service;
 
+import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
@@ -30,6 +31,9 @@ class PromotionIssueServiceTest {
 
 	@Mock
 	private PromotionIssueReader promotionIssueReader;
+
+	@Mock
+	private PromotionIssueWriter promotionIssueWriter;
 
 	@InjectMocks
 	private PromotionIssueService promotionIssueService;
@@ -75,6 +79,28 @@ class PromotionIssueServiceTest {
 				).containsExactly(
 					Tuple.tuple(promotionId, promotionName, couponName, discountValue, discountType, issuedAt, expiresAt, usedAt)
 				);
+
+		}
+	}
+
+	@Nested
+	class ExpirePromotionIssues {
+
+		@Test
+		public void 만료시간이_지난_ISSUED_쿠폰_1건을_만료처리하고_건수를_반환한다() {
+			//given
+			LocalDateTime currentDateTime = LocalDateTime.now();
+			PromotionIssueStatus currentStatus = PromotionIssueStatus.ISSUED;
+			PromotionIssueStatus targetStatus = PromotionIssueStatus.EXPIRED;
+
+			given(promotionIssueWriter.bulkUpdateStatusByCurrentTime(any(LocalDateTime.class), any(PromotionIssueStatus.class), any(
+				PromotionIssueStatus.class))).willReturn(1);
+
+			//when
+			int expiredPromotionIssuesCount = promotionIssueService.expirePromotionIssues(currentDateTime, currentStatus, targetStatus);
+
+			//then
+			assertThat(expiredPromotionIssuesCount).isEqualTo(1);
 
 		}
 	}
