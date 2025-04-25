@@ -32,7 +32,7 @@ public class PromotionIssueService {
 
 	@Transactional
 	public int expirePromotionIssues(LocalDateTime currentDateTime, PromotionIssueStatus currentStatus, PromotionIssueStatus targetStatus) {
-		return promotionIssueWriter.bulkUpdateStatusByCurrentTime(currentDateTime, currentStatus, targetStatus);
+		return promotionIssueWriter.expirePromotionIssues(currentDateTime, currentStatus, targetStatus);
 	}
 
 }

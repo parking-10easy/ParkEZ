@@ -18,13 +18,12 @@ public class PromotionIssueScheduler {
 
 	private final PromotionIssueService promotionIssueService;
 
-	@Scheduled(cron = "* */10 * * * *")
+	@Scheduled(cron = "0 */10 * * * *")
 	public void expirePromotionIssues() {
 
 		LocalDateTime currentDateTime = LocalDateTime.now();
 		PromotionIssueStatus currentStatus = PromotionIssueStatus.ISSUED;
 		PromotionIssueStatus targetStatus = PromotionIssueStatus.EXPIRED;
-
 
 		int expiredPromotionIssuesCount = promotionIssueService.expirePromotionIssues(currentDateTime, currentStatus, targetStatus);
 

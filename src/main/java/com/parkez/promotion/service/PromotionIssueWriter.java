@@ -36,7 +36,7 @@ public class PromotionIssueWriter {
 
 	}
 
-	public int bulkUpdateStatusByCurrentTime(LocalDateTime currentDateTime, PromotionIssueStatus currentStatus, PromotionIssueStatus targetStatus) {
+	public int expirePromotionIssues(LocalDateTime currentDateTime, PromotionIssueStatus currentStatus, PromotionIssueStatus targetStatus) {
 
 		return promotionIssueRepository.bulkUpdateStatusByCurrentTime(currentDateTime, currentStatus, targetStatus);
 	}

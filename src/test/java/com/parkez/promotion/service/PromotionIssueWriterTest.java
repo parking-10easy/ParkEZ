@@ -101,7 +101,6 @@ class PromotionIssueWriterTest {
 		@Test
 		public void 만료시간이_지난_ISSUED_쿠폰은_EXPIRED_상태로_변경된다() {
 			//given
-			//given
 			User user = createUser();
 			User savedUser = userRepository.save(user);
 
@@ -136,7 +135,7 @@ class PromotionIssueWriterTest {
 			PromotionIssueStatus targetStatus = PromotionIssueStatus.EXPIRED;
 
 			//when
-			int expiredPromotionIssuesCount = promotionIssueWriter.bulkUpdateStatusByCurrentTime(currentDateTime, currentStatus, targetStatus);
+			int expiredPromotionIssuesCount = promotionIssueWriter.expirePromotionIssues(currentDateTime, currentStatus, targetStatus);
 
 			entityManager.flush();
 			entityManager.clear();

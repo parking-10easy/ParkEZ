@@ -2,6 +2,7 @@ package com.parkez.promotion.service;
 
 import static com.parkez.promotion.domain.enums.PromotionType.*;
 import static com.parkez.promotion.excption.PromotionErrorCode.*;
+import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
@@ -447,6 +448,47 @@ class PromotionServiceTest {
 					promotionId, couponId, couponName, issuedAt, expiresAt
 				);
 
+		}
+	}
+
+	@Nested
+	class ExpireEndedPromotions {
+
+		@Test
+		public void 종료된_프로모션_1건을_만료처리하고_건수를_반환한다() {
+			//given
+
+			LocalDateTime currentDateTime = LocalDateTime.now();
+			PromotionStatus currentStatus = PromotionStatus.ACTIVE;
+			PromotionStatus targetStatus = PromotionStatus.ENDED;
+
+			given(promotionWriter.expireEndedPromotions(any(LocalDateTime.class), any(PromotionStatus.class), any(PromotionStatus.class))).willReturn(1);
+
+			//when
+			int endedPromotionCount = promotionService.expireEndedPromotions(currentDateTime, currentStatus, targetStatus);
+
+			//then
+			assertThat(endedPromotionCount).isEqualTo(1);
+		}
+	}
+
+	@Nested
+	class ExpireSoldOutPromotionStatus {
+
+		@Test
+		public void 쿠폰_매진된_프로모션_1건을_만료처리하고_건수를_반환한다() {
+			//given
+
+			PromotionStatus currentStatus = PromotionStatus.ACTIVE;
+			PromotionStatus targetStatus = PromotionStatus.ENDED;
+
+			given(promotionWriter.expireSoldOutPromotions(any(PromotionStatus.class), any(PromotionStatus.class))).willReturn(1);
+
+			//when
+			int soldOutCount = promotionService.expireSoldOutPromotions(currentStatus, targetStatus);
+
+			//then
+			assertThat(soldOutCount).isEqualTo(1);
 		}
 	}
 

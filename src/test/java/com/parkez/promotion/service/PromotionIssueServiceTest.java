@@ -93,7 +93,7 @@ class PromotionIssueServiceTest {
 			PromotionIssueStatus currentStatus = PromotionIssueStatus.ISSUED;
 			PromotionIssueStatus targetStatus = PromotionIssueStatus.EXPIRED;
 
-			given(promotionIssueWriter.bulkUpdateStatusByCurrentTime(any(LocalDateTime.class), any(PromotionIssueStatus.class), any(
+			given(promotionIssueWriter.expirePromotionIssues(any(LocalDateTime.class), any(PromotionIssueStatus.class), any(
 				PromotionIssueStatus.class))).willReturn(1);
 
 			//when

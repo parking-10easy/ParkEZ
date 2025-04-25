@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -102,4 +103,27 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 	""")
 	Optional<Promotion> findActivePromotionWithPessimisticLock(@Param("promotionId") Long promotionId, @Param("now") LocalDateTime now, @Param("activeStatus") PromotionStatus activeStatus);
 
+	@Modifying
+	@Query("""
+		update Promotion p
+		set p.promotionStatus = :targetStatus
+		where
+			p.promotionEndAt <= :currentDateTime
+			and p.promotionStatus = :currentStatus
+	""")
+	int bulkUpdatePromotionStatusToEndedByCurrentDateTime(@Param("currentDateTime") LocalDateTime currentDateTime,@Param("currentStatus") PromotionStatus currentStatus,@Param("targetStatus") PromotionStatus targetStatus);
+
+	@Modifying
+	@Query("""
+		update Promotion p
+		set p.promotionStatus = :targetStatus
+		where
+			p.limitTotal <= (
+				select count(pi)
+				from PromotionIssue pi
+				where pi.promotion.id = p.id
+			)
+			and p.promotionStatus = :currentStatus
+	""")
+	int bulkUpdatePromotionStatusToEndedIfSoldOut(@Param("currentStatus") PromotionStatus currentStatus,@Param("targetStatus") PromotionStatus targetStatus);
 }
