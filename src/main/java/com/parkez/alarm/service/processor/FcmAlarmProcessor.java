@@ -12,7 +12,7 @@ public class FcmAlarmProcessor {
     private final PushService pushService;
 
     public void processReservation(Alarm alarm) {
-        pushService.sendPush(alarm, alarm.getDeviceToken(), alarm.getTitle(), alarm.getMessage());
+        pushService.sendReservationPush(alarm, alarm.getDeviceToken(), alarm.getTitle(), alarm.getMessage());
     }
 
     public void processPayment(com.parkez.alarm.dto.ReservationAlarmInfo info, com.parkez.alarm.domain.enums.NotificationType type) {

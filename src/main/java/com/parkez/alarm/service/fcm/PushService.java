@@ -24,19 +24,19 @@ public class PushService {
     private final FcmDeviceRepository fcmDeviceRepository;
 
     @Transactional
-    public void sendPush(Alarm alarm, String token, String title, String body) {
+    public void sendReservationPush(Alarm alarm, String token, String title, String body) {
         Message message = Message.builder()
                 .setToken(token)
                 .setNotification(Notification.builder().setTitle(title).setBody(body).build())
                 .build();
         try {
             String response = FirebaseMessaging.getInstance().send(message);
-            log.info("푸시 알림 전송 성공 response={} ",response);
+            log.info("예약 푸시 알림 전송 성공 response={} ",response);
             alarm.updateSent(true);
             alarm.updateSentAt(LocalDateTime.now());
 
         } catch (FirebaseMessagingException e) {
-            log.info("푸시 알림 전송 실패 e.getMessage={} ",e.getMessage());
+            log.info("예약 푸시 알림 전송 실패 e.getMessage={} ",e.getMessage());
             alarm.updateFailReason(e.getMessage());
             alarmRepository.flush();
         }
