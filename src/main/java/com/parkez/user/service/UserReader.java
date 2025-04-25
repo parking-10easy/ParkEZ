@@ -51,8 +51,7 @@ public class UserReader {
         );
     }
 
-    public List<User> findOwnersForSettlementByMonth(YearMonth targetMonth, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
-        return userRepository.findOwnersForSettlementByMonth(targetMonth, pageable);
+    public List<User> findOwnersForSettlementByMonth(YearMonth targetMonth, Long lastId, int size) {
+        return userRepository.findOwnersForSettlementByMonth(targetMonth, lastId, size);
     }
 }

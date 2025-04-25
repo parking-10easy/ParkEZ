@@ -9,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.YearMonth;
+import java.time.*;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,17 +32,20 @@ class OwnerItemReaderTest {
     @Test
     void read_정상적으로_유저를_순차적으로_반환한다() {
         // given
-        YearMonth targetMonth = YearMonth.of(2025, 3);
-        String targetMonthString = targetMonth.toString();
+//        YearMonth targetMonth = YearMonth.of(2025, 3);
+//        String targetMonthString = targetMonth.toString();
+        LocalDateTime now = LocalDateTime.now();
+        String targetMonthString = now.toString();
+        YearMonth targetMonth = YearMonth.from(now).minusMonths(1);
         ownerItemReader = new OwnerItemReader(userReader, targetMonthString);
 
         List<User> page0 = List.of(mockUser(1L), mockUser(2L), mockUser(3L));
         List<User> page1 = List.of(mockUser(4L));
         List<User> emptyPage = List.of();
 
-        given(userReader.findOwnersForSettlementByMonth(targetMonth, 0, 10)).willReturn(page0);
-        given(userReader.findOwnersForSettlementByMonth(targetMonth, 1, 10)).willReturn(page1);
-        given(userReader.findOwnersForSettlementByMonth(targetMonth, 2, 10)).willReturn(emptyPage);
+        given(userReader.findOwnersForSettlementByMonth(targetMonth, 0L, 10)).willReturn(page0);
+        given(userReader.findOwnersForSettlementByMonth(targetMonth, 3L, 10)).willReturn(page1);
+        given(userReader.findOwnersForSettlementByMonth(targetMonth, 4L, 10)).willReturn(emptyPage);
 
         // when & then
         assertThat(ownerItemReader.read().getId()).isEqualTo(1L);

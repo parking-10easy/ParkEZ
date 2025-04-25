@@ -17,6 +17,8 @@ import static com.parkez.parkinglot.domain.entity.QParkingLot.parkingLot;
 import static com.parkez.parkingzone.domain.entity.QParkingZone.parkingZone;
 import static com.parkez.payment.domain.entity.QPayment.payment;
 import static com.parkez.reservation.domain.entity.QReservation.reservation;
+import static com.parkez.settlement.domain.entity.QSettlement.settlement;
+import static com.parkez.user.domain.entity.QUser.user;
 
 @Repository
 @RequiredArgsConstructor
@@ -25,23 +27,29 @@ public class UserRepositoryImpl implements UserQueryDslRepository {
     private final JPAQueryFactory jpaQueryFactory;
 
     @Override
-    public List<User> findOwnersForSettlementByMonth(YearMonth yearMonth, Pageable pageable) {
+    public List<User> findOwnersForSettlementByMonth(YearMonth yearMonth, Long lastId, int size) {
         LocalDateTime start = yearMonth.atDay(1).atStartOfDay();
         LocalDateTime end = yearMonth.atEndOfMonth().atTime(LocalTime.MAX);
 
         return jpaQueryFactory
-                .selectDistinct(parkingLot.owner)
+                .selectDistinct(user)
                 .from(payment)
                 .join(payment.reservation, reservation)
                 .join(reservation.parkingZone, parkingZone)
                 .join(parkingZone.parkingLot, parkingLot)
+                .join(parkingLot.owner, user)
+                .leftJoin(settlement)
+                    .on(settlement.owner.eq(parkingLot.owner)
+                        .and(settlement.settlementMonth.eq(yearMonth)))
                 .where(
                         payment.paymentStatus.eq(PaymentStatus.APPROVED),
                         reservation.status.eq(ReservationStatus.COMPLETED),
-                        reservation.endDateTime.between(start, end)
+                        reservation.endDateTime.between(start, end),
+                        settlement.id.isNull(),
+                        user.id.gt(lastId)
                 )
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
+                .orderBy(user.id.asc())
+                .limit(size)
                 .fetch();
     }
 }

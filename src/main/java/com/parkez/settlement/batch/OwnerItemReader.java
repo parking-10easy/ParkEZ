@@ -23,7 +23,7 @@ public class OwnerItemReader implements ItemReader<User> {
 
     private static final int PAGE_SIZE = 10;
 
-    private int currentPage = 0;
+    private Long lastId = 0L;
     private List<User> currentChunk = new ArrayList<>();
     private int currentIndex = 0;
 
@@ -39,10 +39,9 @@ public class OwnerItemReader implements ItemReader<User> {
 
     @Override
     public User read() {
-        log.info("current Page = {}, current Index = {}", currentPage, currentIndex);
         if (currentIndex >= currentChunk.size()) {
             // 다음 페이지 조회
-            this.currentChunk = userReader.findOwnersForSettlementByMonth(targetMonth, currentPage++, PAGE_SIZE);
+            this.currentChunk = userReader.findOwnersForSettlementByMonth(targetMonth, lastId, PAGE_SIZE);
 
             // 더 이상 데이터가 없을 경우 종료
             if (currentChunk.isEmpty()) {
@@ -50,6 +49,10 @@ public class OwnerItemReader implements ItemReader<User> {
             }
             currentIndex = 0;
         }
-        return currentChunk.get(currentIndex++);
+
+        User currentUser = currentChunk.get(currentIndex++);
+        lastId = currentUser.getId(); // 커서 갱신
+        log.info("조회 ownerId={}, lastId={}", currentUser.getId(), lastId);
+        return currentUser;
     }
 }

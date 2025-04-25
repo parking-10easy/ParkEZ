@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface UserQueryDslRepository {
 
-    List<User> findOwnersForSettlementByMonth(YearMonth yearMonth, Pageable pageable);
+    List<User> findOwnersForSettlementByMonth(YearMonth yearMonth, Long lastId, int size);
 }
