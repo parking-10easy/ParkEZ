@@ -166,13 +166,12 @@ public class ParkingLotPublicDataService {
 
     private void bulkInsertImages(Connection connection, List<ParkingLot> parkingLots) throws SQLException {
         String sql = """
-                INSERT INTO parking_lot_image
+                INSERT IGNORE INTO parking_lot_image
                   (parking_lot_id, image_url, created_at, modified_at)
                 SELECT pl.id, ?, NOW(), NOW()
                   FROM parking_lot pl
                  WHERE pl.longitude = ?
-                  AND pl.latitude = ?
-                 ON DUPLICATE KEY UPDATE id = id
+                   AND pl.latitude = ?
                 """;
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
