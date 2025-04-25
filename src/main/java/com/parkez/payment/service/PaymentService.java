@@ -2,7 +2,6 @@ package com.parkez.payment.service;
 
 import com.parkez.alarm.domain.enums.NotificationType;
 import com.parkez.alarm.dto.ReservationAlarmInfo;
-import com.parkez.alarm.event.PaymentEvent;
 import com.parkez.alarm.pubsub.PaymentAlarmMessage;
 import com.parkez.alarm.pubsub.PaymentAlarmPublisher;
 import com.parkez.common.exception.ParkingEasyException;
@@ -25,7 +24,6 @@ import com.parkez.reservation.service.ReservationWriter;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -44,9 +42,6 @@ public class PaymentService {
     private final ReservationWriter reservationWriter;
     private final WebClient tossWebClient;
     private final TossPaymentService tossPaymentService;
-    // Event 발행 방식
-     private final ApplicationEventPublisher applicationEventPublisher;
-    // Redis Pub/Sub 발행 방식
     private final PaymentAlarmPublisher paymentAlarmPublisher;
 
     private static final long TIME_OUT_MINUTE = 10;
@@ -149,10 +144,7 @@ public class PaymentService {
 
         reservationWriter.cancel(reservation);
 
-        // Event 발행 방식
-        applicationEventPublisher.publishEvent(new PaymentEvent(ReservationAlarmInfo.from(reservation), NotificationType.FAILED));
-        // Redis Pub/Sub 발행 방식
-        //paymentAlarmPublisher.publish(new PaymentAlarmMessage(ReservationAlarmInfo.from(reservation), NotificationType.FAILED));
+        paymentAlarmPublisher.publish(new PaymentAlarmMessage(ReservationAlarmInfo.from(reservation), NotificationType.FAILED));
     }
 
     public void cancelPayment(Reservation reservation, ReservationCancelRequest request){
@@ -176,10 +168,8 @@ public class PaymentService {
 
             paymentWriter.cancelPayment(payment);
         }
-        // Event 발행 방식
-         applicationEventPublisher.publishEvent(new PaymentEvent(ReservationAlarmInfo.from(reservation), NotificationType.CANCELED));
-        // Redis Pub/Sub 발행 방식
-        //paymentAlarmPublisher.publish(new PaymentAlarmMessage(ReservationAlarmInfo.from(reservation), NotificationType.CANCELED));
+
+        paymentAlarmPublisher.publish(new PaymentAlarmMessage(ReservationAlarmInfo.from(reservation), NotificationType.CANCELED));
     }
 
     public void expirePayment() {

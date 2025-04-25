@@ -1,7 +1,7 @@
 package com.parkez.alarm.pubsub;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parkez.alarm.service.AsyncAlarmService;
+import com.parkez.alarm.service.AlarmSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PaymentAlarmSubscriber implements MessageListener {
 
-    private final AsyncAlarmService asyncAlarmService;
+    private final AlarmSender alarmSender;
     private final GenericJackson2JsonRedisSerializer redisSerializer;
     private final ObjectMapper objectMapper;
 
@@ -24,7 +24,7 @@ public class PaymentAlarmSubscriber implements MessageListener {
             Object rawObject = redisSerializer.deserialize(message.getBody());
             PaymentAlarmMessage alarmMessage = objectMapper.convertValue(rawObject, PaymentAlarmMessage.class);
 
-            asyncAlarmService.sendAlarms(alarmMessage.getReservationAlarmInfo(), alarmMessage.getNotificationType());
+            alarmSender.processPaymentAlarms(alarmMessage.getReservationAlarmInfo(), alarmMessage.getNotificationType());
 
         } catch (Exception e) {
             log.error("❌ Redis 결제 알람 처리 실패", e);
