@@ -20,7 +20,7 @@ public class SettlementScheduler {
     private final JobRegistry jobRegistry;
 
     // 매월 10일 새벽 1시에 실행
-    @Scheduled(cron = "0 */1 * * * ?")
+    @Scheduled(cron = "0 0 1 10 * ?")
     public void confirmMonthlySettlements() throws Exception {
 
         log.info("settlement schedule start");
