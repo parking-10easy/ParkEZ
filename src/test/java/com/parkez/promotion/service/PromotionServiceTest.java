@@ -492,7 +492,7 @@ class PromotionServiceTest {
 		}
 	}
 
-	private static PromotionIssue createPromotionIssue(Promotion promotion, AuthUser authUser, LocalDateTime issuedAt,
+	private PromotionIssue createPromotionIssue(Promotion promotion, AuthUser authUser, LocalDateTime issuedAt,
 		LocalDateTime expiresAt) {
 		return PromotionIssue.builder()
 			.promotion(promotion)
@@ -502,7 +502,7 @@ class PromotionServiceTest {
 			.build();
 	}
 
-	private static AuthUser creatAuthUser() {
+	private AuthUser creatAuthUser() {
 		return AuthUser.builder().email("user@example.com")
 			.roleName(UserRole.ROLE_USER.name())
 			.nickname("nickname")

@@ -9,6 +9,14 @@ import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import com.parkez.parkingzone.exception.ParkingZoneErrorCode;
 import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.payment.service.PaymentService;
+import com.parkez.promotion.domain.entity.Coupon;
+import com.parkez.promotion.domain.entity.Promotion;
+import com.parkez.promotion.domain.entity.PromotionIssue;
+import com.parkez.promotion.domain.enums.DiscountType;
+import com.parkez.promotion.domain.enums.PromotionStatus;
+import com.parkez.promotion.domain.enums.PromotionType;
+import com.parkez.promotion.service.PromotionIssueReader;
+import com.parkez.promotion.service.PromotionIssueValidator;
 import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
@@ -21,6 +29,8 @@ import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
+
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +51,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import static com.parkez.promotion.excption.PromotionIssueErrorCode.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -64,6 +75,13 @@ class ReservationServiceTest {
     private DistributedLockManager distributedLockManager;
     @Mock
     private PaymentService paymentService;
+
+    @Mock
+    private PromotionIssueReader promotionIssueReader;
+
+    @Mock
+    private PromotionIssueValidator promotionIssueValidator;
+
     @InjectMocks
     private ReservationService reservationService;
 
@@ -123,7 +141,8 @@ class ReservationServiceTest {
         return parkingZone;
     }
 
-    private static Reservation createReservation(Long id, User user, ParkingZone parkingZone, ReservationRequest request, BigDecimal price) {
+    private static Reservation createReservation(Long id, User user, ParkingZone parkingZone, ReservationRequest request, BigDecimal price,
+        BigDecimal originalPrice, BigDecimal discountAmount, Long promotionIssueId) {
         Reservation reservation = Reservation.builder()
                 .user(user)
                 .parkingZone(parkingZone)
@@ -131,6 +150,9 @@ class ReservationServiceTest {
                 .startDateTime(request.getStartDateTime())
                 .endDateTime(request.getEndDateTime())
                 .price(price)
+                .originalPrice(originalPrice)
+                .discountAmount(discountAmount)
+                .promotionIssueId(promotionIssueId)
                 .build();
         ReflectionTestUtils.setField(reservation, "id", id);
         return reservation;
@@ -146,19 +168,216 @@ class ReservationServiceTest {
         return reservation;
     }
 
-    private static ReservationRequest createRequest(Long id) {
+    private static ReservationRequest createRequest(Long id, Long promotionIssueId) {
         ReservationRequest request = new ReservationRequest();
         ReflectionTestUtils.setField(request, "parkingZoneId", id);
         ReflectionTestUtils.setField(request, "startDateTime", RESERVATION_START_DATE_TIME);
         ReflectionTestUtils.setField(request, "endDateTime", RESERVATION_END_DATE_TIME);
+        ReflectionTestUtils.setField(request, "promotionIssueId", promotionIssueId);
         return request;
+    }
+
+    private PromotionIssue createPromotionIssue(Promotion promotion, AuthUser authUser, LocalDateTime issuedAt,
+        LocalDateTime expiresAt) {
+        return PromotionIssue.builder()
+            .promotion(promotion)
+            .user(User.from(authUser))
+            .issuedAt(issuedAt)
+            .expiresAt(expiresAt)
+            .build();
+    }
+
+    private Promotion createPromotion(Long promotionId, String promotionName, PromotionType promotionType,
+        Coupon coupon, int limitTotal,
+        int limitPerUser, LocalDateTime promotionStartAt, LocalDateTime promotionEndAt, int validDaysAfterIssue,
+        PromotionStatus promotionStatus) {
+        Promotion promotion = Promotion.builder()
+            .name(promotionName)
+            .promotionType(promotionType)
+            .coupon(coupon)
+            .limitTotal(limitTotal)
+            .limitPerUser(limitPerUser)
+            .promotionStartAt(promotionStartAt)
+            .promotionEndAt(promotionEndAt)
+            .validDaysAfterIssue(validDaysAfterIssue)
+            .build();
+        ReflectionTestUtils.setField(promotion, "id", promotionId);
+        ReflectionTestUtils.setField(promotion, "promotionStatus", promotionStatus);
+        return promotion;
+    }
+
+    private Coupon createCoupon(Long id, String name, DiscountType discountType, int discountValue,
+        String description) {
+        Coupon coupon = Coupon.builder()
+            .name(name)
+            .discountType(discountType)
+            .discountValue(discountValue)
+            .description(description)
+            .build();
+        ReflectionTestUtils.setField(coupon, "id", id);
+        return coupon;
     }
 
     @Nested
     class CreateReservation {
 
         @Test
-        void 특정_주차공간에_대한_예약_생성_테스트() {
+        void 특정_주차공간에_존재하지않는_쿠폰으로_예약하면_PROMOTION_ISSUE_NOT_FOUND_예외_발생한다() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+
+            AuthUser authUser = createAuthUser(userId);
+
+            Long promotionIssueId = -1L;
+            ReservationRequest request = createRequest(parkingZoneId, promotionIssueId);
+
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+            given(promotionIssueReader.getWithPromotionAndCouponById(anyLong())).willThrow(new ParkingEasyException(PROMOTION_ISSUE_NOT_FOUND));
+
+            // when & then
+            Assertions.assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
+                .isInstanceOf(ParkingEasyException.class)
+                .hasMessage(PROMOTION_ISSUE_NOT_FOUND.getDefaultMessage());
+
+        }
+
+        @Test
+        void 특정_주차공간에_만료된_쿠폰으로_예약하면_EXPIRED_COUPON_예외가_발생한다() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+
+            AuthUser authUser = createAuthUser(userId);
+
+            Long promotionIssueId = 1L;
+            ReservationRequest request = createRequest(parkingZoneId, promotionIssueId);
+
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            Long promotionId = 1L;
+            String promotionName = "DAILY 2000";
+            PromotionType promotionType = PromotionType.DAILY;
+            int limitTotal = 100;
+            int limitPerUser = 1;
+            int validDaysAfterIssue = 3;
+
+            LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
+            LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
+
+            long couponId = 1L;
+            String couponName = "신규가입 2000원 할인 쿠폰";
+            DiscountType discountType = DiscountType.FIXED;
+            int discountValue = 2000;
+            String description = "신규 유저 전용, 1회만 사용 가능";
+
+            Coupon coupon = createCoupon(couponId,couponName,discountType,discountValue,description);
+            Promotion promotion = createPromotion(promotionId,promotionName,promotionType,coupon,limitTotal,limitPerUser,promotionStartAt,promotionEndAt,validDaysAfterIssue,PromotionStatus.ACTIVE);
+
+            LocalDateTime issuedAt = LocalDateTime.now();
+            LocalDateTime expiresAt = issuedAt.plusDays(promotion.getValidDaysAfterIssue());
+            PromotionIssue promotionIssue = createPromotionIssue(promotion, authUser, issuedAt, expiresAt);
+
+
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+            given(promotionIssueReader.getWithPromotionAndCouponById(anyLong())).willReturn(promotionIssue);
+            doThrow(new ParkingEasyException(EXPIRED_COUPON)).when(promotionIssueValidator).validateCanBeUsed(any(),any());
+
+            // when & then
+            Assertions.assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
+                .isInstanceOf(ParkingEasyException.class)
+                .hasMessage(EXPIRED_COUPON.getDefaultMessage());
+
+        }
+
+        @Test
+        void 특정_주차공간에_이미_사용한_쿠폰으로_예약하면_ALREADY_USED_예외가_발생한다() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+
+            AuthUser authUser = createAuthUser(userId);
+
+            Long promotionIssueId = 1L;
+            ReservationRequest request = createRequest(parkingZoneId, promotionIssueId);
+
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            Long promotionId = 1L;
+            String promotionName = "DAILY 2000";
+            PromotionType promotionType = PromotionType.DAILY;
+            int limitTotal = 100;
+            int limitPerUser = 1;
+            int validDaysAfterIssue = 3;
+
+            LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
+            LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
+
+            long couponId = 1L;
+            String couponName = "신규가입 2000원 할인 쿠폰";
+            DiscountType discountType = DiscountType.FIXED;
+            int discountValue = 2000;
+            String description = "신규 유저 전용, 1회만 사용 가능";
+
+            Coupon coupon = createCoupon(couponId,couponName,discountType,discountValue,description);
+            Promotion promotion = createPromotion(promotionId,promotionName,promotionType,coupon,limitTotal,limitPerUser,promotionStartAt,promotionEndAt,validDaysAfterIssue,PromotionStatus.ACTIVE);
+
+            LocalDateTime issuedAt = LocalDateTime.now();
+            LocalDateTime expiresAt = issuedAt.plusDays(promotion.getValidDaysAfterIssue());
+            PromotionIssue promotionIssue = createPromotionIssue(promotion, authUser, issuedAt, expiresAt);
+
+
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+            given(promotionIssueReader.getWithPromotionAndCouponById(anyLong())).willReturn(promotionIssue);
+            doThrow(new ParkingEasyException(ALREADY_USED)).when(promotionIssueValidator).validateCanBeUsed(any(),any());
+
+            // when & then
+            Assertions.assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
+                .isInstanceOf(ParkingEasyException.class)
+                .hasMessage(ALREADY_USED.getDefaultMessage());
+
+        }
+
+        @Test
+        void 특정_주차공간에_쿠폰을_적용해서_예약_생성_할_수_있다() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
@@ -168,7 +387,85 @@ class ReservationServiceTest {
 
             AuthUser authUser = createAuthUser(userId);
 
-            ReservationRequest request = createRequest(parkingZoneId);
+            Long promotionIssueId = 1L;
+            ReservationRequest request = createRequest(parkingZoneId, promotionIssueId);
+
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            Long promotionId = 1L;
+            String promotionName = "DAILY 2000";
+            PromotionType promotionType = PromotionType.DAILY;
+            int limitTotal = 100;
+            int limitPerUser = 1;
+            int validDaysAfterIssue = 3;
+
+            LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
+            LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
+
+            long couponId = 1L;
+            String couponName = "신규가입 2000원 할인 쿠폰";
+            DiscountType discountType = DiscountType.FIXED;
+            int discountValue = 2000;
+            String description = "신규 유저 전용, 1회만 사용 가능";
+
+
+
+            Coupon coupon = createCoupon(couponId,couponName,discountType,discountValue,description);
+            Promotion promotion = createPromotion(promotionId,promotionName,promotionType,coupon,limitTotal,limitPerUser,promotionStartAt,promotionEndAt,validDaysAfterIssue,PromotionStatus.ACTIVE);
+
+            LocalDateTime issuedAt = LocalDateTime.now();
+            LocalDateTime expiresAt = issuedAt.plusDays(promotion.getValidDaysAfterIssue());
+            PromotionIssue promotionIssue = createPromotionIssue(promotion, authUser, issuedAt, expiresAt);
+
+            long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
+            BigDecimal originalPrice = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+            BigDecimal discountAmount = coupon.calculateDiscount(originalPrice);
+            BigDecimal finalPrice = originalPrice.subtract(discountAmount);
+
+            Reservation reservation = createReservation(reservationId, user, parkingZone, request, finalPrice, originalPrice,
+                discountAmount, promotionIssueId);
+
+
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+            given(promotionIssueReader.getWithPromotionAndCouponById(anyLong())).willReturn(promotionIssue);
+            given(reservationWriter.create(any(User.class), any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class),any(BigDecimal.class),any(
+                BigDecimal.class),any(BigDecimal.class),any()))
+                .willReturn(reservation);
+
+            // when
+            ReservationResponse result = reservationService.createReservation(authUser, request, LocalDateTime.now());
+
+            // then
+            assertThat(result)
+                .isNotNull()
+                .extracting("reservationId", "userId", "parkingZoneId", "parkingLotName", "reviewWritten", "startDateTime", "endDateTime", "price", "originalPrice", "discountAmount")
+                .isEqualTo(
+                    List.of(reservationId, userId, parkingZoneId, parkingLot.getName(), false, request.getStartDateTime(), request.getEndDateTime(), finalPrice, discountAmount, originalPrice)
+                );
+        }
+
+        @Test
+        void 특정_주차공간에_쿠폰을_사용하지않고_예약_생성_할_수_있다() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+            Long reservationId = 1L;
+
+            AuthUser authUser = createAuthUser(userId);
+
+            ReservationRequest request = createRequest(parkingZoneId, null);
 
             User owner = createOwner(ownerId);
             User user = createUser(authUser.getId());
@@ -178,9 +475,13 @@ class ReservationServiceTest {
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
             long hours = ChronoUnit.HOURS.between(request.getStartDateTime(), request.getEndDateTime());
-            BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+            BigDecimal originalPrice = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+            BigDecimal discountAmount = BigDecimal.ZERO;
+            BigDecimal price = originalPrice.subtract(discountAmount);
+            Long  promotionIssueId = null;
 
-            Reservation reservation = createReservation(reservationId, user, parkingZone, request, price);
+            Reservation reservation = createReservation(reservationId, user, parkingZone, request, price, originalPrice,
+                discountAmount, promotionIssueId);
 
             given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
                 Callable<ReservationResponse> task = invocation.getArgument(1);
@@ -188,11 +489,12 @@ class ReservationServiceTest {
             });
             given(userReader.getActiveUserById(anyLong())).willReturn(user);
             given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
-            given(reservationWriter.create(any(User.class), any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class)))
+            given(reservationWriter.create(any(User.class), any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class),any(BigDecimal.class),any(
+                BigDecimal.class),any(BigDecimal.class),any()))
                     .willReturn(reservation);
 
             // when
-            ReservationResponse result = reservationService.createReservation(authUser, request);
+            ReservationResponse result = reservationService.createReservation(authUser, request, LocalDateTime.now());
 
             // then
             assertThat(result)
@@ -213,7 +515,7 @@ class ReservationServiceTest {
 
             AuthUser authUser = createAuthUser(userId);
 
-            ReservationRequest request = createRequest(parkingZoneId);
+            ReservationRequest request = createRequest(parkingZoneId, null);
             ReflectionTestUtils.setField(request, "endDateTime", request.getStartDateTime().minusNanos(1));
 
             User owner = createOwner(ownerId);
@@ -232,7 +534,7 @@ class ReservationServiceTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.createReservation(authUser, request));
+                    () -> reservationService.createReservation(authUser, request, LocalDateTime.now()));
             assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
         }
 
@@ -248,7 +550,7 @@ class ReservationServiceTest {
 
             AuthUser authUser = createAuthUser(userId);
 
-            ReservationRequest request = createRequest(parkingZoneId);
+            ReservationRequest request = createRequest(parkingZoneId, null);
             ReflectionTestUtils.setField(request, "startDateTime", startDateTime);
 
             User owner = createOwner(ownerId);
@@ -267,7 +569,7 @@ class ReservationServiceTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.createReservation(authUser, request));
+                    () -> reservationService.createReservation(authUser, request, LocalDateTime.now()));
             assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
         }
 
@@ -283,7 +585,7 @@ class ReservationServiceTest {
 
             AuthUser authUser = createAuthUser(userId);
 
-            ReservationRequest request = createRequest(parkingZoneId);
+            ReservationRequest request = createRequest(parkingZoneId, null);
             ReflectionTestUtils.setField(request, "endDateTime", endDateTime);
 
             User owner = createOwner(ownerId);
@@ -302,7 +604,7 @@ class ReservationServiceTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.createReservation(authUser, request));
+                    () -> reservationService.createReservation(authUser, request, LocalDateTime.now()));
             assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
         }
 
@@ -316,7 +618,7 @@ class ReservationServiceTest {
 
             AuthUser authUser = createAuthUser(userId);
 
-            ReservationRequest request = createRequest(parkingZoneId);
+            ReservationRequest request = createRequest(parkingZoneId, null);
 
             User owner = createOwner(ownerId);
             User user = createUser(authUser.getId());
@@ -335,7 +637,7 @@ class ReservationServiceTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.createReservation(authUser, request));
+                    () -> reservationService.createReservation(authUser, request, LocalDateTime.now()));
             assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.CANT_RESERVE_UNAVAILABLE_PARKING_ZONE);
         }
 
@@ -351,7 +653,7 @@ class ReservationServiceTest {
 
             AuthUser authUser = createAuthUser(userId);
 
-            ReservationRequest request = createRequest(parkingZoneId);
+            ReservationRequest request = createRequest(parkingZoneId, null);
             ReflectionTestUtils.setField(request, "startDateTime", startDateTime);
 
             User owner = createOwner(ownerId);
@@ -370,7 +672,7 @@ class ReservationServiceTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.createReservation(authUser, request));
+                    () -> reservationService.createReservation(authUser, request, LocalDateTime.now()));
             assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
         }
 
@@ -386,7 +688,7 @@ class ReservationServiceTest {
 
             AuthUser authUser = createAuthUser(userId);
 
-            ReservationRequest request = createRequest(parkingZoneId);
+            ReservationRequest request = createRequest(parkingZoneId, null);
             ReflectionTestUtils.setField(request, "endDateTime", endDateTime);
 
             User owner = createOwner(ownerId);
@@ -405,7 +707,7 @@ class ReservationServiceTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.createReservation(authUser, request));
+                    () -> reservationService.createReservation(authUser, request, LocalDateTime.now()));
             assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
         }
 
@@ -419,7 +721,7 @@ class ReservationServiceTest {
 
             AuthUser authUser = createAuthUser(userId);
 
-            ReservationRequest request = createRequest(parkingZoneId);
+            ReservationRequest request = createRequest(parkingZoneId, null);
 
             User owner = createOwner(ownerId);
             User user = createUser(authUser.getId());
@@ -438,7 +740,7 @@ class ReservationServiceTest {
 
             // when & then
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.createReservation(authUser, request));
+                    () -> reservationService.createReservation(authUser, request, LocalDateTime.now()));
             assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.ALREADY_RESERVED);
         }
 
@@ -446,7 +748,7 @@ class ReservationServiceTest {
         void 올바른_예약_요청_시간에_대한_검증_테스트() {
             // given
             Long parkingZoneId = 1L;
-            ReservationRequest request = createRequest(parkingZoneId);
+            ReservationRequest request = createRequest(parkingZoneId, null);
 
             // when
             boolean result = reservationService.validateRequestTime(request);

@@ -1,5 +1,15 @@
 package com.parkez.reservation.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.exception.ParkingLotErrorCode;
@@ -7,6 +17,10 @@ import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.domain.enums.ParkingZoneStatus;
 import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.payment.service.PaymentService;
+import com.parkez.promotion.domain.entity.Coupon;
+import com.parkez.promotion.domain.entity.PromotionIssue;
+import com.parkez.promotion.service.PromotionIssueReader;
+import com.parkez.promotion.service.PromotionIssueValidator;
 import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
@@ -18,151 +32,176 @@ import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ReservationService {
 
-    private final DistributedLockManager distributedLockManager;
-    private final ReservationReader reservationReader;
-    private final ReservationWriter reservationWriter;
-    private final UserReader userReader;
-    private final ParkingZoneReader parkingZoneReader;
-    private final ReviewReader reviewReader;
-    private final PaymentService paymentService;
+	private final DistributedLockManager distributedLockManager;
+	private final ReservationReader reservationReader;
+	private final ReservationWriter reservationWriter;
+	private final UserReader userReader;
+	private final ParkingZoneReader parkingZoneReader;
+	private final ReviewReader reviewReader;
+	private final PaymentService paymentService;
+	private final PromotionIssueReader promotionIssueReader;
+	private final PromotionIssueValidator promotionIssueValidator;
 
-    private static final long CANCEL_LIMIT_HOURS = 1L;
-    private static final long EXPIRATION_TIME = 10L;
+	private static final long CANCEL_LIMIT_HOURS = 1L;
+	private static final long EXPIRATION_TIME = 10L;
 
-    public ReservationResponse createReservation(AuthUser authUser, ReservationRequest request) {
+	public ReservationResponse createReservation(AuthUser authUser, ReservationRequest request, LocalDateTime now) {
 
-        return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> {
+		return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> {
 
-            User user = userReader.getActiveUserById(authUser.getId());
-            ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
+			User user = userReader.getActiveUserById(authUser.getId());
+			ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
 
-            // 예약 날짜 및 시간 입력 오류 예외
-            if (!validateRequestTime(request)) {
-                throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
-            }
+			// 예약 날짜 및 시간 입력 오류 예외
+			if (!validateRequestTime(request)) {
+				throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
+			}
 
-            // parkingZone 의 상태가 AVAILABLE 일 경우에만 예약 가능
-            if (!parkingZone.getStatus().equals(ParkingZoneStatus.AVAILABLE)) {
-                throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_UNAVAILABLE_PARKING_ZONE);
-            }
+			// parkingZone 의 상태가 AVAILABLE 일 경우에만 예약 가능
+			if (!parkingZone.getStatus().equals(ParkingZoneStatus.AVAILABLE)) {
+				throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_UNAVAILABLE_PARKING_ZONE);
+			}
 
-            // parkingLot 의 영업 시간 내에만 예약 가능
-            if (!parkingZone.isOpened(request.getStartDateTime(), request.getEndDateTime())) {
-                throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
-            }
+			// parkingLot 의 영업 시간 내에만 예약 가능
+			if (!parkingZone.isOpened(request.getStartDateTime(), request.getEndDateTime())) {
+				throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
+			}
 
-            // 이미 해당 시간에 예약이 존재할 경우
-            List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
-            boolean existed = reservationReader.existsReservationByConditions(parkingZone, request.getStartDateTime(), request.getEndDateTime(), statusList);
-            if (existed) {
-                throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED);
-            }
+			// 이미 해당 시간에 예약이 존재할 경우
+			List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
+			boolean existed = reservationReader.existsReservationByConditions(parkingZone, request.getStartDateTime(),
+				request.getEndDateTime(), statusList);
+			if (existed) {
+				throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED);
+			}
 
-            Reservation reservation = reservationWriter.create(
-                    user,
-                    parkingZone,
-                    request.getStartDateTime(),
-                    request.getEndDateTime()
-            );
+			long hours = calculateUsedHour(request.getStartDateTime(), request.getEndDateTime());
 
-            return ReservationResponse.from(reservation);
-        });
-    }
+			BigDecimal originalPrice = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+			BigDecimal discountAmount = BigDecimal.ZERO;
 
-    public Page<ReservationResponse> getMyReservations(AuthUser authUser, int page, int size) {
+			Long promotionIssueId = null;
+			if (request.getPromotionIssueId() != null) {
 
-        int adjustedPage = page -1;
-        PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by("createdAt").descending());
-        Page<ReservationWithReviewDto> pageDto = reservationReader.findMyReservations(authUser.getId(), pageable);
+				PromotionIssue promotionIssue = promotionIssueReader.getWithPromotionAndCouponById(
+					request.getPromotionIssueId());
+				promotionIssueId = promotionIssue.getId();
 
-        return pageDto.map(dto ->
-                ReservationResponse.of(dto.reservation(), dto.reviewWritten())
-        );
-    }
+				promotionIssueValidator.validateCanBeUsed(promotionIssue, now);
+				Coupon coupon = promotionIssue.getCoupon();
+				discountAmount = coupon.calculateDiscount(originalPrice);
+			}
 
-    public ReservationResponse getMyReservation(AuthUser authUser, Long reservationId) {
+			BigDecimal finalPrice = originalPrice.subtract(discountAmount);
 
-        Reservation myReservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
+			Reservation reservation = reservationWriter.create(
+				user,
+				parkingZone,
+				request.getStartDateTime(),
+				request.getEndDateTime(),
+				originalPrice,
+				discountAmount,
+				finalPrice,
+				promotionIssueId
+			);
 
-        // 리뷰 작성 여부 조회
-        boolean reviewWritten = reviewReader.isReviewWritten(myReservation.getId());
+			return ReservationResponse.from(reservation);
+		});
+	}
 
-        return ReservationResponse.of(myReservation, reviewWritten);
-    }
+	public Page<ReservationResponse> getMyReservations(AuthUser authUser, int page, int size) {
 
-    public Page<ReservationResponse> getOwnerReservations(AuthUser authUser, Long parkingZoneId, int page, int size) {
+		int adjustedPage = page - 1;
+		PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by("createdAt").descending());
+		Page<ReservationWithReviewDto> pageDto = reservationReader.findMyReservations(authUser.getId(), pageable);
 
-        ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
+		return pageDto.map(dto ->
+			ReservationResponse.of(dto.reservation(), dto.reviewWritten())
+		);
+	}
 
-        // 조회하려는 주차공간이 본인 소유의 주차공간이 아닐 경우 예외
-        if (!parkingZone.getParkingLot().isOwned(authUser.getId())) {
-            throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
-        }
+	public ReservationResponse getMyReservation(AuthUser authUser, Long reservationId) {
 
-        int adjustedPage = page -1;
-        PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by("createdAt").descending());
-        Page<Reservation> pageReservations = reservationReader.findOwnerReservations(parkingZoneId, pageable);
+		Reservation myReservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
-        return pageReservations.map(ReservationResponse::from);
-    }
+		// 리뷰 작성 여부 조회
+		boolean reviewWritten = reviewReader.isReviewWritten(myReservation.getId());
 
-    public void completeReservation(AuthUser authUser, Long reservationId) {
+		return ReservationResponse.of(myReservation, reviewWritten);
+	}
 
-        Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
+	public Page<ReservationResponse> getOwnerReservations(AuthUser authUser, Long parkingZoneId, int page, int size) {
 
-        // 예약 완료 됨 상태의 예약만 사용 완료 됨으로 변경 가능 예외
-        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
-            throw new ParkingEasyException(ReservationErrorCode.CANT_MODIFY_RESERVATION_STATUS);
-        }
+		ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(parkingZoneId);
 
-        reservationWriter.complete(reservation);
-    }
+		// 조회하려는 주차공간이 본인 소유의 주차공간이 아닐 경우 예외
+		if (!parkingZone.getParkingLot().isOwned(authUser.getId())) {
+			throw new ParkingEasyException(ParkingLotErrorCode.NOT_PARKING_LOT_OWNER);
+		}
 
-    public void cancelReservation(AuthUser authUser, Long reservationId, ReservationCancelRequest request) {
+		int adjustedPage = page - 1;
+		PageRequest pageable = PageRequest.of(adjustedPage, size, Sort.by("createdAt").descending());
+		Page<Reservation> pageReservations = reservationReader.findOwnerReservations(parkingZoneId, pageable);
 
-        Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
+		return pageReservations.map(ReservationResponse::from);
+	}
 
-        // 결제 대기 중 또는 결제 완료 된 예약만 취소할 수 있음
-        if (!reservation.canBeCanceled()) {
-            throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_RESERVATION);
-        }
+	public void completeReservation(AuthUser authUser, Long reservationId) {
 
-        // 시작 시간 1시간 이내일 경우 취소 불가 예외
-        LocalDateTime cancelLimitTime = reservation.getStartDateTime().minusHours(CANCEL_LIMIT_HOURS);
-        if (reservation.isAfter(cancelLimitTime, LocalDateTime.now())) {
-            throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
-        }
+		Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
-        paymentService.cancelPayment(reservation, request);
+		// 예약 완료 됨 상태의 예약만 사용 완료 됨으로 변경 가능 예외
+		if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+			throw new ParkingEasyException(ReservationErrorCode.CANT_MODIFY_RESERVATION_STATUS);
+		}
 
-        reservationWriter.cancel(reservation);
-    }
+		reservationWriter.complete(reservation);
+	}
 
-    public void expireReservation() {
-        LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(EXPIRATION_TIME);
-        reservationWriter.expire(expiredTime);
-    }
+	public void cancelReservation(AuthUser authUser, Long reservationId, ReservationCancelRequest request) {
 
-    public boolean validateRequestTime (ReservationRequest request) {
-        LocalDateTime startDateTime = request.getStartDateTime();
-        LocalDateTime endDateTime = request.getEndDateTime();
+		Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
-        return startDateTime.isBefore(endDateTime)
-                && startDateTime.isAfter(LocalDateTime.now())
-                && startDateTime.toLocalDate().equals(endDateTime.toLocalDate());
-    }
+		// 결제 대기 중 또는 결제 완료 된 예약만 취소할 수 있음
+		if (!reservation.canBeCanceled()) {
+			throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_RESERVATION);
+		}
+
+		// 시작 시간 1시간 이내일 경우 취소 불가 예외
+		LocalDateTime cancelLimitTime = reservation.getStartDateTime().minusHours(CANCEL_LIMIT_HOURS);
+		if (reservation.isAfter(cancelLimitTime, LocalDateTime.now())) {
+			throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
+		}
+
+		paymentService.cancelPayment(reservation, request);
+
+		reservationWriter.cancel(reservation);
+	}
+
+	public void expireReservation() {
+		LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(EXPIRATION_TIME);
+		reservationWriter.expire(expiredTime);
+	}
+
+	public boolean validateRequestTime(ReservationRequest request) {
+		LocalDateTime startDateTime = request.getStartDateTime();
+		LocalDateTime endDateTime = request.getEndDateTime();
+
+		return startDateTime.isBefore(endDateTime)
+			&& startDateTime.isAfter(LocalDateTime.now())
+			&& startDateTime.toLocalDate().equals(endDateTime.toLocalDate());
+	}
+
+	private long calculateUsedHour(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+		return ChronoUnit.HOURS.between(startDateTime, endDateTime);
+	}
 }

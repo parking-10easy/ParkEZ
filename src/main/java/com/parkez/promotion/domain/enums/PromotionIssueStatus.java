@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.promotion.excption.PromotionErrorCode;
+import com.parkez.promotion.excption.PromotionIssueErrorCode;
 
 import lombok.Getter;
 
@@ -18,7 +19,7 @@ public enum PromotionIssueStatus {
 		return Arrays.stream(values())
 			.filter(promotionIssueStatus -> promotionIssueStatus.name().equalsIgnoreCase(source))
 			.findFirst()
-			.orElseThrow(()-> new ParkingEasyException(PromotionErrorCode.INVALID_ISSUE_STATUS));
+			.orElseThrow(()-> new ParkingEasyException(PromotionIssueErrorCode.INVALID_ISSUE_STATUS));
 	}
 
 }

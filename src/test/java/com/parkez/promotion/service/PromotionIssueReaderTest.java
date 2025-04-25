@@ -1,5 +1,7 @@
 package com.parkez.promotion.service;
 
+import static com.parkez.promotion.excption.PromotionIssueErrorCode.*;
+
 import java.time.LocalDateTime;
 
 import org.assertj.core.api.Assertions;
@@ -17,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.parkez.common.config.PersistenceConfig;
 import com.parkez.common.config.QueryDslConfig;
+import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.promotion.domain.entity.Coupon;
 import com.parkez.promotion.domain.entity.Promotion;
 import com.parkez.promotion.domain.entity.PromotionIssue;
@@ -183,6 +186,67 @@ class PromotionIssueReaderTest {
 					"promotionId", "promotionName", "couponName", "discountValue", "discountType", "issuedAt", "expiresAt", "usedAt"
 				).containsExactly(
 					Tuple.tuple(promotionIssue.getId(), promotion.getName(), coupon.getName(), coupon.getDiscountValue(), coupon.getDiscountType(), promotionIssue.getIssuedAt(), promotionIssue.getExpiresAt(), promotionIssue.getUsedAt())
+				);
+
+		}
+	}
+
+	@Nested
+	class GetWithPromotionAndCouponById {
+
+		@Test
+		public void 존재하지_않는_프로모션_발급을_조회하면_PROMOTION_ISSUE_NOT_FOUND_예외가_발생합니다() {
+			//given
+			Long promotionId = -1L;
+
+			//when & then
+			Assertions.assertThatThrownBy(()->promotionIssueReader.getWithPromotionAndCouponById(promotionId))
+				.isInstanceOf(ParkingEasyException.class)
+				.hasMessage(PROMOTION_ISSUE_NOT_FOUND.getDefaultMessage());
+
+		}
+
+		@Test
+		public void 프로모션쿠폰_아이디로_프로모션_쿠폰_정보를_함께_조회할_수있다() {
+			//given
+			User user = createUser();
+			User savedUser = userRepository.save(user);
+
+			String couponName = "신규가입 2000원 할인 쿠폰";
+			DiscountType discountType = DiscountType.PERCENT;
+			int discountValue = 10;
+			String description = "신규 유저 전용, 1회만 사용 가능";
+
+			Coupon coupon = createCoupon(couponName, discountType, discountValue, description);
+			Coupon savedCoupon = couponRepository.save(coupon);
+
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 100;
+			int limitPerUser = 1;
+			int validDaysAfterIssue = 3;
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
+			LocalDateTime promotionStartAt = now.minusDays(1);
+			LocalDateTime promotionEndAt = now.plusDays(1);
+
+			Promotion promotion = createPromotion(promotionName, promotionType, savedCoupon, limitTotal,
+				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
+			Promotion savedPromotion = promotionRepository.save(promotion);
+
+			LocalDateTime issuedAt = now;
+
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion);
+			PromotionIssue savedPromotionIssue = promotionIssueRepository.save(promotionIssue);
+
+			//when
+			PromotionIssue result = promotionIssueReader.getWithPromotionAndCouponById(savedPromotionIssue.getId());
+
+			//then
+			Assertions.assertThat(result)
+				.extracting(
+					"promotion.name", "issuedAt", "promotion.coupon.name"
+				).containsExactly(
+					promotionName, issuedAt, couponName
 				);
 
 		}

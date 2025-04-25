@@ -1,6 +1,7 @@
 package com.parkez.promotion.domain.repository;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -29,4 +30,13 @@ public interface PromotionIssueRepository extends JpaRepository<PromotionIssue, 
 		@Param("currentDateTime") LocalDateTime currentDateTime,
 		@Param("currentStatus") PromotionIssueStatus currentStatus,
 		@Param("targetStatus") PromotionIssueStatus targetStatus);
+
+	@Query("""
+		select pi
+		from PromotionIssue pi
+		join fetch pi.promotion p
+		join fetch p.coupon c
+		where pi.id = :promotionIssueId
+	""")
+	Optional<PromotionIssue> findWithPromotionAndCouponById(@Param("promotionIssueId") Long promotionIssueId);
 }

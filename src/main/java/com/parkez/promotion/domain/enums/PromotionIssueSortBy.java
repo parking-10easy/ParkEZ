@@ -3,7 +3,7 @@ package com.parkez.promotion.domain.enums;
 import java.util.Arrays;
 
 import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.promotion.excption.PromotionErrorCode;
+import com.parkez.promotion.excption.PromotionIssueErrorCode;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public enum PromotionIssueSortBy {
 		return Arrays.stream(values())
 			.filter(promotionIssueSortBy -> promotionIssueSortBy.name().equalsIgnoreCase(source))
 			.findFirst()
-			.orElseThrow(()-> new ParkingEasyException(PromotionErrorCode.INVALID_SORT_BY));
+			.orElseThrow(()-> new ParkingEasyException(PromotionIssueErrorCode.INVALID_SORT_BY));
 	}
 
 }
