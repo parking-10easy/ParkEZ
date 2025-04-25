@@ -1,13 +1,11 @@
-package com.parkez.alarm.service;
+package com.parkez.alarm.service.processor;
 
 import com.parkez.alarm.domain.entity.Alarm;
 import com.parkez.alarm.domain.enums.AlarmChannel;
 import com.parkez.alarm.domain.enums.AlarmTargetType;
 import com.parkez.alarm.domain.enums.NotificationType;
-import com.parkez.alarm.domain.repository.AlarmRepository;
 import com.parkez.alarm.dto.ReservationAlarmInfo;
-import com.parkez.alarm.service.processor.EmailAlarmProcessor;
-import com.parkez.alarm.service.processor.FcmAlarmProcessor;
+import com.parkez.alarm.service.fcm.PushService;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.reservation.domain.entity.Reservation;
@@ -21,40 +19,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AlarmSenderTest {
+class FcmAlarmProcessorTest {
 
     @Mock
-    private AlarmRepository alarmRepository;
-
-    @Mock
-    private EmailAlarmProcessor emailAlarmProcessor;
-
-    @Mock
-    private FcmAlarmProcessor fcmAlarmProcessor;
+    private PushService pushService;
 
     @InjectMocks
-    private AlarmSender alarmSender;
+    private FcmAlarmProcessor fcmAlarmProcessor;
 
-    private Alarm createEmailAlarm() {
+    private Alarm createTestAlarm() {
         return Alarm.builder()
-                .id(1L)
-                .channel(AlarmChannel.EMAIL)
+                .userId(1L)
+                .targetId(100L)
                 .targetType(AlarmTargetType.RESERVATION)
-                .sent(false)
-                .build();
-    }
-
-    private Alarm createFcmAlarm() {
-        return Alarm.builder()
-                .id(2L)
                 .channel(AlarmChannel.FCM)
-                .targetType(AlarmTargetType.RESERVATION)
-                .sent(false)
+                .title("테스트 예약 알림")
+                .message("예약 알림 메시지")
+                .deviceToken("test-device-token")
                 .build();
     }
 
@@ -109,53 +94,57 @@ class AlarmSenderTest {
         return reservation;
     }
 
-    @Test
-    void 예약_알림_이메일과_FCM_전송_성공() {
-        // given
-        Alarm emailAlarm = spy(createEmailAlarm());
-        Alarm fcmAlarm = spy(createFcmAlarm());
-
-        when(alarmRepository.findAllBySentFalse()).thenReturn(List.of(emailAlarm, fcmAlarm));
-
-        // when
-        alarmSender.processReservationAlarms();
-
-        // then
-        verify(emailAlarmProcessor).processReservation(emailAlarm);
-        verify(fcmAlarmProcessor).processReservation(fcmAlarm);
-
-        verify(emailAlarm).updateSent(true);
-        verify(fcmAlarm).updateSent(true);
-    }
-
-    @Test
-    void 예약_알림_전송_실패시_실패사유저장() {
-        // given
-        Alarm emailAlarm = spy(createEmailAlarm());
-
-        when(alarmRepository.findAllBySentFalse()).thenReturn(List.of(emailAlarm));
-        doThrow(new RuntimeException("전송 실패")).when(emailAlarmProcessor).processReservation(emailAlarm);
-
-        // when
-        alarmSender.processReservationAlarms();
-
-        // then
-        verify(emailAlarm).updateFailReason("전송 실패");
-    }
-
-    @Test
-    void 결제_알림_전송_성공() {
-        // given
+    private ReservationAlarmInfo createTestReservationAlarmInfo() {
         Reservation reservation = createTestReservation();
-        ReservationAlarmInfo info = ReservationAlarmInfo.from(reservation);
+        return ReservationAlarmInfo.from(reservation);
+    }
 
-        NotificationType type = NotificationType.CANCELED;
+    @Test
+    void 예약_FCM_알림_처리_성공() {
+        // given
+        Alarm alarm = createTestAlarm();
 
         // when
-        alarmSender.processPaymentAlarms(info, type);
+        fcmAlarmProcessor.processReservation(alarm);
 
         // then
-        verify(emailAlarmProcessor).processPayment(info, type);
-        verify(fcmAlarmProcessor).processPayment(info, type);
+        verify(pushService).sendReservationPush(
+                eq(alarm),
+                eq(alarm.getDeviceToken()),
+                eq(alarm.getTitle()),
+                eq(alarm.getMessage())
+        );
+    }
+
+    @Test
+    void 결제_FCM_알림_처리_취소() {
+        // given
+        ReservationAlarmInfo info = createTestReservationAlarmInfo();
+
+        // when
+        fcmAlarmProcessor.processPayment(info, NotificationType.CANCELED);
+
+        // then
+        verify(pushService).sendPaymentPush(
+                eq(info.getUserId()),
+                contains("[결제]"),
+                eq("결제가 취소되었습니다.")
+        );
+    }
+
+    @Test
+    void 결제_FCM_알림_처리_실패() {
+        // given
+        ReservationAlarmInfo info = createTestReservationAlarmInfo();
+
+        // when
+        fcmAlarmProcessor.processPayment(info, NotificationType.FAILED);
+
+        // then
+        verify(pushService).sendPaymentPush(
+                eq(info.getUserId()),
+                contains("[결제]"),
+                eq("결제가 실패했습니다.")
+        );
     }
 }

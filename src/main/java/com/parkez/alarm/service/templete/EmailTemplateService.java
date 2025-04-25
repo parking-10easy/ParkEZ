@@ -34,7 +34,7 @@ public class EmailTemplateService {
             return writer.toString();
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load or parse email template: " + templateName, e);
+            throw new RuntimeException("이메일 템플릿 로드 또는 파싱 실패: " + templateName, e);
         }
     }
 }

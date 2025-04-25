@@ -22,7 +22,7 @@ public class FcmAlarmProcessor {
 
         String message = type == com.parkez.alarm.domain.enums.NotificationType.CANCELED
                 ? "결제가 취소되었습니다."
-                : "결제에 실패했습니다.";
+                : "결제가 실패했습니다.";
 
         pushService.sendPaymentPush(info.getUserId(), title, message);
     }

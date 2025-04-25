@@ -1,4 +1,4 @@
-package com.parkez.alarm.service;
+package com.parkez.alarm.service.email;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,10 +50,9 @@ class SesEmailServiceTest {
         assertThat(request.source()).isEqualTo("noreply@parkez.click");
         assertThat(request.destination().toAddresses()).contains(to);
         assertThat(request.message().subject().data()).isEqualTo(subject);
-        assertThat(request.message().body().text().data()).isEqualTo(body);
+        assertThat(request.message().body().html().data()).isEqualTo(body);
     }
 
-    // === 유틸 메서드 ===
     private void injectFromEmail(SesEmailService service, String fromEmail) {
         try {
             var field = SesEmailService.class.getDeclaredField("from");

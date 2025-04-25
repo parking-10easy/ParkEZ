@@ -1,8 +1,7 @@
 package com.parkez.payment.service;
 
-import com.parkez.alarm.domain.enums.NotificationType;
-import com.parkez.alarm.service.AlarmSender;
-import com.parkez.alarm.service.AlarmService;
+import com.parkez.alarm.pubsub.PaymentAlarmMessage;
+import com.parkez.alarm.pubsub.PaymentAlarmPublisher;
 import com.parkez.common.exception.ParkingEasyException;
 import com.parkez.common.principal.AuthUser;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
@@ -33,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -73,10 +73,7 @@ public class PaymentServiceTest {
     private TossPaymentService tossPaymentService;
 
     @Mock
-    private AlarmService alarmService;
-
-    @Mock
-    private AlarmSender alarmSender;
+    private PaymentAlarmPublisher paymentAlarmPublisher;
 
     private static AuthUser createAuthUser(Long id) {
         return AuthUser.builder()
@@ -582,8 +579,7 @@ public class PaymentServiceTest {
             // then
             verify(paymentWriter).cancelPayment(payment);
             verify(reservationWriter).cancel(reservation);
-            verify(alarmService).createPaymentAlarms(reservation, NotificationType.FAILED);
-            verify(alarmSender).processAlarms();
+            verify(paymentAlarmPublisher).publish(Mockito.any(PaymentAlarmMessage.class));
         }
     }
 
