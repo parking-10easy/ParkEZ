@@ -1,6 +1,8 @@
 package com.parkez.settlement.batch;
 
+import com.parkez.settlement.dto.response.SettlementBatchProcessResponse;
 import com.parkez.settlement.service.SettlementService;
+import com.parkez.settlement.service.SettlementWriter;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +28,8 @@ import java.time.YearMonth;
 @RequiredArgsConstructor
 public class BatchConfig {
 
-    private final UserReader userReader;
     private final SettlementService settlementService;
+    private final SettlementWriter settlementWriter;
 
     @Bean
     // 첫번째 매개변수 : 해당 Job을 지칭할 이름 선언 ("settlementJob")
@@ -44,12 +46,12 @@ public class BatchConfig {
             JobRepository jobRepository,
             PlatformTransactionManager platformTransactionManager,
             ItemReader<User> ownerItemReader,
-            ItemProcessor<User, User> settlementItemProcessor,
-            ItemWriter<User> settlementItemWriter
+            ItemProcessor<User, SettlementBatchProcessResponse> settlementItemProcessor,
+            ItemWriter<SettlementBatchProcessResponse> settlementItemWriter
     ) {
         // <[Reader에서 읽어들일 데이터 타입], [Writer에서 쓸 데이터 타입]>
         return new StepBuilder("settlementStep", jobRepository)
-                .<User, User>chunk(10, platformTransactionManager) // chunkSize = 10 -> 10개 데이터 단위로 읽기, 처리, 쓰기 진행
+                .<User, SettlementBatchProcessResponse>chunk(10, platformTransactionManager) // chunkSize = 10 -> 10개 데이터 단위로 읽기, 처리, 쓰기 진행
                 .reader(ownerItemReader) // 읽는 메서드 자리
                 .processor(settlementItemProcessor) // 처리 메서드 자리
                 .writer(settlementItemWriter) // 쓰기 메서드 자리
@@ -58,27 +60,33 @@ public class BatchConfig {
 
     @Bean
     @StepScope
-    public ItemProcessor<User, User> settlementItemProcessor(
+    public ItemProcessor<User, SettlementBatchProcessResponse> settlementItemProcessor(
             @Value("#{jobParameters['targetMonth']}") String targetMonthString
     ) {
         return owner -> {
             YearMonth targetMonth = YearMonth.parse(targetMonthString); // 직전 달 정산
-            log.info("정산 수행 중 - ownerId={}, month={}", owner.getId(), targetMonth);
+            log.info("[정산 수행 중] ownerId={}, month={}", owner.getId(), targetMonth);
 
             try {
-                settlementService.generateMonthlySettlement(owner, targetMonth); // 정산 로직 실행
+                SettlementBatchProcessResponse response = SettlementBatchProcessResponse.success(
+                        settlementService.generateMonthlySettlement(owner, targetMonth).getSettlement(),
+                        settlementService.generateMonthlySettlement(owner, targetMonth).getSettlementDetail()
+                ); // 정산 로직 실행
                 log.info("[정산 생성 성공] ownerId={}, month={}", owner.getId(), targetMonth);
+                return response;
+
             } catch (Exception e) {
                 log.error("[정산 생성 실패] ownerId={}, month={}", owner.getId(), targetMonth, e);
+                return SettlementBatchProcessResponse.failure(e.getMessage());
             }
-            return owner; // settlementService.generateMonthlySettlement(owner, targetMonth)를 통해 모든 정산 로직이 종료되지만
-            //               ItemWriter 는 필수 구성 요소이므로 Writer 로 전달할 반환 값 필요
         };
     }
 
     // Writer 는 필수 구성 요소지만, 정산 처리 로직은 Processor 에서 완료되므로 no-operation 처리
     @Bean
-    public ItemWriter<User> settlementItemWriter() {
-        return item -> {};
+    public ItemWriter<SettlementBatchProcessResponse> settlementItemWriter(SettlementWriter settlementWriter) {
+        return items -> {
+
+        };
     }
 }

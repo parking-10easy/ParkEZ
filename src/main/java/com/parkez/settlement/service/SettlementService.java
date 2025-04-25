@@ -7,7 +7,9 @@ import com.parkez.payment.service.PaymentReader;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.service.ReservationReader;
 import com.parkez.settlement.domain.entity.Settlement;
+import com.parkez.settlement.domain.entity.SettlementDetail;
 import com.parkez.settlement.domain.enums.SettlementStatus;
+import com.parkez.settlement.dto.response.SettlementBatchProcessResponse;
 import com.parkez.settlement.dto.response.SettlementPreviewResponse;
 import com.parkez.settlement.dto.response.SettlementReservationResponse;
 import com.parkez.settlement.dto.response.SettlementResponse;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -46,7 +49,7 @@ public class SettlementService {
         private final BigDecimal netAmount;
     }
 
-    public SettlementPreviewResponse getPreview(AuthUser authUser, YearMonth yearMonth){
+    public SettlementPreviewResponse getPreview(AuthUser authUser, YearMonth yearMonth) {
 
         User owner = userReader.getActiveUserById(authUser.getId());
 
@@ -77,7 +80,7 @@ public class SettlementService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void generateMonthlySettlement(User owner, YearMonth month) {
+    public SettlementBatchProcessResponse generateMonthlySettlement(User owner, YearMonth month) {
         // 이미 정산된 달인지 확인
         settlementReader.validateNotSettled(owner, month);
 
@@ -86,7 +89,32 @@ public class SettlementService {
 
         SettlementAmounts settlementAmounts = calculateSettlementAmounts(payments);
 
-        settlementWriter.writeMonthlySettlement(owner, month, payments, settlementAmounts.getTotalAmount(), settlementAmounts.getTotalFee(), settlementAmounts.getNetAmount());
+        Settlement settlement = Settlement.builder()
+                .owner(owner)
+                .settlementMonth(month)
+                .totalAmount(settlementAmounts.getTotalAmount())
+                .totalFee(settlementAmounts.getTotalFee())
+                .netAmount(settlementAmounts.getNetAmount())
+                .calculatedAt(LocalDateTime.now())
+                .status(SettlementStatus.CONFIRMED)
+                .build();
+
+        List<SettlementDetail> settlementDetails = payments.stream()
+                .map(p -> {
+                    BigDecimal price = p.getPrice();
+                    BigDecimal fee = price.multiply(BigDecimal.valueOf(FEE_PERCENTAGE));
+                    BigDecimal net = price.subtract(fee);
+                    return SettlementDetail.builder()
+                            .settlement(settlement)
+                            .reservation(p.getReservation())
+                            .amount(price)
+                            .fee(fee)
+                            .netAmount(net)
+                            .build();
+                })
+                .toList();
+
+        return SettlementBatchProcessResponse.success(settlement, settlementDetails);
     }
 
     private SettlementAmounts calculateSettlementAmounts(List<Payment> payments) {
@@ -101,11 +129,11 @@ public class SettlementService {
         return new SettlementAmounts(totalAmount, totalFee, netAmount);
     }
 
-    public void completeSettlement(Long settlementId){
+    public void completeSettlement(Long settlementId) {
 
         Settlement settlement = settlementReader.getById(settlementId);
 
-        switch (settlement.getStatus()){
+        switch (settlement.getStatus()) {
             case PENDING:
                 throw new ParkingEasyException(SettlementErrorCode.SETTLEMENT_NOT_CONFIRMABLE);
             case COMPLETED:
