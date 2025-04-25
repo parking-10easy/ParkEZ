@@ -9,7 +9,7 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 @Component
 @RequiredArgsConstructor
@@ -20,14 +20,14 @@ public class SettlementScheduler {
     private final JobRegistry jobRegistry;
 
     // 매월 10일 새벽 1시에 실행
-    @Scheduled(cron = "0 0 1 10 * ?")
+    @Scheduled(cron = "0 */1 * * * ?")
     public void confirmMonthlySettlements() throws Exception {
 
         log.info("settlement schedule start");
 
-        LocalDateTime now = LocalDateTime.now();
+        YearMonth targetMonth = YearMonth.now().minusMonths(1);
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("runtime", now.toString())
+                .addString("targetMonth", targetMonth.toString())
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("settlementJob"), jobParameters);

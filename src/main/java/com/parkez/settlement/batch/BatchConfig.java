@@ -19,7 +19,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 @Slf4j
@@ -44,33 +43,26 @@ public class BatchConfig {
     public Step settlementStep(
             JobRepository jobRepository,
             PlatformTransactionManager platformTransactionManager,
-            ItemReader<User> settlementItemReader,
+            ItemReader<User> ownerItemReader,
             ItemProcessor<User, User> settlementItemProcessor,
             ItemWriter<User> settlementItemWriter
     ) {
         // <[Reader에서 읽어들일 데이터 타입], [Writer에서 쓸 데이터 타입]>
         return new StepBuilder("settlementStep", jobRepository)
                 .<User, User>chunk(10, platformTransactionManager) // chunkSize = 10 -> 10개 데이터 단위로 읽기, 처리, 쓰기 진행
-                .reader(settlementItemReader) // 읽는 메서드 자리
+                .reader(ownerItemReader) // 읽는 메서드 자리
                 .processor(settlementItemProcessor) // 처리 메서드 자리
                 .writer(settlementItemWriter) // 쓰기 메서드 자리
                 .build();
     }
 
     @Bean
-    @StepScope // 매 Job 마다 ownerItemReader 가 fresh 하게 생성
-    public ItemReader<User> settlementItemReader() {
-        return new OwnerItemReader(userReader);
-    }
-
-    @Bean
     @StepScope
     public ItemProcessor<User, User> settlementItemProcessor(
-            @Value("#{jobParameters['runtime']}") String runtimeString
+            @Value("#{jobParameters['targetMonth']}") String targetMonthString
     ) {
         return owner -> {
-            LocalDateTime runtime = LocalDateTime.parse(runtimeString);
-            YearMonth targetMonth = YearMonth.from(runtime).minusMonths(1); // 직전 달 정산
+            YearMonth targetMonth = YearMonth.parse(targetMonthString); // 직전 달 정산
             log.info("정산 수행 중 - ownerId={}, month={}", owner.getId(), targetMonth);
 
             try {

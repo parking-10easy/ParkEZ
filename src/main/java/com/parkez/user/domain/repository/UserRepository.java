@@ -1,17 +1,13 @@
 package com.parkez.user.domain.repository;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.LoginType;
 import com.parkez.user.domain.enums.UserRole;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<User, Long>, UserQueryDslRepository {
 
 	boolean existsByEmailAndRoleAndLoginType(String email, UserRole role, LoginType loginType);
 
@@ -20,6 +16,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	Optional<User> findByIdAndDeletedAtIsNull(Long id);
 
 	Optional<User> findByEmailAndRoleAndDeletedAtIsNull(String email, UserRole role);
-
-    Page<User> findAllByRole(UserRole role, Pageable pageable);
 }

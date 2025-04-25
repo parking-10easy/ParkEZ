@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,13 +32,15 @@ class OwnerItemReaderTest {
     @Test
     void read_정상적으로_유저를_순차적으로_반환한다() {
         // given
+        YearMonth targetMonth = YearMonth.of(2025, 3);
+
         List<User> page0 = List.of(mockUser(1L), mockUser(2L), mockUser(3L));
         List<User> page1 = List.of(mockUser(4L));
         List<User> emptyPage = List.of();
 
-        given(userReader.findAllOwnersByPage(0, 10)).willReturn(page0);
-        given(userReader.findAllOwnersByPage(1, 10)).willReturn(page1);
-        given(userReader.findAllOwnersByPage(2, 10)).willReturn(emptyPage);
+        given(userReader.findOwnersForSettlementByMonth(targetMonth, 0, 10)).willReturn(page0);
+        given(userReader.findOwnersForSettlementByMonth(targetMonth, 1, 10)).willReturn(page1);
+        given(userReader.findOwnersForSettlementByMonth(targetMonth, 2, 10)).willReturn(emptyPage);
 
         // when & then
         assertThat(ownerItemReader.read().getId()).isEqualTo(1L);

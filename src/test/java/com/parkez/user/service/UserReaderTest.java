@@ -3,6 +3,7 @@ package com.parkez.user.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
@@ -182,20 +183,20 @@ class UserReaderTest {
     }
 
     @Nested
-    class findAllOwners {
+    class findOwnersForSettlementByMonth {
         @Test
-        void ROLE_OWNER_권한의_유저를_전체_조회한다() {
+        void 해당_월에_정산할_결제_내역이_있는_ROLE_OWNER_권한의_유저를_전체_조회한다() {
             // given
+            YearMonth yearMonth = YearMonth.of(2025, 3);
             int page = 0;
             int size = 10;
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
 
             List<User> owners = List.of(mock(User.class), mock(User.class));
-            Page<User> ownersPage = new PageImpl<>(owners);
-            when(userRepository.findAllByRole(UserRole.ROLE_OWNER, pageable)).thenReturn(ownersPage);
+            when(userRepository.findOwnersForSettlementByMonth(any(YearMonth.class), any(Pageable.class))).thenReturn(owners);
 
             // when
-            List<User> result = userReader.findAllOwnersByPage(page, size);
+            List<User> result = userReader.findOwnersForSettlementByMonth(yearMonth, page, size);
 
             // then
             assertThat(result).isEqualTo(owners);
