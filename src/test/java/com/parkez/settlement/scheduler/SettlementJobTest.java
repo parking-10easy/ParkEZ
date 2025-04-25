@@ -171,9 +171,15 @@ class SettlementJobTest {
     @Test
     void 스프링_배치를_이용한_정산_테스트() throws Exception {
         // given
-        YearMonth targetMonth = YearMonth.of(2025, 3);
+//        YearMonth targetMonth = YearMonth.of(2025, 3);
+//        JobParameters jobParameters = new JobParametersBuilder()
+//                .addString("targetMonth", targetMonth.toString())
+//                .toJobParameters();
+        LocalDateTime now = LocalDateTime.now();
+        String targetMonthString = now.toString();
+        YearMonth targetMonth = YearMonth.from(now).minusMonths(1);
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("targetMonth", targetMonth.toString())
+                .addString("targetMonth", targetMonthString)
                 .toJobParameters();
 
         // when
