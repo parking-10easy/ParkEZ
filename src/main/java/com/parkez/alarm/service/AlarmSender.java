@@ -1,7 +1,9 @@
 package com.parkez.alarm.service;
 
 import com.parkez.alarm.domain.entity.Alarm;
+import com.parkez.alarm.domain.enums.NotificationType;
 import com.parkez.alarm.domain.repository.AlarmRepository;
+import com.parkez.alarm.dto.ReservationAlarmInfo;
 import com.parkez.alarm.service.processor.EmailAlarmProcessor;
 import com.parkez.alarm.service.processor.FcmAlarmProcessor;
 import lombok.RequiredArgsConstructor;
@@ -22,14 +24,14 @@ public class AlarmSender {
     private final FcmAlarmProcessor fcmAlarmProcessor;
 
     @Transactional
-    public void processAlarms() {
+    public void processReservationAlarms() {
         List<Alarm> pendingAlarms = alarmRepository.findAllBySentFalse();
 
         for (Alarm alarm : pendingAlarms) {
             try {
                 switch (alarm.getChannel()) {
-                    case EMAIL -> emailAlarmProcessor.process(alarm);
-                    case FCM -> fcmAlarmProcessor.process(alarm);
+                    case EMAIL -> emailAlarmProcessor.processReservation(alarm);
+                    case FCM -> fcmAlarmProcessor.processReservation(alarm);
                     default -> throw new IllegalArgumentException("지원하지 않는 알림 채널입니다: " + alarm.getChannel());
                 }
                 alarm.updateSent(true);
@@ -39,5 +41,10 @@ public class AlarmSender {
                 log.error("알림 전송 실패: alarmId={}, reason={}", alarm.getId(), e.getMessage(), e);
             }
         }
+    }
+
+    public void processPaymentAlarms(ReservationAlarmInfo reservationAlarmInfo, NotificationType notificationType) {
+        emailAlarmProcessor.processPayment(reservationAlarmInfo, notificationType);
+        fcmAlarmProcessor.processPayment(reservationAlarmInfo, notificationType);
     }
 }

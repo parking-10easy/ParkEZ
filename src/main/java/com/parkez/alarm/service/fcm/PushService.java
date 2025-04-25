@@ -5,7 +5,9 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import com.parkez.alarm.domain.entity.Alarm;
+import com.parkez.alarm.domain.entity.FcmDevice;
 import com.parkez.alarm.domain.repository.AlarmRepository;
+import com.parkez.alarm.domain.repository.FcmDeviceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import java.time.LocalDateTime;
 public class PushService {
 
     private final AlarmRepository alarmRepository;
+    private final FcmDeviceRepository fcmDeviceRepository;
 
     @Transactional
     public void sendPush(Alarm alarm, String token, String title, String body) {
@@ -38,4 +41,28 @@ public class PushService {
             alarmRepository.flush();
         }
     }
+
+    public void sendPaymentPush(Long userId, String title, String message) {
+        try {
+            String token = fetchDeviceToken(userId);
+
+            Message fcmMessage = Message.builder()
+                    .setToken(token)
+                    .setNotification(Notification.builder().setTitle(title).setBody(message).build())
+                    .build();
+
+            String response = FirebaseMessaging.getInstance().send(fcmMessage);
+            log.info("결제 푸시 알림 전송 성공 response={}", response);
+
+        } catch (FirebaseMessagingException e) {
+            log.error("결제 푸시 알림 전송 실패: {}", e.getMessage(), e);
+        }
+    }
+
+    private String fetchDeviceToken(Long userId) {
+        return fcmDeviceRepository.findFirstByUserId(userId)
+                .map(FcmDevice::getToken)
+                .orElseThrow(() -> new IllegalArgumentException("FCM 토큰이 존재하지 않습니다. userId=" + userId));
+    }
+
 }

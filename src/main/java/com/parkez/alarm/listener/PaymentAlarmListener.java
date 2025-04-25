@@ -1,7 +1,7 @@
 package com.parkez.alarm.listener;
 
 import com.parkez.alarm.event.PaymentEvent;
-import com.parkez.alarm.service.AsyncAlarmService;
+import com.parkez.alarm.service.AlarmSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -10,11 +10,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaymentAlarmListener {
 
-    private final AsyncAlarmService asyncAlarmService;
+    private final AlarmSender alarmSender;
 
     @EventListener
     public void handlePaymentEvent(PaymentEvent event) {
-        asyncAlarmService.sendAlarms(event.getReservationAlarmInfo(), event.getNotificationType());
+        alarmSender.processPaymentAlarms(event.getReservationAlarmInfo(), event.getNotificationType());
     }
 }
-

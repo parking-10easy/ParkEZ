@@ -11,17 +11,17 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FcmDeviceService {
 
-    private final FcmDeviceRepository deviceRepository;
+    private final FcmDeviceRepository fcmDeviceRepository;
 
     public FcmDevice registerDevice(Long userId, String token) {
-        Optional<FcmDevice> existingDeviceOpt = deviceRepository.findByTokenAndStatusTrue(token);
+        Optional<FcmDevice> existingDeviceOpt = fcmDeviceRepository.findByTokenAndStatusTrue(token);
 
         existingDeviceOpt.ifPresent(existingDevice -> {
             existingDevice.updateStatus(false);
-            deviceRepository.save(existingDevice);
+            fcmDeviceRepository.save(existingDevice);
         });
 
         FcmDevice newDevice = FcmDevice.of(userId, token);
-        return deviceRepository.save(newDevice);
+        return fcmDeviceRepository.save(newDevice);
     }
 }
