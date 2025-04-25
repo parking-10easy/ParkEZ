@@ -12,12 +12,12 @@ import java.util.List;
 public class SettlementBatchProcessResponse {
 
     private final Settlement settlement;
-    private final List<SettlementDetail> settlementDetail;
+    private final List<SettlementDetail> settlementDetails;
     private final boolean success;
     private final String errorMessage;
 
-    public static SettlementBatchProcessResponse success(Settlement settlement, List<SettlementDetail> settlementDetail) {
-        return new SettlementBatchProcessResponse(settlement, settlementDetail, true, null);
+    public static SettlementBatchProcessResponse success(Settlement settlement, List<SettlementDetail> settlementDetails) {
+        return new SettlementBatchProcessResponse(settlement, settlementDetails, true, null);
     }
 
     public static SettlementBatchProcessResponse failure(String errorMessage) {

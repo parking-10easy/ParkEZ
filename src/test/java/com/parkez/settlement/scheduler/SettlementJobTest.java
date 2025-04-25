@@ -42,6 +42,7 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -104,9 +105,14 @@ class SettlementJobTest {
 
     @BeforeEach
     void setUp() {
+        paymentRepository.deleteAll();
+        reservationRepository.deleteAll();
+        parkingZoneRepository.deleteAll();
+        parkingLotRepository.deleteAll();
+        userRepository.deleteAll();
 
         user = userRepository.save(User.builder()
-                .email("SettlementTest@example.com")
+                .email("test@example.com")
                 .password("Qwer123!")
                 .nickname("test")
                 .phone("010-1234-5678")
@@ -116,7 +122,7 @@ class SettlementJobTest {
                 .build());
 
         owner = userRepository.save(User.builder()
-                .email("SettlementTest@example.com")
+                .email("test@example.com")
                 .password("Qwer123!")
                 .nickname("test")
                 .phone("010-1234-5678")
@@ -165,9 +171,9 @@ class SettlementJobTest {
     @Test
     void 스프링_배치를_이용한_정산_테스트() throws Exception {
         // given
-        LocalDateTime runtime = LocalDateTime.of(2025, 4, 1, 0, 0);
+        YearMonth targetMonth = YearMonth.of(2025, 3);
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("runtime", runtime.toString())
+                .addString("targetMonth", targetMonth.toString())
                 .toJobParameters();
 
         // when

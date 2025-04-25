@@ -2,9 +2,7 @@ package com.parkez.settlement.batch;
 
 import com.parkez.settlement.dto.response.SettlementBatchProcessResponse;
 import com.parkez.settlement.service.SettlementService;
-import com.parkez.settlement.service.SettlementWriter;
 import com.parkez.user.domain.entity.User;
-import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -29,7 +27,6 @@ import java.time.YearMonth;
 public class BatchConfig {
 
     private final SettlementService settlementService;
-    private final SettlementWriter settlementWriter;
 
     @Bean
     // 첫번째 매개변수 : 해당 Job을 지칭할 이름 선언 ("settlementJob")
@@ -70,7 +67,7 @@ public class BatchConfig {
             try {
                 SettlementBatchProcessResponse response = SettlementBatchProcessResponse.success(
                         settlementService.generateMonthlySettlement(owner, targetMonth).getSettlement(),
-                        settlementService.generateMonthlySettlement(owner, targetMonth).getSettlementDetail()
+                        settlementService.generateMonthlySettlement(owner, targetMonth).getSettlementDetails()
                 ); // 정산 로직 실행
                 log.info("[정산 생성 성공] ownerId={}, month={}", owner.getId(), targetMonth);
                 return response;
@@ -84,9 +81,19 @@ public class BatchConfig {
 
     // Writer 는 필수 구성 요소지만, 정산 처리 로직은 Processor 에서 완료되므로 no-operation 처리
     @Bean
-    public ItemWriter<SettlementBatchProcessResponse> settlementItemWriter(SettlementWriter settlementWriter) {
+    public ItemWriter<SettlementBatchProcessResponse> settlementItemWriter() {
         return items -> {
-
+            for (SettlementBatchProcessResponse item : items) {
+                if (!item.isSuccess()) {
+                    log.warn("[정산 생략] 정산 오류 발생 : {}", item.getErrorMessage());
+                    continue;
+                }
+                // 성공한 정산 DB에 저장
+                settlementService.saveSettlementAndDetails(item.getSettlement(), item.getSettlementDetails());
+                log.info("[정산 저장 완료] ownerId={}, month={}",
+                        item.getSettlement().getOwner().getId(),
+                        item.getSettlement().getSettlementMonth());
+            }
         };
     }
 }

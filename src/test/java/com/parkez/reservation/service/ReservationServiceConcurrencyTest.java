@@ -65,8 +65,10 @@ class ReservationServiceConcurrencyTest {
     @BeforeEach
     void setUp() {
 
+        userRepository.deleteAll();
+
         user = userRepository.save(User.builder()
-                .email("ReservationConcurrencyTest@example.com")
+                .email("test@example.com")
                 .password("Qwer123!")
                 .nickname("test")
                 .phone("010-1234-5678")
@@ -82,6 +84,8 @@ class ReservationServiceConcurrencyTest {
                 .nickname(user.getNickname())
                 .build();
 
+        parkingLotRepository.deleteAll();
+
         ParkingLot parkingLot = parkingLotRepository.save(ParkingLot.builder()
                 .owner(user)
                 .name("테스트 주차장")
@@ -94,6 +98,8 @@ class ReservationServiceConcurrencyTest {
                 .chargeType(ChargeType.PAID)
                 .sourceType(SourceType.OWNER_REGISTERED)
                 .build());
+
+        parkingZoneRepository.deleteAll();
 
         parkingZone = parkingZoneRepository.save(ParkingZone.builder()
                 .parkingLot(parkingLot)

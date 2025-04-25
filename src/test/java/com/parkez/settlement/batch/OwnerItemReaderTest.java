@@ -20,7 +20,7 @@ class OwnerItemReaderTest {
 
     @Mock
     private UserReader userReader;
-    @InjectMocks
+
     private OwnerItemReader ownerItemReader;
 
     private User mockUser(Long id) {
@@ -33,6 +33,8 @@ class OwnerItemReaderTest {
     void read_정상적으로_유저를_순차적으로_반환한다() {
         // given
         YearMonth targetMonth = YearMonth.of(2025, 3);
+        String targetMonthString = targetMonth.toString();
+        ownerItemReader = new OwnerItemReader(userReader, targetMonthString);
 
         List<User> page0 = List.of(mockUser(1L), mockUser(2L), mockUser(3L));
         List<User> page1 = List.of(mockUser(4L));

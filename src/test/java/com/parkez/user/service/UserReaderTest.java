@@ -190,7 +190,6 @@ class UserReaderTest {
             YearMonth yearMonth = YearMonth.of(2025, 3);
             int page = 0;
             int size = 10;
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
 
             List<User> owners = List.of(mock(User.class), mock(User.class));
             when(userRepository.findOwnersForSettlementByMonth(any(YearMonth.class), any(Pageable.class))).thenReturn(owners);

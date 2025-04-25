@@ -141,7 +141,6 @@ public class SettlementService {
         }
 
         settlementWriter.completeSettlement(settlement);
-
     }
 
     public SettlementResponse getConfirmedSettlement(AuthUser authUser, YearMonth month) {
@@ -152,4 +151,8 @@ public class SettlementService {
         return SettlementResponse.from(settlement);
     }
 
+    public void saveSettlementAndDetails(Settlement settlement, List<SettlementDetail> settlementDetails) {
+
+        settlementWriter.save(settlement, settlementDetails);
+    }
 }

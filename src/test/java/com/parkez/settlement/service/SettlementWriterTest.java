@@ -3,6 +3,7 @@ package com.parkez.settlement.service;
 import com.parkez.payment.domain.entity.Payment;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.settlement.domain.entity.Settlement;
+import com.parkez.settlement.domain.entity.SettlementDetail;
 import com.parkez.settlement.domain.repository.SettlementDetailRepository;
 import com.parkez.settlement.domain.repository.SettlementRepository;
 import com.parkez.user.domain.entity.User;
@@ -31,30 +32,23 @@ class SettlementWriterTest {
     private SettlementDetailRepository settlementDetailRepository;
 
     @Test
-    void 정산과_정산상세가_정상적으로_저장된다() {
+    void 정산_및_정산_Details_저장_테스트() {
         // given
         User owner = mock(User.class);
         YearMonth month = YearMonth.of(2025, 4);
 
-        Reservation reservation = mock(Reservation.class);
-        Payment payment = mock(Payment.class);
-        when(payment.getPrice()).thenReturn(new BigDecimal("10000"));
-        when(payment.getReservation()).thenReturn(reservation);
-
-        List<Payment> payments = List.of(payment);
-
-        BigDecimal totalAmount = new BigDecimal("10000");
-        BigDecimal totalFee = totalAmount.multiply(BigDecimal.valueOf(0.033));
-        BigDecimal netAmount = totalAmount.subtract(totalFee);
-
         Settlement savedSettlement = mock(Settlement.class);
-        when(settlementRepository.save(any())).thenReturn(savedSettlement);
+        SettlementDetail settlementDetail = mock(SettlementDetail.class);
+        List<SettlementDetail> savedSettlementDetail = List.of(settlementDetail);
+
+        when(settlementRepository.saveAndFlush(any())).thenReturn(savedSettlement);
+        when(settlementDetailRepository.saveAll(any())).thenReturn(savedSettlementDetail);
 
         // when
-        settlementWriter.writeMonthlySettlement(owner, month, payments, totalAmount, totalFee, netAmount);
+        settlementWriter.save(savedSettlement, savedSettlementDetail);
 
         // then
-        verify(settlementRepository).save(any(Settlement.class));
+        verify(settlementRepository).saveAndFlush(any(Settlement.class));
         verify(settlementDetailRepository).saveAll(anyList());
     }
 
