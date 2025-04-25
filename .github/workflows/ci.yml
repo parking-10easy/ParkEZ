@@ -53,6 +53,9 @@ jobs:
           APPLICATION_OAUTH: ${{ secrets.APPLICATION_OAUTH }}
           APPLICATION_PAYMENT: ${{ secrets.APPLICATION_PAYMENT }}
 
+      - name: Setup Firebase Service Account
+        run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > src/main/resources/firebase-service-account.json
+
       - name: Docker Compose 실행
         run: docker compose up -d
 
