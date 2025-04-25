@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 @Slf4j
@@ -63,7 +64,9 @@ public class BatchConfig {
             @Value("#{jobParameters['targetMonth']}") String targetMonthString
     ) {
         return owner -> {
-            YearMonth targetMonth = YearMonth.parse(targetMonthString); // 직전 달 정산
+//            YearMonth targetMonth = YearMonth.parse(targetMonthString); // 직전 달 정산
+            LocalDateTime now = LocalDateTime.parse(targetMonthString);
+            YearMonth targetMonth = YearMonth.from(now).minusMonths(1);
             log.info("[정산 수행 중] ownerId={}, month={}", owner.getId(), targetMonth);
 
             try {

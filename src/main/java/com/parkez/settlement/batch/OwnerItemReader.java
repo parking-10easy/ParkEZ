@@ -8,6 +8,7 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,9 @@ public class OwnerItemReader implements ItemReader<User> {
             @Value("#{jobParameters['targetMonth']}") String targetMonthString
     ) {
         this.userReader = userReader;
-        this.targetMonth = YearMonth.parse(targetMonthString);
+//        this.targetMonth = YearMonth.parse(targetMonthString);
+        LocalDateTime now = LocalDateTime.parse(targetMonthString);
+        this.targetMonth = YearMonth.from(now).minusMonths(1);
     }
 
     @Override
