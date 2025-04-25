@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -66,8 +67,17 @@ public class PromotionIssueConcurrencyTest {
 	@Autowired
 	private UserRepository userRepository;
 
+	@BeforeEach
+	void setUp() {
+		clearRepository();
+	}
+
 	@AfterEach
 	void tearDown() {
+		clearRepository();
+	}
+
+	private void clearRepository() {
 		promotionIssueRepository.deleteAll();
 		promotionRepository.deleteAll();
 		couponRepository.deleteAll();
