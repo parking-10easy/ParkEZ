@@ -1006,6 +1006,65 @@ class ReservationServiceTest {
     class CancelReservation {
 
         @Test
+        void 예약_취소시_사용했던_쿠폰이_만료되지_않았으면_복구한다() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long reservationId = 1L;
+            LocalDateTime startDateTime = LocalDateTime.now().plusHours(3);
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+
+            AuthUser authUser = createAuthUser(userId);
+            User user = createUser(authUser.getId());
+            User owner = createOwner(ownerId);
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
+            ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
+            ReflectionTestUtils.setField(reservation, "startDateTime", startDateTime);
+            ReflectionTestUtils.setField(reservation, "promotionIssueId", 1L);
+
+            Long promotionId = 1L;
+            String promotionName = "DAILY 2000";
+            PromotionType promotionType = PromotionType.DAILY;
+            int limitTotal = 100;
+            int limitPerUser = 1;
+            int validDaysAfterIssue = 3;
+
+            LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
+            LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
+
+            long couponId = 1L;
+            String couponName = "신규가입 2000원 할인 쿠폰";
+            DiscountType discountType = DiscountType.FIXED;
+            int discountValue = 2000;
+            String description = "신규 유저 전용, 1회만 사용 가능";
+
+            Coupon coupon = createCoupon(couponId,couponName,discountType,discountValue,description);
+            Promotion promotion = createPromotion(promotionId,promotionName,promotionType,coupon,limitTotal,limitPerUser,promotionStartAt,promotionEndAt,validDaysAfterIssue,PromotionStatus.ACTIVE);
+
+            LocalDateTime issuedAt = LocalDateTime.now();
+            LocalDateTime expiresAt = issuedAt.plusDays(promotion.getValidDaysAfterIssue());
+            PromotionIssue promotionIssue = createPromotionIssue(promotion, authUser, issuedAt, expiresAt);
+
+            given(reservationReader.findMyReservation(anyLong(), any(Long.class))).willReturn(reservation);
+            given(promotionIssueReader.getById(anyLong())).willReturn(promotionIssue);
+            doNothing().when(reservationWriter).cancel(reservation);
+            doNothing().when(promotionIssueWriter).cancelUsage(promotionIssue);
+
+            // when
+            ReservationCancelRequest request = new ReservationCancelRequest();
+            reservationService.cancelReservation(authUser, reservationId, request, LocalDateTime.now());
+
+            // then
+            verify(promotionIssueWriter).cancelUsage(promotionIssue);
+        }
+
+        @Test
         void 특정_예약_취소_시_PENDING_상태의_특정_예약_취소_테스트() {
             // given
             Long ownerId = 1L;
@@ -1032,7 +1091,7 @@ class ReservationServiceTest {
 
             // when
             ReservationCancelRequest request = new ReservationCancelRequest();
-            reservationService.cancelReservation(authUser, reservationId, request);
+            reservationService.cancelReservation(authUser, reservationId, request, LocalDateTime.now());
 
             // then
             verify(reservationWriter, times(1)).cancel(reservation);
@@ -1065,7 +1124,7 @@ class ReservationServiceTest {
 
             // when
             ReservationCancelRequest request = new ReservationCancelRequest();
-            reservationService.cancelReservation(authUser, reservationId, request);
+            reservationService.cancelReservation(authUser, reservationId, request, LocalDateTime.now());
 
             // then
             verify(reservationWriter, times(1)).cancel(reservation);
@@ -1097,7 +1156,7 @@ class ReservationServiceTest {
             ReservationCancelRequest request = new ReservationCancelRequest();
 
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.cancelReservation(authUser, reservationId, request));
+                    () -> reservationService.cancelReservation(authUser, reservationId, request, LocalDateTime.now()));
             assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.CANT_CANCEL_RESERVATION);
         }
 
@@ -1129,7 +1188,7 @@ class ReservationServiceTest {
             ReservationCancelRequest request = new ReservationCancelRequest();
 
             ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.cancelReservation(authUser, reservationId, request));
+                    () -> reservationService.cancelReservation(authUser, reservationId, request, LocalDateTime.now()));
             assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
         }
     }

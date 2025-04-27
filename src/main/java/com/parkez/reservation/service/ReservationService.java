@@ -171,7 +171,8 @@ public class ReservationService {
 		reservationWriter.complete(reservation);
 	}
 
-	public void cancelReservation(AuthUser authUser, Long reservationId, ReservationCancelRequest request) {
+	public void cancelReservation(AuthUser authUser, Long reservationId, ReservationCancelRequest request,
+		LocalDateTime now) {
 
 		Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
@@ -186,13 +187,12 @@ public class ReservationService {
 			throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
 		}
 
-		/*
-		예약에 프로모션 발급 아이디 있으면
-		프로모션발급 조회
-		만료일자가 아직 지나지 않았으면
-		usedAt = null
-
-		 */
+		if (reservation.getPromotionIssueId() != null) {
+			PromotionIssue promotionIssue = promotionIssueReader.getById(reservation.getPromotionIssueId());
+			if (!promotionIssue.isExpired(now)) {
+				promotionIssueWriter.cancelUsage(promotionIssue);
+			}
+		}
 
 		paymentService.cancelPayment(reservation, request);
 

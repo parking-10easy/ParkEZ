@@ -77,4 +77,9 @@ public class PromotionIssue extends BaseEntity {
 		this.usedAt = now;
 		this.status = PromotionIssueStatus.USED;
 	}
+
+	public void cancelUsage() {
+		this.usedAt = null;
+		this.status = PromotionIssueStatus.ISSUED;
+	}
 }

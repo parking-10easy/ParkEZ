@@ -126,8 +126,8 @@ class PromotionIssueWriterTest {
 			Promotion savedPromotion = promotionRepository.save(promotion);
 
 			LocalDateTime issuedAt = now;
-
-			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion);
+			LocalDateTime expiresAt = issuedAt.plusDays(savedPromotion.getValidDaysAfterIssue());
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, expiresAt);
 			promotionIssueRepository.save(promotionIssue);
 
 			LocalDateTime currentDateTime = LocalDateTime.of(2025, 4, 10, 10, 0);
@@ -144,6 +144,94 @@ class PromotionIssueWriterTest {
 			assertThat(expiredPromotionIssuesCount).isEqualTo(1);
 			PromotionIssue target = promotionIssueRepository.findById(promotionIssue.getId()).get();
 			Assertions.assertThat(target.getStatus()).isEqualTo(PromotionIssueStatus.EXPIRED);
+
+		}
+	}
+
+	@Nested
+	class Use {
+
+		@Test
+		public void 프로모션_쿠폰을_사용하면_used_상태로_변경된다() {
+			//given
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 100;
+			int limitPerUser = 1;
+			int validDaysAfterIssue = 3;
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
+			LocalDateTime promotionStartAt = now.minusDays(1);
+			LocalDateTime promotionEndAt = now.plusDays(1);
+
+			String couponName = "신규가입 2000원 할인 쿠폰";
+			DiscountType discountType = DiscountType.PERCENT;
+			int discountValue = 10;
+			String description = "신규 유저 전용, 1회만 사용 가능";
+
+			User user = User.createUser("user@example.com", "password", "nickname", "010-1234-5678", "default.jpg");
+			User savedUser = userRepository.save(user);
+			Coupon coupon = createCoupon(couponName, discountType, discountValue, description);
+			Coupon savedCoupon = couponRepository.save(coupon);
+			Promotion promotion = createPromotion(promotionName, promotionType, savedCoupon, limitTotal,
+				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
+			Promotion savedPromotion = promotionRepository.save(promotion);
+			LocalDateTime issuedAt = now;
+			LocalDateTime expiresAt = issuedAt.plusDays(savedPromotion.getValidDaysAfterIssue());
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion,savedUser,issuedAt,expiresAt);
+
+			//when
+			promotionIssueWriter.use(promotionIssue, now);
+
+			//then
+			assertThat(promotionIssue).extracting(
+				"usedAt", "status"
+			).containsExactly(
+				now, PromotionIssueStatus.USED
+			);
+
+		}
+	}
+
+	@Nested
+	class CancelUsage {
+
+		@Test
+		public void 프로모션_쿠폰_사용_취소하면_ISSUED_상태로_변경되고_usedAt이_null된다() {
+			//given
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 100;
+			int limitPerUser = 1;
+			int validDaysAfterIssue = 3;
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
+			LocalDateTime promotionStartAt = now.minusDays(1);
+			LocalDateTime promotionEndAt = now.plusDays(1);
+
+			String couponName = "신규가입 2000원 할인 쿠폰";
+			DiscountType discountType = DiscountType.PERCENT;
+			int discountValue = 10;
+			String description = "신규 유저 전용, 1회만 사용 가능";
+
+			User user = User.createUser("user@example.com", "password", "nickname", "010-1234-5678", "default.jpg");
+			User savedUser = userRepository.save(user);
+			Coupon coupon = createCoupon(couponName, discountType, discountValue, description);
+			Coupon savedCoupon = couponRepository.save(coupon);
+			Promotion promotion = createPromotion(promotionName, promotionType, savedCoupon, limitTotal,
+				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
+			Promotion savedPromotion = promotionRepository.save(promotion);
+			LocalDateTime issuedAt = now;
+			LocalDateTime expiresAt = issuedAt.plusDays(savedPromotion.getValidDaysAfterIssue());
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion,savedUser,issuedAt,expiresAt);
+
+			//when
+			promotionIssueWriter.cancelUsage(promotionIssue);
+
+			//then
+			assertThat(promotionIssue).extracting(
+				"usedAt", "status"
+			).containsExactly(
+				null, PromotionIssueStatus.ISSUED
+			);
 
 		}
 	}
@@ -176,12 +264,12 @@ class PromotionIssueWriterTest {
 	}
 
 	private PromotionIssue createPromotionIssue(Promotion savedPromotion, User savedUser, LocalDateTime issuedAt,
-		Promotion promotion) {
+		LocalDateTime expiresAt) {
 		return PromotionIssue.builder()
 			.promotion(savedPromotion)
 			.user(savedUser)
 			.issuedAt(issuedAt)
-			.expiresAt(issuedAt.plusDays(promotion.getValidDaysAfterIssue()))
+			.expiresAt(expiresAt)
 			.build();
 	}
 }

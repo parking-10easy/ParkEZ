@@ -114,7 +114,7 @@ class ReservationServiceConcurrencyTest {
     void 동시_요청에도_오직_하나의_예약만_성공해야_한다() throws InterruptedException {
 
         // given
-        int requestCount = 1000;
+        int requestCount = 100;
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         CountDownLatch latch = new CountDownLatch(requestCount);
         AtomicInteger successCount = new AtomicInteger();

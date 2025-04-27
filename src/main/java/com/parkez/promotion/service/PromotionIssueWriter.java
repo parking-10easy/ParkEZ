@@ -44,4 +44,8 @@ public class PromotionIssueWriter {
 	public void use(PromotionIssue promotionIssue, LocalDateTime now) {
 		promotionIssue.use(now);
 	}
+
+	public void cancelUsage(PromotionIssue promotionIssue) {
+		promotionIssue.cancelUsage();
+	}
 }

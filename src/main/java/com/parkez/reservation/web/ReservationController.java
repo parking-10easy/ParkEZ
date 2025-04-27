@@ -93,7 +93,8 @@ public class ReservationController {
             @PathVariable Long reservationId,
             @Valid @RequestBody ReservationCancelRequest request
             ) {
-        reservationService.cancelReservation(authUser, reservationId, request);
+        LocalDateTime now = LocalDateTime.now();
+        reservationService.cancelReservation(authUser, reservationId, request, now);
         return Response.empty();
     }
 }

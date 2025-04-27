@@ -43,4 +43,10 @@ public class PromotionIssueReader {
 		);
 	}
 
+	public PromotionIssue getById(Long promotionIssueId) {
+		return promotionIssueRepository.findById(promotionIssueId).orElseThrow(
+			()-> new ParkingEasyException(PromotionIssueErrorCode.PROMOTION_ISSUE_NOT_FOUND)
+		);
+	}
+
 }
