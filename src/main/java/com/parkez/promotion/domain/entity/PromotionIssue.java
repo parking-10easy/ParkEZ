@@ -82,4 +82,9 @@ public class PromotionIssue extends BaseEntity {
 		this.usedAt = null;
 		this.status = PromotionIssueStatus.ISSUED;
 	}
+
+	public boolean isOwnedBy(Long userId) {
+		return Objects.equals(this.user.getId(), userId);
+	}
+
 }

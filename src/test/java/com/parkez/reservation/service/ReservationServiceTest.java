@@ -261,7 +261,7 @@ class ReservationServiceTest {
         }
 
         @Test
-        void 특정_주차공간에_만료된_쿠폰으로_예약하면_EXPIRED_COUPON_예외가_발생한다() {
+        void 만료된_쿠폰으로_예약하면_EXPIRED_COUPON_예외가_발생한다() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
@@ -321,7 +321,7 @@ class ReservationServiceTest {
         }
 
         @Test
-        void 특정_주차공간에_이미_사용한_쿠폰으로_예약하면_ALREADY_USED_예외가_발생한다() {
+        void 이미_사용한_쿠폰으로_예약하면_ALREADY_USED_예외가_발생한다() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
@@ -377,6 +377,66 @@ class ReservationServiceTest {
             Assertions.assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
                 .isInstanceOf(ParkingEasyException.class)
                 .hasMessage(ALREADY_USED.getDefaultMessage());
+
+        }
+
+        @Test
+        void 다른_사람의_쿠폰으로_예약하면_NOT_YOUR_COUPON_예외가_발생한다() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+
+            AuthUser authUser = createAuthUser(userId);
+            AuthUser anotherAuthUser = createAuthUser(3L);
+
+            Long promotionIssueId = 1L;
+            ReservationRequest request = createRequest(parkingZoneId, promotionIssueId);
+
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            Long promotionId = 1L;
+            String promotionName = "DAILY 2000";
+            PromotionType promotionType = PromotionType.DAILY;
+            int limitTotal = 100;
+            int limitPerUser = 1;
+            int validDaysAfterIssue = 3;
+
+            LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
+            LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
+
+            long couponId = 1L;
+            String couponName = "신규가입 2000원 할인 쿠폰";
+            DiscountType discountType = DiscountType.FIXED;
+            int discountValue = 2000;
+            String description = "신규 유저 전용, 1회만 사용 가능";
+
+            Coupon coupon = createCoupon(couponId,couponName,discountType,discountValue,description);
+            Promotion promotion = createPromotion(promotionId,promotionName,promotionType,coupon,limitTotal,limitPerUser,promotionStartAt,promotionEndAt,validDaysAfterIssue,PromotionStatus.ACTIVE);
+
+            LocalDateTime issuedAt = LocalDateTime.now();
+            LocalDateTime expiresAt = issuedAt.plusDays(promotion.getValidDaysAfterIssue());
+            PromotionIssue promotionIssue = createPromotionIssue(promotion, anotherAuthUser, issuedAt, expiresAt);
+
+
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveUserById(anyLong())).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
+            given(promotionIssueReader.getWithPromotionAndCouponById(anyLong())).willReturn(promotionIssue);
+
+            // when & then
+            Assertions.assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
+                .isInstanceOf(ParkingEasyException.class)
+                .hasMessage(NOT_YOUR_COUPON.getDefaultMessage());
 
         }
 
@@ -454,7 +514,7 @@ class ReservationServiceTest {
                 .isNotNull()
                 .extracting("reservationId", "userId", "parkingZoneId", "parkingLotName", "reviewWritten", "startDateTime", "endDateTime", "price", "originalPrice", "discountAmount")
                 .isEqualTo(
-                    List.of(reservationId, userId, parkingZoneId, parkingLot.getName(), false, request.getStartDateTime(), request.getEndDateTime(), finalPrice, discountAmount, originalPrice)
+                    List.of(reservationId, userId, parkingZoneId, parkingLot.getName(), false, request.getStartDateTime(), request.getEndDateTime(), finalPrice,originalPrice, discountAmount)
                 );
         }
 

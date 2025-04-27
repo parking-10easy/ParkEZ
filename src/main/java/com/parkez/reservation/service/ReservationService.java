@@ -19,6 +19,7 @@ import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.payment.service.PaymentService;
 import com.parkez.promotion.domain.entity.Coupon;
 import com.parkez.promotion.domain.entity.PromotionIssue;
+import com.parkez.promotion.excption.PromotionIssueErrorCode;
 import com.parkez.promotion.service.PromotionIssueReader;
 import com.parkez.promotion.service.PromotionIssueValidator;
 import com.parkez.promotion.service.PromotionIssueWriter;
@@ -96,6 +97,11 @@ public class ReservationService {
 
 				PromotionIssue promotionIssue = promotionIssueReader.getWithPromotionAndCouponById(
 					request.getPromotionIssueId());
+
+				if (!promotionIssue.isOwnedBy(authUser.getId())) {
+					throw new ParkingEasyException(PromotionIssueErrorCode.NOT_YOUR_COUPON);
+				}
+
 				promotionIssueId = promotionIssue.getId();
 
 				promotionIssueValidator.validateCanBeUsed(promotionIssue, now);
