@@ -103,6 +103,8 @@ class SettlementJobTest {
 
     @BeforeEach
     void setUp() {
+        settlementDetailRepository.deleteAll();
+        settlementRepository.deleteAll();
         paymentRepository.deleteAll();
         reservationRepository.deleteAll();
         parkingZoneRepository.deleteAll();
