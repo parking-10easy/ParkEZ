@@ -80,7 +80,7 @@ public class SettlementService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public SettlementBatchProcessResponse generateMonthlySettlement(User owner, YearMonth month) {
+    public SettlementBatchProcessResponse generateMonthlySettlement(User owner, YearMonth month, LocalDateTime settledAt) {
         // 이미 정산된 달인지 확인
         settlementReader.validateNotSettled(owner, month);
 
@@ -95,7 +95,7 @@ public class SettlementService {
                 .totalAmount(settlementAmounts.getTotalAmount())
                 .totalFee(settlementAmounts.getTotalFee())
                 .netAmount(settlementAmounts.getNetAmount())
-                .calculatedAt(LocalDateTime.now())
+                .calculatedAt(settledAt)
                 .status(SettlementStatus.CONFIRMED)
                 .build();
 

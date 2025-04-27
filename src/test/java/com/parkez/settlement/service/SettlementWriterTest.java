@@ -1,7 +1,5 @@
 package com.parkez.settlement.service;
 
-import com.parkez.payment.domain.entity.Payment;
-import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.settlement.domain.entity.Settlement;
 import com.parkez.settlement.domain.entity.SettlementDetail;
 import com.parkez.settlement.domain.repository.SettlementDetailRepository;
@@ -13,7 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -41,14 +38,14 @@ class SettlementWriterTest {
         SettlementDetail settlementDetail = mock(SettlementDetail.class);
         List<SettlementDetail> savedSettlementDetail = List.of(settlementDetail);
 
-        when(settlementRepository.saveAndFlush(any())).thenReturn(savedSettlement);
+        when(settlementRepository.save(any())).thenReturn(savedSettlement);
         when(settlementDetailRepository.saveAll(any())).thenReturn(savedSettlementDetail);
 
         // when
         settlementWriter.save(savedSettlement, savedSettlementDetail);
 
         // then
-        verify(settlementRepository).saveAndFlush(any(Settlement.class));
+        verify(settlementRepository).save(any(Settlement.class));
         verify(settlementDetailRepository).saveAll(anyList());
     }
 

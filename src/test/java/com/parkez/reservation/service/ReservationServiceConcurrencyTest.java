@@ -65,6 +65,8 @@ class ReservationServiceConcurrencyTest {
     @BeforeEach
     void setUp() {
 
+        parkingZoneRepository.deleteAll();
+        parkingLotRepository.deleteAll();
         userRepository.deleteAll();
 
         user = userRepository.save(User.builder()
@@ -84,8 +86,6 @@ class ReservationServiceConcurrencyTest {
                 .nickname(user.getNickname())
                 .build();
 
-        parkingLotRepository.deleteAll();
-
         ParkingLot parkingLot = parkingLotRepository.save(ParkingLot.builder()
                 .owner(user)
                 .name("테스트 주차장")
@@ -98,8 +98,6 @@ class ReservationServiceConcurrencyTest {
                 .chargeType(ChargeType.PAID)
                 .sourceType(SourceType.OWNER_REGISTERED)
                 .build());
-
-        parkingZoneRepository.deleteAll();
 
         parkingZone = parkingZoneRepository.save(ParkingZone.builder()
                 .parkingLot(parkingLot)

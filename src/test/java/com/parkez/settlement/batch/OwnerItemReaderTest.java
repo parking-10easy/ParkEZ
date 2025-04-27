@@ -4,12 +4,12 @@ import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.*;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +30,7 @@ class OwnerItemReaderTest {
     }
 
     @Test
-    void read_정상적으로_유저를_순차적으로_반환한다() {
+    void read_메서드_호출_시_정상적으로_유저를_순차적으로_반환한다() {
         // given
 //        YearMonth targetMonth = YearMonth.of(2025, 3);
 //        String targetMonthString = targetMonth.toString();

@@ -7,9 +7,6 @@ import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.domain.repository.UserRepository;
 import com.parkez.user.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +49,6 @@ public class UserReader {
     }
 
     public List<User> findOwnersForSettlementByMonth(YearMonth targetMonth, Long lastId, int size) {
-        return userRepository.findOwnersForSettlementByMonth(targetMonth, lastId, size);
+        return userRepository.findAllOwnersForSettlementByMonth(targetMonth, lastId, size);
     }
 }

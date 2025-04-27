@@ -20,7 +20,8 @@ public class SettlementWriter {
     private final SettlementDetailRepository settlementDetailRepository;
 
     public void save(Settlement settlement, List<SettlementDetail> settlementDetails) {
-        settlementRepository.saveAndFlush(settlement);
+        settlementRepository.save(settlement);
+
         for (SettlementDetail settlementDetail : settlementDetails) {
             settlementDetail.updateSettlement(settlement);
         }

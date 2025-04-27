@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Pageable;
 
 import java.time.YearMonth;
 import java.util.List;
@@ -192,7 +191,7 @@ class UserReaderTest {
             int size = 10;
 
             List<User> owners = List.of(mock(User.class), mock(User.class));
-            when(userRepository.findOwnersForSettlementByMonth(any(YearMonth.class), anyLong(), anyInt())).thenReturn(owners);
+            when(userRepository.findAllOwnersForSettlementByMonth(any(YearMonth.class), anyLong(), anyInt())).thenReturn(owners);
 
             // when
             List<User> result = userReader.findOwnersForSettlementByMonth(yearMonth, lastId, size);

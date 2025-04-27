@@ -7,7 +7,6 @@ import com.parkez.payment.service.PaymentReader;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.service.ReservationReader;
 import com.parkez.settlement.domain.entity.Settlement;
-import com.parkez.settlement.domain.entity.SettlementDetail;
 import com.parkez.settlement.domain.enums.SettlementStatus;
 import com.parkez.settlement.dto.response.SettlementBatchProcessResponse;
 import com.parkez.settlement.dto.response.SettlementPreviewResponse;
@@ -62,13 +61,14 @@ public class SettlementServiceTest {
                     mock(Payment.class),
                     mock(Payment.class)
             );
+            LocalDateTime settledAt = LocalDateTime.now();
 
             when(paymentReader.findApprovedPaymentsWithCompletedReservations(owner, month)).thenReturn(payments);
             when(payments.get(0).getPrice()).thenReturn(new BigDecimal("10000"));
             when(payments.get(1).getPrice()).thenReturn(new BigDecimal("5000"));
 
             // when
-            SettlementBatchProcessResponse result = settlementService.generateMonthlySettlement(owner, month);
+            SettlementBatchProcessResponse result = settlementService.generateMonthlySettlement(owner, month, settledAt);
 
             // then
             verify(settlementReader).validateNotSettled(owner, month);
