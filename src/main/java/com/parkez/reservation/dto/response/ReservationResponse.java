@@ -68,8 +68,8 @@ public class ReservationResponse {
                 reservation.getEndDateTime(),
                 reservation.getUseCompletionTime(),
                 reservation.getPrice(),
-                reservation.getOriginalPrice(),
                 reservation.getDiscountAmount(),
+                reservation.getOriginalPrice(),
                 reservation.getStatus(),
                 reservation.getCreatedAt()
         );
@@ -86,8 +86,8 @@ public class ReservationResponse {
                 reservation.getEndDateTime(),
                 reservation.getUseCompletionTime(),
                 reservation.getPrice(),
-                reservation.getOriginalPrice(),
                 reservation.getDiscountAmount(),
+                reservation.getOriginalPrice(),
                 reservation.getStatus(),
                 reservation.getCreatedAt()
         );
