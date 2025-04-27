@@ -9,7 +9,6 @@ import com.parkez.parkingzone.domain.repository.ParkingZoneRepository;
 import com.parkez.payment.domain.entity.Payment;
 import com.parkez.payment.domain.enums.PaymentStatus;
 import com.parkez.payment.domain.repository.PaymentRepository;
-import com.parkez.payment.service.PaymentReader;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.repository.ReservationRepository;
 import com.parkez.settlement.domain.entity.Settlement;
@@ -71,14 +70,13 @@ class SettlementJobTest {
     @Autowired
     private PaymentRepository paymentRepository;
     @Autowired
-    private PaymentReader paymentReader;
-    @Autowired
     private DataSource dataSource;
 
     private static final LocalTime OPENED_AT = LocalTime.of(9, 0, 0);
     private static final LocalTime CLOSED_AT = LocalTime.of(21, 0, 0);
-    private static final LocalDateTime RESERVATION_START_DATE_TIME = LocalDateTime.of(LocalDate.of(2025,3,10), OPENED_AT);
-    private static final LocalDateTime RESERVATION_END_DATE_TIME = LocalDateTime.of(LocalDate.of(2025,3,10), CLOSED_AT);
+    private static final LocalDate RESERVATION_DATE = LocalDate.of(2025, 3, 10);
+    private static final LocalDateTime RESERVATION_START_DATE_TIME = LocalDateTime.of(RESERVATION_DATE, OPENED_AT);
+    private static final LocalDateTime RESERVATION_END_DATE_TIME = LocalDateTime.of(RESERVATION_DATE, CLOSED_AT);
 
     private User user;
     private User owner;
@@ -171,19 +169,17 @@ class SettlementJobTest {
     @Test
     void 스프링_배치를_이용한_정산_테스트() throws Exception {
         // given
-//        YearMonth targetMonth = YearMonth.of(2025, 3);
+//        YearMonth targetMonth = YearMonth.from(RESERVATION_DATE);
 //        JobParameters jobParameters = new JobParametersBuilder()
 //                .addString("targetMonth", targetMonth.toString())
 //                .toJobParameters();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.of(RESERVATION_DATE.plusMonths(1), LocalTime.now());
         String targetMonthString = now.toString();
-        YearMonth targetMonth = YearMonth.from(now).minusMonths(1);
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("targetMonth", targetMonthString)
                 .toJobParameters();
 
         // when
-        log.info("settlement batch start");
         JobExecution execution = jobLauncher.run(jobRegistry.getJob("settlementJob"), jobParameters);
 
         // then
@@ -197,5 +193,36 @@ class SettlementJobTest {
         List<SettlementDetail> details = settlementDetailRepository.findAll();
         SettlementDetail settlementDetail = details.get(0);
         assertThat(settlementDetail.getReservation().getId()).isEqualTo(reservation.getId());
+    }
+
+    @Test
+    void 스프링_배치를_이용한_정산_시_이미_해당_월에_대한_정산이_완료된_경우_중복_정산_미실행_테스트() throws Exception {
+        // given
+//        YearMonth targetMonth = YearMonth.from(RESERVATION_DATE);
+//        JobParameters jobParameters = new JobParametersBuilder()
+//                .addString("targetMonth", targetMonth.toString())
+//                .toJobParameters();
+        LocalDateTime now = LocalDateTime.of(RESERVATION_DATE.plusMonths(1), LocalTime.now());
+        String targetMonthString = now.toString();
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("targetMonth", targetMonthString)
+                .toJobParameters();
+
+        settlementRepository.saveAndFlush(Settlement.builder()
+                .owner(owner)
+                .settlementMonth(YearMonth.from(RESERVATION_DATE))
+                .totalAmount(BigDecimal.valueOf(10000))
+                .totalFee(BigDecimal.valueOf(330))
+                .netAmount(BigDecimal.valueOf(99670))
+                .calculatedAt(LocalDateTime.of(RESERVATION_DATE.plusMonths(1), LocalTime.now()))
+                .status(SettlementStatus.CONFIRMED)
+                .build());
+
+        // when
+        JobExecution execution = jobLauncher.run(jobRegistry.getJob("settlementJob"), jobParameters);
+
+        // then
+        assertThat(execution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
+        assertThat(settlementRepository.count()).isEqualTo(1);
     }
 }
