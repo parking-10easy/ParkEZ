@@ -41,4 +41,7 @@ public class PromotionIssueWriter {
 		return promotionIssueRepository.bulkUpdateStatusByCurrentTime(currentDateTime, currentStatus, targetStatus);
 	}
 
+	public void use(PromotionIssue promotionIssue, LocalDateTime now) {
+		promotionIssue.use(now);
+	}
 }

@@ -73,4 +73,8 @@ public class PromotionIssue extends BaseEntity {
 		return this.promotion.getCoupon();
 	}
 
+	public void use(LocalDateTime now) {
+		this.usedAt = now;
+		this.status = PromotionIssueStatus.USED;
+	}
 }

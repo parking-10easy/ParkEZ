@@ -21,6 +21,7 @@ import com.parkez.promotion.domain.entity.Coupon;
 import com.parkez.promotion.domain.entity.PromotionIssue;
 import com.parkez.promotion.service.PromotionIssueReader;
 import com.parkez.promotion.service.PromotionIssueValidator;
+import com.parkez.promotion.service.PromotionIssueWriter;
 import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
@@ -50,6 +51,7 @@ public class ReservationService {
 	private final PaymentService paymentService;
 	private final PromotionIssueReader promotionIssueReader;
 	private final PromotionIssueValidator promotionIssueValidator;
+	private final PromotionIssueWriter promotionIssueWriter;
 
 	private static final long CANCEL_LIMIT_HOURS = 1L;
 	private static final long EXPIRATION_TIME = 10L;
@@ -99,6 +101,8 @@ public class ReservationService {
 				promotionIssueValidator.validateCanBeUsed(promotionIssue, now);
 				Coupon coupon = promotionIssue.getCoupon();
 				discountAmount = coupon.calculateDiscount(originalPrice);
+
+				promotionIssueWriter.use(promotionIssue, now);
 			}
 
 			BigDecimal finalPrice = originalPrice.subtract(discountAmount);
@@ -181,6 +185,14 @@ public class ReservationService {
 		if (reservation.isAfter(cancelLimitTime, LocalDateTime.now())) {
 			throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_WITHIN_ONE_HOUR);
 		}
+
+		/*
+		예약에 프로모션 발급 아이디 있으면
+		프로모션발급 조회
+		만료일자가 아직 지나지 않았으면
+		usedAt = null
+
+		 */
 
 		paymentService.cancelPayment(reservation, request);
 

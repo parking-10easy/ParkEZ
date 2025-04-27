@@ -17,6 +17,7 @@ import com.parkez.promotion.domain.enums.PromotionStatus;
 import com.parkez.promotion.domain.enums.PromotionType;
 import com.parkez.promotion.service.PromotionIssueReader;
 import com.parkez.promotion.service.PromotionIssueValidator;
+import com.parkez.promotion.service.PromotionIssueWriter;
 import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
@@ -81,6 +82,9 @@ class ReservationServiceTest {
 
     @Mock
     private PromotionIssueValidator promotionIssueValidator;
+
+    @Mock
+    private PromotionIssueWriter promotionIssueWriter;
 
     @InjectMocks
     private ReservationService reservationService;
