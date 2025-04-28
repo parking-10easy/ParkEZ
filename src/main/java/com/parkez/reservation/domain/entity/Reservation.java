@@ -52,6 +52,14 @@ public class Reservation extends BaseEntity {
     @Column(nullable = false)
     private boolean reviewWritten;
 
+    private Long promotionIssueId;
+
+    @Column(nullable = false)
+    private BigDecimal discountAmount;
+
+    @Column(nullable = false)
+    private BigDecimal originalPrice;
+
     @Builder
     private Reservation(
             User user,
@@ -59,7 +67,10 @@ public class Reservation extends BaseEntity {
             String parkingLotName,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime,
-            BigDecimal price
+            BigDecimal price,
+            Long promotionIssueId,
+            BigDecimal discountAmount,
+            BigDecimal originalPrice
     ) {
         this.user = user;
         this.parkingZone = parkingZone;
@@ -70,6 +81,9 @@ public class Reservation extends BaseEntity {
         this.price = price;
         this.status = ReservationStatus.PENDING;
         this.reviewWritten = false;
+        this.promotionIssueId = promotionIssueId;
+        this.discountAmount = discountAmount;
+        this.originalPrice = originalPrice;
     }
 
     public void complete(LocalDateTime useCompletionTime) {

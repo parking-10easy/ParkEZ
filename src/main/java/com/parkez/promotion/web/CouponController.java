@@ -1,9 +1,5 @@
 package com.parkez.promotion.web;
 
-import static com.parkez.user.domain.enums.UserRole.*;
-import static com.parkez.user.domain.enums.UserRole.Authority.*;
-
-import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,7 +11,6 @@ import com.parkez.common.resolver.AuthenticatedUser;
 import com.parkez.promotion.dto.request.CouponCreateRequest;
 import com.parkez.promotion.dto.response.CouponResponse;
 import com.parkez.promotion.service.CouponService;
-import com.parkez.user.domain.enums.UserRole;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,4 +32,5 @@ public class CouponController {
 	public Response<CouponResponse> createCoupon(@AuthenticatedUser @Parameter(hidden = true) AuthUser authUser,@Valid @RequestBody CouponCreateRequest request) {
 		return Response.of(couponService.createCoupon(request));
 	}
+
 }

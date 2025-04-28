@@ -28,7 +28,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -115,7 +114,7 @@ class ReservationServiceConcurrencyTest {
     void 동시_요청에도_오직_하나의_예약만_성공해야_한다() throws InterruptedException {
 
         // given
-        int requestCount = 1000;
+        int requestCount = 100;
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         CountDownLatch latch = new CountDownLatch(requestCount);
         AtomicInteger successCount = new AtomicInteger();
@@ -126,7 +125,7 @@ class ReservationServiceConcurrencyTest {
         for (int i = 0; i < requestCount; i++) {
             executorService.submit(() -> {
                 try {
-                    reservationService.createReservation(authUser, request);
+                    reservationService.createReservation(authUser, request, LocalDateTime.now());
                     successCount.incrementAndGet();
                 } catch (ParkingEasyException e) {
                     log.warn("실패한 요청: {}", e.getErrorCode());

@@ -2,12 +2,11 @@ package com.parkez.promotion.service;
 
 import static com.parkez.promotion.domain.enums.PromotionType.*;
 import static com.parkez.promotion.excption.PromotionErrorCode.*;
+import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
-import javax.management.relation.Role;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
@@ -315,7 +314,7 @@ class PromotionServiceTest {
 			Long promotionId = -1L;
 
 
-			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willThrow(new ParkingEasyException(PROMOTION_NOT_FOUND));
+			given(promotionReader.getActivePromotionWithCouponForUpdate(anyLong())).willThrow(new ParkingEasyException(PROMOTION_NOT_FOUND));
 
 			//when & then
 			Assertions.assertThatThrownBy(()-> promotionService.issueCoupon(authUser, promotionId))
@@ -351,7 +350,7 @@ class PromotionServiceTest {
 
 			int issuedCount = 100;
 
-			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willReturn(promotion);
+			given(promotionReader.getActivePromotionWithCouponForUpdate(anyLong())).willReturn(promotion);
 			given(promotionIssueReader.countByPromotionId(anyLong())).willReturn(issuedCount);
 
 			//when & then
@@ -389,7 +388,7 @@ class PromotionServiceTest {
 			int issuedCount = 99;
 			int userIssuedCount = 1;
 
-			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willReturn(promotion);
+			given(promotionReader.getActivePromotionWithCouponForUpdate(anyLong())).willReturn(promotion);
 			given(promotionIssueReader.countByPromotionId(anyLong())).willReturn(issuedCount);
 			given(promotionIssueReader.countByPromotionIdAndUserId(anyLong(),anyLong())).willReturn(userIssuedCount);
 
@@ -432,7 +431,7 @@ class PromotionServiceTest {
 			int issuedCount = 99;
 			int userIssuedCount = 0;
 
-			given(promotionReader.getActiveByIdWithCoupon(anyLong())).willReturn(promotion);
+			given(promotionReader.getActivePromotionWithCouponForUpdate(anyLong())).willReturn(promotion);
 			given(promotionIssueReader.countByPromotionId(anyLong())).willReturn(issuedCount);
 			given(promotionIssueReader.countByPromotionIdAndUserId(anyLong(),anyLong())).willReturn(userIssuedCount);
 			given(promotionIssueWriter.create(any(Promotion.class), any(User.class))).willReturn(promotionIssue);
@@ -452,7 +451,48 @@ class PromotionServiceTest {
 		}
 	}
 
-	private static PromotionIssue createPromotionIssue(Promotion promotion, AuthUser authUser, LocalDateTime issuedAt,
+	@Nested
+	class ExpireEndedPromotions {
+
+		@Test
+		public void 종료된_프로모션_1건을_만료처리하고_건수를_반환한다() {
+			//given
+
+			LocalDateTime currentDateTime = LocalDateTime.now();
+			PromotionStatus currentStatus = PromotionStatus.ACTIVE;
+			PromotionStatus targetStatus = PromotionStatus.ENDED;
+
+			given(promotionWriter.expireEndedPromotions(any(LocalDateTime.class), any(PromotionStatus.class), any(PromotionStatus.class))).willReturn(1);
+
+			//when
+			int endedPromotionCount = promotionService.expireEndedPromotions(currentDateTime, currentStatus, targetStatus);
+
+			//then
+			assertThat(endedPromotionCount).isEqualTo(1);
+		}
+	}
+
+	@Nested
+	class ExpireSoldOutPromotionStatus {
+
+		@Test
+		public void 쿠폰_매진된_프로모션_1건을_만료처리하고_건수를_반환한다() {
+			//given
+
+			PromotionStatus currentStatus = PromotionStatus.ACTIVE;
+			PromotionStatus targetStatus = PromotionStatus.ENDED;
+
+			given(promotionWriter.expireSoldOutPromotions(any(PromotionStatus.class), any(PromotionStatus.class))).willReturn(1);
+
+			//when
+			int soldOutCount = promotionService.expireSoldOutPromotions(currentStatus, targetStatus);
+
+			//then
+			assertThat(soldOutCount).isEqualTo(1);
+		}
+	}
+
+	private PromotionIssue createPromotionIssue(Promotion promotion, AuthUser authUser, LocalDateTime issuedAt,
 		LocalDateTime expiresAt) {
 		return PromotionIssue.builder()
 			.promotion(promotion)
@@ -462,7 +502,7 @@ class PromotionServiceTest {
 			.build();
 	}
 
-	private static AuthUser creatAuthUser() {
+	private AuthUser creatAuthUser() {
 		return AuthUser.builder().email("user@example.com")
 			.roleName(UserRole.ROLE_USER.name())
 			.nickname("nickname")
