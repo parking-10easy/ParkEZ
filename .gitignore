@@ -41,3 +41,5 @@ application.yml
 application-*.yml
 .DS_Store
 mysql_data/
+grafana-data/
+prometheus-data/
