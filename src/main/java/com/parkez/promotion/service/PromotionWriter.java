@@ -3,15 +3,18 @@ package com.parkez.promotion.service;
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.parkez.promotion.domain.entity.Coupon;
 import com.parkez.promotion.domain.entity.Promotion;
+import com.parkez.promotion.domain.enums.PromotionStatus;
 import com.parkez.promotion.domain.enums.PromotionType;
 import com.parkez.promotion.domain.repository.PromotionRepository;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class PromotionWriter {
 
@@ -34,4 +37,15 @@ public class PromotionWriter {
 
 		return promotionRepository.save(promotion);
 	}
+
+	public int expireEndedPromotions(LocalDateTime currentDateTime, PromotionStatus currentStatus,
+		PromotionStatus targetStatus) {
+		return promotionRepository.bulkUpdatePromotionStatusToEndedByCurrentDateTime(currentDateTime, currentStatus, targetStatus);
+	}
+
+	public int expireSoldOutPromotions(PromotionStatus currentStatus, PromotionStatus targetStatus) {
+
+		return promotionRepository.bulkUpdatePromotionStatusToEndedIfSoldOut(currentStatus, targetStatus);
+	}
+
 }

@@ -11,6 +11,7 @@ import com.parkez.common.principal.AuthUser;
 import com.parkez.promotion.domain.entity.Coupon;
 import com.parkez.promotion.domain.entity.Promotion;
 import com.parkez.promotion.domain.entity.PromotionIssue;
+import com.parkez.promotion.domain.enums.PromotionStatus;
 import com.parkez.promotion.domain.repository.projection.ActivePromotionProjection;
 import com.parkez.promotion.domain.repository.projection.PromotionDetail;
 import com.parkez.promotion.dto.response.PromotionIssueResponse;
@@ -65,9 +66,8 @@ public class PromotionService {
 	@Transactional
 	public PromotionIssueResponse issueCoupon(AuthUser authUser, Long promotionId) {
 
-		Promotion promotion =  promotionReader.getActiveByIdWithCoupon(promotionId);
+		Promotion promotion =  promotionReader.getActivePromotionWithCouponForUpdate(promotionId);
 
-		// TODO 카운트 쿼리 묶을지
 		int issuedCount = promotionIssueReader.countByPromotionId(promotionId);
 
 		if (!promotion.hasRemainingQuantity(issuedCount)) {
@@ -86,6 +86,17 @@ public class PromotionService {
 
 		return PromotionIssueResponse.of(promotion, promotionIssue);
 
+	}
+
+	@Transactional
+	public int expireEndedPromotions(LocalDateTime currentDateTime, PromotionStatus currentStatus,
+		PromotionStatus targetStatus) {
+		return promotionWriter.expireEndedPromotions(currentDateTime, currentStatus, targetStatus);
+	}
+
+	@Transactional
+	public int expireSoldOutPromotions(PromotionStatus currentStatus, PromotionStatus targetStatus) {
+		return promotionWriter.expireSoldOutPromotions(currentStatus, targetStatus);
 	}
 
 	private void validateDateRange(LocalDateTime promotionStartAt, LocalDateTime promotionEndAt) {

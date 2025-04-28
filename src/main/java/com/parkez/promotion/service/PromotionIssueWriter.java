@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.parkez.promotion.domain.entity.Promotion;
 import com.parkez.promotion.domain.entity.PromotionIssue;
+import com.parkez.promotion.domain.enums.PromotionIssueStatus;
 import com.parkez.promotion.domain.repository.PromotionIssueRepository;
 import com.parkez.user.domain.entity.User;
 
@@ -35,4 +36,16 @@ public class PromotionIssueWriter {
 
 	}
 
+	public int expirePromotionIssues(LocalDateTime currentDateTime, PromotionIssueStatus currentStatus, PromotionIssueStatus targetStatus) {
+
+		return promotionIssueRepository.bulkUpdateStatusByCurrentTime(currentDateTime, currentStatus, targetStatus);
+	}
+
+	public void use(PromotionIssue promotionIssue, LocalDateTime now) {
+		promotionIssue.use(now);
+	}
+
+	public void cancelUsage(PromotionIssue promotionIssue) {
+		promotionIssue.cancelUsage();
+	}
 }

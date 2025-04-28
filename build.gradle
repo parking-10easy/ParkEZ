@@ -87,6 +87,7 @@ dependencies {
 
     //actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 
     // JavaMailSender
     implementation 'org.springframework.boot:spring-boot-starter-mail'
