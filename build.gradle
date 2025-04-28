@@ -28,7 +28,6 @@ jacoco {
     toolVersion = "0.8.12"
 }
 
-
 dependencies {
     //spring data jpa
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -88,6 +87,7 @@ dependencies {
 
     //actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 
     // JavaMailSender
     implementation 'org.springframework.boot:spring-boot-starter-mail'
@@ -101,6 +101,9 @@ dependencies {
     implementation 'com.amazonaws:aws-lambda-java-events:3.11.1'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.2'
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    // spring batch
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    testImplementation 'org.springframework.batch:spring-batch-test'
 }
 
 clean {

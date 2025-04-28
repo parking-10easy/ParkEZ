@@ -1,11 +1,11 @@
 package com.parkez.user.service;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
-
-import java.util.List;
-import java.util.Optional;
-
+import com.parkez.common.exception.ParkingEasyException;
+import com.parkez.user.domain.entity.User;
+import com.parkez.user.domain.enums.LoginType;
+import com.parkez.user.domain.enums.UserRole;
+import com.parkez.user.domain.repository.UserRepository;
+import com.parkez.user.exception.UserErrorCode;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,12 +13,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.parkez.common.exception.ParkingEasyException;
-import com.parkez.user.domain.entity.User;
-import com.parkez.user.domain.enums.LoginType;
-import com.parkez.user.domain.enums.UserRole;
-import com.parkez.user.domain.repository.UserRepository;
-import com.parkez.user.exception.UserErrorCode;
+import java.time.YearMonth;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserReaderTest {
@@ -141,15 +142,19 @@ class UserReaderTest {
 
 
     @Nested
-    class findAllOwners {
+    class findOwnersForSettlementByMonth {
         @Test
-        void ROLE_OWNER_권한의_유저를_전체_조회한다() {
+        void 해당_월에_정산할_결제_내역이_있는_ROLE_OWNER_권한의_유저를_전체_조회한다() {
             // given
+            YearMonth yearMonth = YearMonth.of(2025, 3);
+            Long lastId = 1L;
+            int size = 10;
+
             List<User> owners = List.of(mock(User.class), mock(User.class));
-            when(userRepository.findAllByRole(UserRole.ROLE_OWNER)).thenReturn(owners);
+            when(userRepository.findAllOwnersForSettlementByMonth(any(YearMonth.class), anyLong(), anyInt())).thenReturn(owners);
 
             // when
-            List<User> result = userReader.findAllOwners();
+            List<User> result = userReader.findOwnersForSettlementByMonth(yearMonth, lastId, size);
 
             // then
             assertThat(result).isEqualTo(owners);
