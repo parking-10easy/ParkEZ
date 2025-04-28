@@ -48,10 +48,10 @@ class SettlementItemProcessorTest {
     @Test
     void process_메서드_호출_시_정산_성공_case_정상적으로_settlement_및_settlementDetails_를_순차적으로_생성한다() {
         // given
-        // YearMonth targetMonth = YearMonth.of(2025, 3);
-        // String targetMonthString = targetMonth.toString();
-        LocalDateTime now = LocalDateTime.now();
-        String targetMonthString = now.toString();
+         YearMonth targetMonth = YearMonth.of(2025, 3);
+         String targetMonthString = targetMonth.toString();
+//        LocalDateTime now = LocalDateTime.now();
+//        String targetMonthString = now.toString();
         settlementItemProcessor = new SettlementItemProcessor(settlementService, targetMonthString);
 
         User owner = mockUser(1L);
@@ -74,10 +74,10 @@ class SettlementItemProcessorTest {
     @Test
     void process_메서드_호출_시_정산_실패_case_예외_발생_시_settlement_및_settlementDetails_미생성_및_errorMessage_를_반환한다() {
         // given
-        // YearMonth targetMonth = YearMonth.of(2025, 3);
-        // String targetMonthString = targetMonth.toString();
-        LocalDateTime now = LocalDateTime.now();
-        String targetMonthString = now.toString();
+         YearMonth targetMonth = YearMonth.of(2025, 3);
+         String targetMonthString = targetMonth.toString();
+//        LocalDateTime now = LocalDateTime.now();
+//        String targetMonthString = now.toString();
         settlementItemProcessor = new SettlementItemProcessor(settlementService, targetMonthString);
 
         User owner = mockUser(1L);

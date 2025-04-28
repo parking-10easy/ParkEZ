@@ -156,6 +156,8 @@ class SettlementJobTest {
                 .startDateTime(RESERVATION_START_DATE_TIME)
                 .endDateTime(RESERVATION_END_DATE_TIME)
                 .price(price)
+                .discountAmount(BigDecimal.ZERO)
+                .originalPrice(price)
                 .build());
         reservation.complete(RESERVATION_END_DATE_TIME);
         reservationRepository.saveAndFlush(reservation);
@@ -171,15 +173,15 @@ class SettlementJobTest {
     @Test
     void 스프링_배치를_이용한_정산_테스트() throws Exception {
         // given
-//        YearMonth targetMonth = YearMonth.from(RESERVATION_DATE);
-//        JobParameters jobParameters = new JobParametersBuilder()
-//                .addString("targetMonth", targetMonth.toString())
-//                .toJobParameters();
-        LocalDateTime now = LocalDateTime.of(RESERVATION_DATE.plusMonths(1), LocalTime.now());
-        String targetMonthString = now.toString();
+        YearMonth targetMonth = YearMonth.from(RESERVATION_DATE);
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("targetMonth", targetMonthString)
+                .addString("targetMonth", targetMonth.toString())
                 .toJobParameters();
+//        LocalDateTime now = LocalDateTime.of(RESERVATION_DATE.plusMonths(1), LocalTime.now());
+//        String targetMonthString = now.toString();
+//        JobParameters jobParameters = new JobParametersBuilder()
+//                .addString("targetMonth", targetMonthString)
+//                .toJobParameters();
 
         // when
         JobExecution execution = jobLauncher.run(jobRegistry.getJob("settlementJob"), jobParameters);
@@ -200,15 +202,15 @@ class SettlementJobTest {
     @Test
     void 스프링_배치를_이용한_정산_시_이미_해당_월에_대한_정산이_완료된_경우_중복_정산_미실행_테스트() throws Exception {
         // given
-//        YearMonth targetMonth = YearMonth.from(RESERVATION_DATE);
-//        JobParameters jobParameters = new JobParametersBuilder()
-//                .addString("targetMonth", targetMonth.toString())
-//                .toJobParameters();
-        LocalDateTime now = LocalDateTime.of(RESERVATION_DATE.plusMonths(1), LocalTime.now());
-        String targetMonthString = now.toString();
+        YearMonth targetMonth = YearMonth.from(RESERVATION_DATE);
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("targetMonth", targetMonthString)
+                .addString("targetMonth", targetMonth.toString())
                 .toJobParameters();
+//        LocalDateTime now = LocalDateTime.of(RESERVATION_DATE.plusMonths(1), LocalTime.now());
+//        String targetMonthString = now.toString();
+//        JobParameters jobParameters = new JobParametersBuilder()
+//                .addString("targetMonth", targetMonthString)
+//                .toJobParameters();
 
         settlementRepository.saveAndFlush(Settlement.builder()
                 .owner(owner)

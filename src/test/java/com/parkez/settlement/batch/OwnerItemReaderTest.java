@@ -32,11 +32,11 @@ class OwnerItemReaderTest {
     @Test
     void read_메서드_호출_시_정상적으로_유저를_순차적으로_반환한다() {
         // given
-//        YearMonth targetMonth = YearMonth.of(2025, 3);
-//        String targetMonthString = targetMonth.toString();
-        LocalDateTime now = LocalDateTime.now();
-        String targetMonthString = now.toString();
-        YearMonth targetMonth = YearMonth.from(now).minusMonths(1);
+        YearMonth targetMonth = YearMonth.of(2025, 3);
+        String targetMonthString = targetMonth.toString();
+//        LocalDateTime now = LocalDateTime.now();
+//        String targetMonthString = now.toString();
+//        YearMonth targetMonth = YearMonth.from(now).minusMonths(1);
         ownerItemReader = new OwnerItemReader(userReader, targetMonthString);
 
         List<User> page0 = List.of(mockUser(1L), mockUser(2L), mockUser(3L));

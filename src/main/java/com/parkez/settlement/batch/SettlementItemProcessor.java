@@ -25,9 +25,9 @@ public class SettlementItemProcessor implements ItemProcessor<User, SettlementBa
             @Value("#{jobParameters['targetMonth']}") String targetMonthString
     ) {
         this.settlementService = settlementService;
-//        this.targetMonth = YearMonth.parse(targetMonthString);
-        LocalDateTime now = LocalDateTime.parse(targetMonthString);
-        this.targetMonth = YearMonth.from(now).minusMonths(1);
+        this.targetMonth = YearMonth.parse(targetMonthString);
+//        LocalDateTime now = LocalDateTime.parse(targetMonthString);
+//        this.targetMonth = YearMonth.from(now).minusMonths(1);
     }
 
     @Override
