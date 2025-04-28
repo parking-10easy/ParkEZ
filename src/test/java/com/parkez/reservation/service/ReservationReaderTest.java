@@ -300,4 +300,79 @@ class ReservationReaderTest {
                     .hasMessageContaining(ReservationErrorCode.NOT_FOUND_RESERVATION.getDefaultMessage());
         }
     }
+
+    @Nested
+    class FindReservationByQueueKeyTest {
+
+        @Test
+        void 정상적으로_예약을_조회한다() {
+            // given
+            Long parkingZoneId = 1L;
+            LocalDateTime startDateTime = LocalDateTime.now().plusHours(1);
+            LocalDateTime endDateTime = startDateTime.plusHours(2);
+
+            Reservation reservation = mock(Reservation.class);
+
+            given(reservationRepository.findByParkingZone_IdAndStartDateTimeAndEndDateTime(
+                    parkingZoneId, startDateTime, endDateTime))
+                    .willReturn(Optional.of(reservation));
+
+            // when
+            Reservation result = reservationReader.findReservationByQueueKey(parkingZoneId, startDateTime, endDateTime);
+
+            // then
+            assertThat(result).isNotNull();
+        }
+
+        @Test
+        void 예약이_없으면_NOT_FOUND_RESERVATION_예외가_발생한다() {
+            // given
+            Long parkingZoneId = 1L;
+            LocalDateTime startDateTime = LocalDateTime.now().plusHours(1);
+            LocalDateTime endDateTime = startDateTime.plusHours(2);
+
+            given(reservationRepository.findByParkingZone_IdAndStartDateTimeAndEndDateTime(
+                    parkingZoneId, startDateTime, endDateTime))
+                    .willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> reservationReader.findReservationByQueueKey(parkingZoneId, startDateTime, endDateTime))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ReservationErrorCode.NOT_FOUND_RESERVATION);
+        }
+    }
+
+    @Nested
+    class FindByIdTest {
+
+        @Test
+        void 정상적으로_id로_예약을_조회한다() {
+            // given
+            Long reservationId = 1L;
+            Reservation reservation = mock(Reservation.class);
+
+            given(reservationRepository.findById(reservationId))
+                    .willReturn(Optional.of(reservation));
+
+            // when
+            Reservation result = reservationReader.findById(reservationId);
+
+            // then
+            assertThat(result).isNotNull();
+        }
+
+        @Test
+        void id로_예약이_없으면_NOT_FOUND_RESERVATION_예외가_발생한다() {
+            // given
+            Long reservationId = 1L;
+
+            given(reservationRepository.findById(reservationId))
+                    .willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> reservationReader.findById(reservationId))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ReservationErrorCode.NOT_FOUND_RESERVATION);
+        }
+    }
 }
