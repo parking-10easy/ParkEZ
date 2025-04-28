@@ -29,7 +29,6 @@ import com.parkez.reservation.exception.ReservationErrorCode;
 import com.parkez.review.service.ReviewReader;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.service.UserReader;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
