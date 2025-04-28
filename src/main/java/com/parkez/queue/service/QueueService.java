@@ -34,7 +34,6 @@ public class QueueService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final QueueRepository queueRepository;
     private final ReservationReader reservationReader;
-    private final UserReader userReader;
     private final ParkingZoneReader parkingZoneReader;
 
     private static final String QUEUE_KEY_PREFIX = "reservation:queue:";
@@ -174,7 +173,7 @@ public class QueueService {
         OptionalInt myPositionOpt = findMyPositionInQueue(waitingList, authUser);
 
         int myPosition = myPositionOpt.orElseThrow(() -> new ParkingEasyException(QueueErrorCode.NOT_IN_QUEUE)) + 1;
-        ParkingZone zone = parkingZoneReader.getActiveByParkingZoneId(reservation.getParkingZone().getId());
+        ParkingZone zone = parkingZoneReader.getActiveByParkingZoneId(reservation.getParkingZoneId());
 
         return MyWaitingQueueDetailResponse.builder()
                 .parkingZoneId(zone.getId())

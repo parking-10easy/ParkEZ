@@ -292,6 +292,6 @@ public class ReservationService {
 			case ALREADY_JOINED -> throw new ParkingEasyException(QueueErrorCode.ALREADY_IN_QUEUE);
 		}
 
-		throw new ParkingEasyException(QueueErrorCode.UNKNOWN_QUEUE_ERROR); // 만약 무슨 일이 생기면
+		throw new ParkingEasyException(QueueErrorCode.UNKNOWN_QUEUE_ERROR);
 	}
 }
