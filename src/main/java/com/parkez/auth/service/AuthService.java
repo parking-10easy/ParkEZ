@@ -17,6 +17,8 @@ import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
 import com.parkez.user.service.UserWriter;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -98,6 +100,15 @@ public class AuthService {
 
 		return TokenResponse.of(newAccessToken, refreshToken);
 
+	}
+
+	public TokenResponse signinAdmin(String email, String password) {
+
+		User user = userReader.getActiveUser(email, UserRole.ROLE_ADMIN, LoginType.NORMAL);
+
+		validatePassword(password, user.getPassword());
+
+		return tokenManager.issueTokens(user);
 	}
 
 	private void validatePassword(String password, String encodedPassword) {
