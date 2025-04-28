@@ -64,6 +64,10 @@ class ReservationServiceConcurrencyTest {
     @BeforeEach
     void setUp() {
 
+        parkingZoneRepository.deleteAll();
+        parkingLotRepository.deleteAll();
+        userRepository.deleteAll();
+
         user = userRepository.save(User.builder()
                 .email("test@example.com")
                 .password("Qwer123!")

@@ -42,4 +42,8 @@ public class SettlementDetail {
         this.fee = fee;
         this.netAmount = netAmount;
     }
+
+    public void updateSettlement(Settlement settlement) {
+        this.settlement = settlement;
+    }
 }
