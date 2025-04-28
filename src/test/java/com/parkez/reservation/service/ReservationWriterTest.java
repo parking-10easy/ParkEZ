@@ -1,11 +1,14 @@
 package com.parkez.reservation.service;
 
-import com.parkez.parkinglot.domain.entity.ParkingLot;
-import com.parkez.parkingzone.domain.entity.ParkingZone;
-import com.parkez.reservation.domain.entity.Reservation;
-import com.parkez.reservation.domain.enums.ReservationStatus;
-import com.parkez.reservation.domain.repository.ReservationRepository;
-import com.parkez.user.domain.entity.User;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,15 +17,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.verify;
+import com.parkez.parkinglot.domain.entity.ParkingLot;
+import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.reservation.domain.entity.Reservation;
+import com.parkez.reservation.domain.enums.ReservationStatus;
+import com.parkez.reservation.domain.repository.ReservationRepository;
+import com.parkez.user.domain.entity.User;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationWriterTest {
@@ -63,7 +63,10 @@ class ReservationWriterTest {
             String parkingLotName,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime,
-            BigDecimal price
+            BigDecimal price,
+            BigDecimal originalPrice,
+            BigDecimal discountAmount,
+            Long promotionIssueId
     ) {
         Reservation reservation = Reservation.builder()
                 .user(user)
@@ -72,6 +75,9 @@ class ReservationWriterTest {
                 .startDateTime(startDateTime)
                 .endDateTime(endDateTime)
                 .price(price)
+                .originalPrice(originalPrice)
+                .discountAmount(discountAmount)
+                .promotionIssueId(promotionIssueId)
                 .build();
         ReflectionTestUtils.setField(reservation, "id", id);
         return reservation;
@@ -107,14 +113,18 @@ class ReservationWriterTest {
             LocalDateTime endDateTime = startDateTime.plusHours(1);
 
             long hours = ChronoUnit.HOURS.between(startDateTime, endDateTime);
-            BigDecimal price = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+            BigDecimal originalPrice = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+            BigDecimal discountAmount = BigDecimal.ZERO;
+            BigDecimal price = originalPrice.subtract(discountAmount);
+            Long promotionIssueId = null;
 
-            Reservation reservation = createReservation(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price);
+            Reservation reservation = createReservation(reservationId, user, parkingZone, parkingLotName, startDateTime, endDateTime, price,
+                originalPrice, discountAmount, promotionIssueId);
 
             given(reservationRepository.save(any(Reservation.class))).willReturn(reservation);
 
             // when
-            Reservation result = reservationWriter.create(user, parkingZone, startDateTime, endDateTime);
+            Reservation result = reservationWriter.create(user, parkingZone, startDateTime, endDateTime,originalPrice, discountAmount,price,promotionIssueId);
 
             // then
             assertThat(result)

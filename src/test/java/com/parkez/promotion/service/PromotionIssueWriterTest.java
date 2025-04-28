@@ -20,7 +20,6 @@ import com.parkez.promotion.domain.entity.Promotion;
 import com.parkez.promotion.domain.entity.PromotionIssue;
 import com.parkez.promotion.domain.enums.DiscountType;
 import com.parkez.promotion.domain.enums.PromotionIssueStatus;
-import com.parkez.promotion.domain.enums.PromotionStatus;
 import com.parkez.promotion.domain.enums.PromotionType;
 import com.parkez.promotion.domain.repository.CouponRepository;
 import com.parkez.promotion.domain.repository.PromotionIssueRepository;
@@ -33,7 +32,13 @@ import jakarta.persistence.EntityManager;
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({QueryDslConfig.class, PersistenceConfig.class})
-class PromotionWriterTest {
+class PromotionIssueWriterTest {
+
+	@Autowired
+	private PromotionIssueRepository promotionIssueRepository;
+
+	@Autowired
+	private UserRepository userRepository;
 
 	@Autowired
 	private PromotionRepository promotionRepository;
@@ -44,65 +49,61 @@ class PromotionWriterTest {
 	@Autowired
 	private EntityManager entityManager;
 
-	@Autowired
-	private UserRepository userRepository;
-
-	@Autowired
-	private PromotionIssueRepository promotionIssueRepository;
-
-	private PromotionWriter promotionWriter;
+	private PromotionIssueWriter promotionIssueWriter;
 
 	@BeforeEach
 	void setUp() {
-		this.promotionWriter = new PromotionWriter(promotionRepository);
+		promotionIssueWriter = new PromotionIssueWriter(promotionIssueRepository);
 	}
 
 	@Nested
 	class Create {
 
 		@Test
-		public void 프로모션_생성_유효한_값으로_프로모션을_생성하고_저장한다() {
+		public void 프로모션_발급이력을_생성하고_저장할_수_있다() {
 			//given
 			String promotionName = "DAILY 2000";
 			PromotionType promotionType = PromotionType.DAILY;
-			int limitTotal = 1000;
+			int limitTotal = 100;
 			int limitPerUser = 1;
-			LocalDateTime promotionStartAt = LocalDateTime.now().plusDays(1);
-			LocalDateTime promotionEndAt = LocalDateTime.now().plusDays(2);
-
 			int validDaysAfterIssue = 3;
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
+			LocalDateTime promotionStartAt = now.minusDays(1);
+			LocalDateTime promotionEndAt = now.plusDays(1);
+
 			String couponName = "신규가입 2000원 할인 쿠폰";
 			DiscountType discountType = DiscountType.PERCENT;
 			int discountValue = 10;
 			String description = "신규 유저 전용, 1회만 사용 가능";
 
+			User user = User.createUser("user@example.com", "password", "nickname", "010-1234-5678", "default.jpg");
+			User savedUser = userRepository.save(user);
 			Coupon coupon = createCoupon(couponName, discountType, discountValue, description);
 			Coupon savedCoupon = couponRepository.save(coupon);
+			Promotion promotion = createPromotion(promotionName, promotionType, savedCoupon, limitTotal,
+				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
+			Promotion savedPromotion = promotionRepository.save(promotion);
 
 			//when
-			Promotion savedPromotion = promotionWriter.create(savedCoupon, promotionName, promotionType, limitTotal,
-				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
+			PromotionIssue promotionIssue = promotionIssueWriter.create(savedPromotion, savedUser);
 
 			//then
-			Assertions.assertThat(savedPromotion)
-				.extracting(
-					"name", "promotionType", "coupon.id", "coupon.name", "limitTotal", "limitPerUser",
-					"promotionStartAt", "promotionEndAt", "validDaysAfterIssue"
-				)
-				.containsExactly(
-					promotionName, promotionType, coupon.getId(), coupon.getName(),
-					limitTotal, limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue
-				);
+			Assertions.assertThat(promotionIssue)
+				.extracting("promotion.id", "user.id", "expiresAt")
+				.containsExactly(savedPromotion.getId(), savedUser.getId(), promotionIssue.getIssuedAt().plusDays(3));
 
 		}
 	}
 
 	@Nested
-	class ExpireEndedPromotions {
+	class BulkUpdateStatusByCurrentTime {
 
 		@Test
-		public void 종료된_프로모션의_상태를_ENDED_로_변경할_수있다() {
+		public void 만료시간이_지난_ISSUED_쿠폰은_EXPIRED_상태로_변경된다() {
 			//given
+			User user = createUser();
+			User savedUser = userRepository.save(user);
+
 			String couponName = "신규가입 2000원 할인 쿠폰";
 			DiscountType discountType = DiscountType.PERCENT;
 			int discountValue = 10;
@@ -124,83 +125,115 @@ class PromotionWriterTest {
 				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
 			Promotion savedPromotion = promotionRepository.save(promotion);
 
+			LocalDateTime issuedAt = now;
+			LocalDateTime expiresAt = issuedAt.plusDays(savedPromotion.getValidDaysAfterIssue());
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, expiresAt);
+			promotionIssueRepository.save(promotionIssue);
+
 			LocalDateTime currentDateTime = LocalDateTime.of(2025, 4, 10, 10, 0);
-			PromotionStatus currentStatus = PromotionStatus.ACTIVE;
-			PromotionStatus targetStatus = PromotionStatus.ENDED;
+			PromotionIssueStatus currentStatus = PromotionIssueStatus.ISSUED;
+			PromotionIssueStatus targetStatus = PromotionIssueStatus.EXPIRED;
 
 			//when
-			int endedPromotionCount = promotionWriter.expireEndedPromotions(currentDateTime, currentStatus, targetStatus);
+			int expiredPromotionIssuesCount = promotionIssueWriter.expirePromotionIssues(currentDateTime, currentStatus, targetStatus);
 
 			entityManager.flush();
 			entityManager.clear();
 
 			//then
-			assertThat(endedPromotionCount).isEqualTo(1);
-			Promotion target = promotionRepository.findById(savedPromotion.getId()).get();
-			Assertions.assertThat(target.getPromotionStatus()).isEqualTo(PromotionStatus.ENDED);
+			assertThat(expiredPromotionIssuesCount).isEqualTo(1);
+			PromotionIssue target = promotionIssueRepository.findById(promotionIssue.getId()).get();
+			Assertions.assertThat(target.getStatus()).isEqualTo(PromotionIssueStatus.EXPIRED);
 
 		}
 	}
 
 	@Nested
-	class ExpireSoldOutPromotionStatus {
+	class Use {
 
 		@Test
-		public void 쿠폰_매진된_프로모션의_상태를_ENDED_로_변경할_수있다() {
+		public void 프로모션_쿠폰을_사용하면_used_상태로_변경된다() {
 			//given
-			User user = createUser();
-			User savedUser = userRepository.save(user);
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 100;
+			int limitPerUser = 1;
+			int validDaysAfterIssue = 3;
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
+			LocalDateTime promotionStartAt = now.minusDays(1);
+			LocalDateTime promotionEndAt = now.plusDays(1);
 
 			String couponName = "신규가입 2000원 할인 쿠폰";
 			DiscountType discountType = DiscountType.PERCENT;
 			int discountValue = 10;
 			String description = "신규 유저 전용, 1회만 사용 가능";
 
+			User user = User.createUser("user@example.com", "password", "nickname", "010-1234-5678", "default.jpg");
+			User savedUser = userRepository.save(user);
 			Coupon coupon = createCoupon(couponName, discountType, discountValue, description);
 			Coupon savedCoupon = couponRepository.save(coupon);
-
-			String promotionName = "DAILY 2000";
-			PromotionType promotionType = PromotionType.DAILY;
-			int limitTotal = 1;
-			int limitPerUser = 1;
-			int validDaysAfterIssue = 3;
-			LocalDateTime now = LocalDateTime.now();
-			LocalDateTime promotionStartAt = now.minusDays(1);
-			LocalDateTime promotionEndAt = now.plusDays(1);
-
 			Promotion promotion = createPromotion(promotionName, promotionType, savedCoupon, limitTotal,
 				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
 			Promotion savedPromotion = promotionRepository.save(promotion);
-
 			LocalDateTime issuedAt = now;
-
-			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion, savedUser, issuedAt, promotion);
-			promotionIssueRepository.save(promotionIssue);
-
-			PromotionStatus currentStatus = PromotionStatus.ACTIVE;
-			PromotionStatus targetStatus = PromotionStatus.ENDED;
+			LocalDateTime expiresAt = issuedAt.plusDays(savedPromotion.getValidDaysAfterIssue());
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion,savedUser,issuedAt,expiresAt);
 
 			//when
-			int endedPromotionCount = promotionWriter.expireSoldOutPromotions(currentStatus, targetStatus);
-
-			entityManager.flush();
-			entityManager.clear();
+			promotionIssueWriter.use(promotionIssue, now);
 
 			//then
-			assertThat(endedPromotionCount).isEqualTo(1);
-			Promotion target = promotionRepository.findById(savedPromotion.getId()).get();
-			Assertions.assertThat(target.getPromotionStatus()).isEqualTo(PromotionStatus.ENDED);
+			assertThat(promotionIssue).extracting(
+				"usedAt", "status"
+			).containsExactly(
+				now, PromotionIssueStatus.USED
+			);
 
 		}
 	}
 
-	private Coupon createCoupon(String name, DiscountType discountType, int discountValue, String description) {
-		return Coupon.builder()
-			.name(name)
-			.discountType(discountType)
-			.discountValue(discountValue)
-			.description(description)
-			.build();
+	@Nested
+	class CancelUsage {
+
+		@Test
+		public void 프로모션_쿠폰_사용_취소하면_ISSUED_상태로_변경되고_usedAt이_null된다() {
+			//given
+			String promotionName = "DAILY 2000";
+			PromotionType promotionType = PromotionType.DAILY;
+			int limitTotal = 100;
+			int limitPerUser = 1;
+			int validDaysAfterIssue = 3;
+			LocalDateTime now = LocalDateTime.of(2025, 4, 23, 10, 0);
+			LocalDateTime promotionStartAt = now.minusDays(1);
+			LocalDateTime promotionEndAt = now.plusDays(1);
+
+			String couponName = "신규가입 2000원 할인 쿠폰";
+			DiscountType discountType = DiscountType.PERCENT;
+			int discountValue = 10;
+			String description = "신규 유저 전용, 1회만 사용 가능";
+
+			User user = User.createUser("user@example.com", "password", "nickname", "010-1234-5678", "default.jpg");
+			User savedUser = userRepository.save(user);
+			Coupon coupon = createCoupon(couponName, discountType, discountValue, description);
+			Coupon savedCoupon = couponRepository.save(coupon);
+			Promotion promotion = createPromotion(promotionName, promotionType, savedCoupon, limitTotal,
+				limitPerUser, promotionStartAt, promotionEndAt, validDaysAfterIssue);
+			Promotion savedPromotion = promotionRepository.save(promotion);
+			LocalDateTime issuedAt = now;
+			LocalDateTime expiresAt = issuedAt.plusDays(savedPromotion.getValidDaysAfterIssue());
+			PromotionIssue promotionIssue = createPromotionIssue(savedPromotion,savedUser,issuedAt,expiresAt);
+
+			//when
+			promotionIssueWriter.cancelUsage(promotionIssue);
+
+			//then
+			assertThat(promotionIssue).extracting(
+				"usedAt", "status"
+			).containsExactly(
+				null, PromotionIssueStatus.ISSUED
+			);
+
+		}
 	}
 
 	private Promotion createPromotion(String promotionName, PromotionType promotionType, Coupon coupon, int limitTotal,
@@ -217,18 +250,26 @@ class PromotionWriterTest {
 			.build();
 	}
 
+	private Coupon createCoupon(String name, DiscountType discountType, int discountValue, String description) {
+		return Coupon.builder()
+			.name(name)
+			.discountType(discountType)
+			.discountValue(discountValue)
+			.description(description)
+			.build();
+	}
+
 	private User createUser() {
 		return User.createUser("user@example.com", "password", "nickname", "010-1234-5678", "default.jpg");
 	}
 
 	private PromotionIssue createPromotionIssue(Promotion savedPromotion, User savedUser, LocalDateTime issuedAt,
-		Promotion promotion) {
+		LocalDateTime expiresAt) {
 		return PromotionIssue.builder()
 			.promotion(savedPromotion)
 			.user(savedUser)
 			.issuedAt(issuedAt)
-			.expiresAt(issuedAt.plusDays(promotion.getValidDaysAfterIssue()))
+			.expiresAt(expiresAt)
 			.build();
 	}
-
 }

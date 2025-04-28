@@ -1,5 +1,7 @@
 package com.parkez.reservation.web;
 
+import java.time.LocalDateTime;
+
 import com.parkez.common.aop.CheckMemberStatus;
 import com.parkez.common.dto.request.PageRequest;
 import com.parkez.common.dto.response.Response;
@@ -36,7 +38,8 @@ public class ReservationController {
             @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @Valid @RequestBody ReservationRequest request
     ) {
-        return Response.of(reservationService.createReservation(authUser, request));
+        LocalDateTime now = LocalDateTime.now();
+        return Response.of(reservationService.createReservation(authUser, request, now));
     }
 
     // 나의 예약 내역 조회
@@ -90,7 +93,8 @@ public class ReservationController {
             @PathVariable Long reservationId,
             @Valid @RequestBody ReservationCancelRequest request
             ) {
-        reservationService.cancelReservation(authUser, reservationId, request);
+        LocalDateTime now = LocalDateTime.now();
+        reservationService.cancelReservation(authUser, reservationId, request, now);
         return Response.empty();
     }
 }

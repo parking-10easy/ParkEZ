@@ -1,5 +1,8 @@
 package com.parkez.promotion.domain.entity;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import com.parkez.common.entity.BaseEntity;
 import com.parkez.promotion.domain.enums.DiscountType;
 
@@ -47,4 +50,13 @@ public class Coupon extends BaseEntity {
 		this.discountValue = discountValue;
 		this.description = description;
 	}
+
+	public BigDecimal calculateDiscount(BigDecimal originalPrice) {
+		return switch (this.discountType) {
+			case FIXED -> originalPrice.min(BigDecimal.valueOf(discountValue));
+			case PERCENT -> originalPrice.multiply(BigDecimal.valueOf(discountValue))
+				.divide(BigDecimal.valueOf(100),RoundingMode.FLOOR);
+		};
+	}
+
 }
