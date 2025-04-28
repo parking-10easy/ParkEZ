@@ -24,8 +24,8 @@ public class SettlementScheduler {
     private static final String TARGET_MONTH = "targetMonth";
 
     // 매월 10일 새벽 1시에 실행
-//    @Scheduled(cron = "0 0 1 10 * ?")
-    @Scheduled(cron = "0 */1 * * * ?")
+    @Scheduled(cron = "0 0 1 10 * ?")
+//    @Scheduled(cron = "0 */1 * * * ?")
     @SchedulerLock(name = "settlementScheduler_batchProcess", lockAtLeastFor = "55s", lockAtMostFor = "10m")
     public void confirmMonthlySettlements() throws Exception {
 
