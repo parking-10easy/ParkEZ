@@ -42,10 +42,10 @@ public class PromotionReader {
 
 	}
 
-	public Promotion getActiveByIdWithCoupon(Long promotionId) {
+	public Promotion getActivePromotionWithCouponForUpdate(Long promotionId) {
 		LocalDateTime now = LocalDateTime.now();
 		PromotionStatus active = PromotionStatus.ACTIVE;
-		return promotionRepository.findActivePromotion(promotionId, now, active).orElseThrow(
+		return promotionRepository.findActivePromotionWithPessimisticLock(promotionId, now, active).orElseThrow(
 			()-> new ParkingEasyException(PromotionErrorCode.PROMOTION_NOT_FOUND)
 		);
 	}

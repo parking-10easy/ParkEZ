@@ -24,4 +24,7 @@ public class ReservationRequest {
     @Schema(description = "종료 날짜 및 시간", example = "2025.04.07 10:00")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd HH:mm")
     private LocalDateTime endDateTime;
+
+    @Schema(description = "발급된 쿠폰 ID (선택 값, 없으면 할인 미적용)", example = "1")
+    private Long promotionIssueId;
 }

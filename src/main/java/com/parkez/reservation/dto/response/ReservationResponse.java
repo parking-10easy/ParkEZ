@@ -42,8 +42,14 @@ public class ReservationResponse {
     @Schema(description = "예약 사용 완료 날짜 및 시간", example = "2025.04.07 10:00")
     private final LocalDateTime useCompletionTime;
 
-    @Schema(description = "예약 총 가격", example = "3000.00")
+    @Schema(description = "결제 금액", example = "2000.00")
     private final BigDecimal price;
+
+    @Schema(description = "할인 금액", example = "1000.00")
+    private final BigDecimal discountAmount;
+
+    @Schema(description = "예약 금액", example = "3000.00")
+    private final BigDecimal originalPrice;
 
     @Schema(description = "예약 상태", example = "COMPLETED")
     private final ReservationStatus status;
@@ -62,6 +68,8 @@ public class ReservationResponse {
                 reservation.getEndDateTime(),
                 reservation.getUseCompletionTime(),
                 reservation.getPrice(),
+                reservation.getDiscountAmount(),
+                reservation.getOriginalPrice(),
                 reservation.getStatus(),
                 reservation.getCreatedAt()
         );
@@ -78,6 +86,8 @@ public class ReservationResponse {
                 reservation.getEndDateTime(),
                 reservation.getUseCompletionTime(),
                 reservation.getPrice(),
+                reservation.getDiscountAmount(),
+                reservation.getOriginalPrice(),
                 reservation.getStatus(),
                 reservation.getCreatedAt()
         );

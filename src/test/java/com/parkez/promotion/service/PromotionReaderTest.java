@@ -176,12 +176,12 @@ class PromotionReaderTest {
 			//given
 			Long promotionId = -1L;
 
-			given(promotionRepository.findActivePromotion(anyLong(),
+			given(promotionRepository.findActivePromotionWithPessimisticLock(anyLong(),
 				any(LocalDateTime.class), any(PromotionStatus.class))).willReturn(
 				Optional.empty());
 
 			//when & then
-			Assertions.assertThatThrownBy(()-> promotionReader.getActiveByIdWithCoupon(promotionId))
+			Assertions.assertThatThrownBy(()-> promotionReader.getActivePromotionWithCouponForUpdate(promotionId))
 				.isInstanceOf(ParkingEasyException.class)
 				.hasMessage(PROMOTION_NOT_FOUND.getDefaultMessage());
 
@@ -210,11 +210,11 @@ class PromotionReaderTest {
 
 			Coupon coupon = createCoupon(couponId,couponName,discountType,discountValue,description);
 			Promotion promotion = createPromotion(promotionId,promotionName,promotionType,coupon,limitTotal,limitPerUser,promotionStartAt,promotionEndAt,validDaysAfterIssue,PromotionStatus.ACTIVE);
-			given(promotionRepository.findActivePromotion(anyLong(), any(LocalDateTime.class), any(PromotionStatus.class))).willReturn(
+			given(promotionRepository.findActivePromotionWithPessimisticLock(anyLong(), any(LocalDateTime.class), any(PromotionStatus.class))).willReturn(
 				Optional.of(promotion));
 
 			//when
-			Promotion result = promotionReader.getActiveByIdWithCoupon(promotionId);
+			Promotion result = promotionReader.getActivePromotionWithCouponForUpdate(promotionId);
 
 			//then
 			Assertions.assertThat(result)
