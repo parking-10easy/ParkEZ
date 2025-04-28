@@ -1,131 +1,73 @@
 package com.parkez.parkinglot.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parkez.parkinglot.client.kakaomap.geocode.SimpleKakaoGeocodeClient;
 import com.parkez.parkinglot.client.publicData.ParkingLotData;
-import com.parkez.parkinglot.client.publicData.ParkingLotDataResponse;
 import com.parkez.parkinglot.domain.entity.ParkingLot;
 import com.parkez.parkinglot.domain.entity.ParkingLotImage;
 import com.parkez.parkinglot.domain.enums.ChargeType;
 import com.parkez.parkinglot.domain.enums.SourceType;
+import com.parkez.parkinglot.domain.repository.PageStateRepository;
 import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.JdbcUserReader;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.http.client.utils.URIBuilder;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.sql.*;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
-public class ParkingLotPublicDataService {
+public class PublicDataWriter {
 
-
-    private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
-
-    private final String parkingLotPublicDataUrl;
-    private final String serviceKey;
-    private final String defaultParkingLotImageUrl;
-    private final String adminEmail;
     private final String jdbcUrl;
     private final String dbUser;
     private final String dbPassword;
-    private final SimpleKakaoGeocodeClient kakaoGeocodeClient;
-
     private final JdbcUserReader userReader;
+    private final SimpleKakaoGeocodeClient kakaoGeocodeClient;
+    private final PageStateRepository pageStateRepo;
+    private final String adminEmail;
+    private final String defaultParkingLotImageUrl;
 
     private static final String description = "공공데이터로 등록한 주차장입니다.";
-    private int currentPage = 1;
-    private final int perPage = 2;
 
-    public ParkingLotPublicDataService(
-            String dataUrl,
-            String serviceKey,
-            String defaultImg,
-            String adminEmail,
-            String jdbcUrl,
-            String dbUser,
-            String dbPassword,
-            SimpleKakaoGeocodeClient kakaoClient,
-            JdbcUserReader userReader
+    public PublicDataWriter(String jdbcUrl, String dbUser, String dbPassword,
+                            JdbcUserReader userReader, SimpleKakaoGeocodeClient kakaoGeocodeClient,
+                            PageStateRepository pageStateRepo, String adminEmail,
+                            String defaultParkingLotImageUrl
     ) {
-        this.parkingLotPublicDataUrl = dataUrl;
-        this.serviceKey = serviceKey;
-        this.defaultParkingLotImageUrl = defaultImg;
-        this.adminEmail = adminEmail;
         this.jdbcUrl = jdbcUrl;
         this.dbUser = dbUser;
         this.dbPassword = dbPassword;
-        this.httpClient = HttpClient.newHttpClient();
-        this.objectMapper = new ObjectMapper();
-        this.kakaoGeocodeClient = kakaoClient;
         this.userReader = userReader;
+        this.kakaoGeocodeClient = kakaoGeocodeClient;
+        this.pageStateRepo = pageStateRepo;
+        this.adminEmail = adminEmail;
+        this.defaultParkingLotImageUrl = defaultParkingLotImageUrl;
+
     }
 
-    public void fetchAndSavePublicData() throws IOException, InterruptedException, URISyntaxException {
-        try {
-            URI uri = new URIBuilder(parkingLotPublicDataUrl)
-                    .addParameter("page", String.valueOf(currentPage))
-                    .addParameter("perPage", String.valueOf(perPage))
-                    .addParameter("serviceKey", serviceKey)
-                    .build();
+    public void savePublicData(List<ParkingLotData> dataList) {
+        try (Connection connection = DriverManager.getConnection(jdbcUrl, dbUser, dbPassword)) {
+            connection.setAutoCommit(false);
 
-            // HTTP 호출
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(uri)
-                    .GET()
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            // json -> dto로 변환
-            ParkingLotDataResponse dataResponse = objectMapper.readValue(
-                    response.body(),
-                    ParkingLotDataResponse.class
-            );
-
-            // 페이지 초기화
-            List<ParkingLotData> dataList = dataResponse.getData();
-            if (dataList == null || dataList.isEmpty()) {
-                currentPage = 1;
-                return;
-            }
+            // 현재 페이지 가져오기
+            int page = pageStateRepo.readPage(connection);
 
             // dto -> entity 변환
             List<ParkingLot> parkingLots = dataList.stream()
                     .map(this::convertToParkingLot)
                     .toList();
 
-            // db에 저장
-            try (Connection connection = DriverManager.getConnection(jdbcUrl, dbUser, dbPassword)) {
-                connection.setAutoCommit(false);
-                try {
-                    bulkInsertParkingLots(connection, parkingLots);
-                    bulkInsertImages(connection, parkingLots);
-                    connection.commit();
-                    log.info("DB 저장 완료: {}건", parkingLots.size());
-                } catch (SQLException e) {
-                    connection.rollback();
-                    log.warn("DB 저장 중 오류, 롤백 처리함", e);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("공공데이터 fetch & save 실패", e);
-            }
+            // 가져온 데이터 저장
+            bulkInsertParkingLots(connection, parkingLots);
+            bulkInsertImages(connection, parkingLots);
 
-            // 페이지 인덱스 갱신
-            currentPage = (dataList.size() < perPage) ? 1 : currentPage + 1;
-
-        } catch (Exception e) {
-            throw e;
+            // 페이지 업데이트
+            int nextPage = dataList.isEmpty() ? 1 : page + 1;
+            pageStateRepo.updatePage(connection, nextPage);
+            connection.commit();
+        } catch (SQLException e) {
+            throw new RuntimeException("DB 저장 실패", e);
         }
     }
 
