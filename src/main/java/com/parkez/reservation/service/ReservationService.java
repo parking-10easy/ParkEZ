@@ -62,81 +62,77 @@ public class ReservationService {
 	private static final long EXPIRATION_TIME = 10L;
 
 	public ReservationResponse createReservation(AuthUser authUser, ReservationRequest request, LocalDateTime now) {
+		try {
+			return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> {
 
-		return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> {
+				User user = userReader.getActiveUserById(authUser.getId());
+				ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
 
-			User user = userReader.getActiveUserById(authUser.getId());
-			ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
-
-			// 예약 날짜 및 시간 입력 오류 예외
-			if (!validateRequestTime(request)) {
-				throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
-			}
-
-			// parkingZone 의 상태가 AVAILABLE 일 경우에만 예약 가능
-			if (!parkingZone.getStatus().equals(ParkingZoneStatus.AVAILABLE)) {
-				throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_UNAVAILABLE_PARKING_ZONE);
-			}
-
-			// parkingLot 의 영업 시간 내에만 예약 가능
-			if (!parkingZone.isOpened(request.getStartDateTime(), request.getEndDateTime())) {
-				throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
-			}
-
-            // 이미 해당 시간에 예약이 존재할 경우 -> 대기열에 추가
-            List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
-            boolean existed = reservationReader.existsReservationByConditions(parkingZone, request.getStartDateTime(), request.getEndDateTime(), statusList);
-
-            if (existed) {
-                JoinQueueResult result = queueService.joinWaitingQueue(user.getId(), request);
-
-                switch (result) {
-                    case JOINED -> throw new ParkingEasyException(QueueErrorCode.JOINED_WAITING_QUEUE); // 대기열 저장 성공
-                    case ALREADY_JOINED -> throw new ParkingEasyException(QueueErrorCode.ALREADY_IN_QUEUE); // 이미 사용자가 대기열에 존재
-                }
-
-            }
-
-			long hours = calculateUsedHour(request.getStartDateTime(), request.getEndDateTime());
-
-			BigDecimal originalPrice = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
-			BigDecimal discountAmount = BigDecimal.ZERO;
-
-			Long promotionIssueId = null;
-			if (request.getPromotionIssueId() != null) {
-
-				PromotionIssue promotionIssue = promotionIssueReader.getWithPromotionAndCouponById(
-					request.getPromotionIssueId());
-
-				if (!promotionIssue.isOwnedBy(authUser.getId())) {
-					throw new ParkingEasyException(PromotionIssueErrorCode.NOT_YOUR_COUPON);
+				if (!validateRequestTime(request)) {
+					throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
 				}
 
-				promotionIssueId = promotionIssue.getId();
+				if (!parkingZone.getStatus().equals(ParkingZoneStatus.AVAILABLE)) {
+					throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_UNAVAILABLE_PARKING_ZONE);
+				}
 
-				promotionIssueValidator.validateCanBeUsed(promotionIssue, now);
-				Coupon coupon = promotionIssue.getCoupon();
-				discountAmount = coupon.calculateDiscount(originalPrice);
+				if (!parkingZone.isOpened(request.getStartDateTime(), request.getEndDateTime())) {
+					throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
+				}
 
-				promotionIssueWriter.use(promotionIssue, now);
+				List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
+				boolean existed = reservationReader.existsReservationByConditions(parkingZone, request.getStartDateTime(), request.getEndDateTime(), statusList);
+
+				if (existed) {
+					handleJoinQueue(user, request);
+				}
+
+				long hours = calculateUsedHour(request.getStartDateTime(), request.getEndDateTime());
+
+				BigDecimal originalPrice = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+				BigDecimal discountAmount = BigDecimal.ZERO;
+
+				Long promotionIssueId = null;
+				if (request.getPromotionIssueId() != null) {
+					PromotionIssue promotionIssue = promotionIssueReader.getWithPromotionAndCouponById(request.getPromotionIssueId());
+
+					if (!promotionIssue.isOwnedBy(authUser.getId())) {
+						throw new ParkingEasyException(PromotionIssueErrorCode.NOT_YOUR_COUPON);
+					}
+
+					promotionIssueId = promotionIssue.getId();
+					promotionIssueValidator.validateCanBeUsed(promotionIssue, now);
+					Coupon coupon = promotionIssue.getCoupon();
+					discountAmount = coupon.calculateDiscount(originalPrice);
+
+					promotionIssueWriter.use(promotionIssue, now);
+				}
+
+				BigDecimal finalPrice = originalPrice.subtract(discountAmount);
+
+				Reservation reservation = reservationWriter.create(
+						user,
+						parkingZone,
+						request.getStartDateTime(),
+						request.getEndDateTime(),
+						originalPrice,
+						discountAmount,
+						finalPrice,
+						promotionIssueId
+				);
+
+				return ReservationResponse.from(reservation);
+			});
+
+		} catch (ParkingEasyException e) {
+			if (e.getErrorCode() == ReservationErrorCode.RESERVATION_LOCK_FAILED) {
+				// 락 못 잡았으면 대기열에 넣기
+				return handleQueueOnLockFail(authUser, request);
 			}
-
-			BigDecimal finalPrice = originalPrice.subtract(discountAmount);
-
-			Reservation reservation = reservationWriter.create(
-				user,
-				parkingZone,
-				request.getStartDateTime(),
-				request.getEndDateTime(),
-				originalPrice,
-				discountAmount,
-				finalPrice,
-				promotionIssueId
-			);
-
-			return ReservationResponse.from(reservation);
-		});
+			throw e;
+		}
 	}
+
 
 	public Page<ReservationResponse> getMyReservations(AuthUser authUser, int page, int size) {
 
@@ -277,4 +273,25 @@ public class ReservationService {
         );
 
     }
+
+	private void handleJoinQueue(User user, ReservationRequest request) {
+		JoinQueueResult result = queueService.joinWaitingQueue(user.getId(), request);
+		switch (result) {
+			case JOINED -> throw new ParkingEasyException(QueueErrorCode.JOINED_WAITING_QUEUE);
+			case ALREADY_JOINED -> throw new ParkingEasyException(QueueErrorCode.ALREADY_IN_QUEUE);
+		}
+	}
+
+	private ReservationResponse handleQueueOnLockFail(AuthUser authUser, ReservationRequest request) {
+		User user = userReader.getActiveUserById(authUser.getId());
+
+		JoinQueueResult result = queueService.joinWaitingQueue(user.getId(), request);
+
+		switch (result) {
+			case JOINED -> throw new ParkingEasyException(QueueErrorCode.JOINED_WAITING_QUEUE);
+			case ALREADY_JOINED -> throw new ParkingEasyException(QueueErrorCode.ALREADY_IN_QUEUE);
+		}
+
+		throw new ParkingEasyException(QueueErrorCode.UNKNOWN_QUEUE_ERROR); // 만약 무슨 일이 생기면
+	}
 }

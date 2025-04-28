@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Component
@@ -51,4 +52,17 @@ public class QueueRepository {
                 });
 
     }
+
+    public Set<String> findAllQueueKeys() {
+        return redisTemplate.keys("reservation:queue:*");
+    }
+
+    public List<Object> getWaitingList(String key) {
+        return redisTemplate.opsForList().range(key, 0, -1);
+    }
+
+    public void removeFromQueue(String key, Object target) {
+        redisTemplate.opsForList().remove(key, 1, target);
+    }
+
 }

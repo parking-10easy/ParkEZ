@@ -84,4 +84,13 @@ public class ReservationReader {
         );
 
     }
+
+    public Reservation findReservationByQueueKey(Long parkingZoneId, LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        return reservationRepository.findByParkingZone_IdAndStartDateTimeAndEndDateTime(parkingZoneId, startDateTime, endDateTime)
+                .orElseThrow(() -> new ParkingEasyException(ReservationErrorCode.NOT_FOUND_RESERVATION));
+    }
+
+    public Reservation findById(Long reservationId) {
+        return reservationRepository.findById(reservationId).orElseThrow(()-> new ParkingEasyException(ReservationErrorCode.NOT_FOUND_RESERVATION));
+    }
 }
