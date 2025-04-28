@@ -1,6 +1,7 @@
 package com.parkez.promotion.domain.entity;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import com.parkez.common.entity.BaseEntity;
 import com.parkez.promotion.domain.enums.PromotionIssueStatus;
@@ -52,13 +53,38 @@ public class PromotionIssue extends BaseEntity {
 	private PromotionIssueStatus status;
 
 	@Builder
-	private PromotionIssue(Promotion promotion, User user, LocalDateTime issuedAt, LocalDateTime expiresAt,
-		LocalDateTime usedAt) {
+	private PromotionIssue(Promotion promotion, User user, LocalDateTime issuedAt, LocalDateTime expiresAt) {
 		this.promotion = promotion;
 		this.user = user;
 		this.issuedAt = issuedAt;
 		this.expiresAt = expiresAt;
-		this.usedAt = usedAt;
 		this.status = PromotionIssueStatus.ISSUED;
 	}
+
+	public boolean isUsed() {
+		return !Objects.isNull(this.usedAt);
+	}
+
+	public boolean isExpired(LocalDateTime now) {
+		return this.expiresAt.isBefore(now);
+	}
+
+	public Coupon getCoupon() {
+		return this.promotion.getCoupon();
+	}
+
+	public void use(LocalDateTime now) {
+		this.usedAt = now;
+		this.status = PromotionIssueStatus.USED;
+	}
+
+	public void cancelUsage() {
+		this.usedAt = null;
+		this.status = PromotionIssueStatus.ISSUED;
+	}
+
+	public boolean isOwnedBy(Long userId) {
+		return Objects.equals(this.user.getId(), userId);
+	}
+
 }

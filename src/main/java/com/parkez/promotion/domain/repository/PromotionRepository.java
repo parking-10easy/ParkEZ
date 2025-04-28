@@ -6,12 +6,17 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.parkez.promotion.domain.entity.Promotion;
 import com.parkez.promotion.domain.enums.PromotionStatus;
 import com.parkez.promotion.domain.repository.projection.ActivePromotionProjection;
-import com.parkez.promotion.domain.repository.projection.PromotionDetailProjection;
+import com.parkez.promotion.domain.repository.projection.PromotionDetail;
+
+import jakarta.persistence.LockModeType;
 
 public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 
@@ -43,7 +48,7 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 					and p.promotionEndAt >= :now
 			"""
 	)
-	Page<ActivePromotionProjection> findActivePromotions(LocalDateTime now, PromotionStatus promotionStatus,
+	Page<ActivePromotionProjection> findActivePromotions(@Param("now") LocalDateTime now,@Param("promotionStatus") PromotionStatus promotionStatus,
 		Pageable pageable);
 
 	@Query(value = """
@@ -59,9 +64,8 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 		  	c.name as couponName,
 		  	c.discount_value,
 		  	case
-			  	when count(
-						   	case when pi.user_id = :userId then 1 end) < p.limit_per_user then 'true'
-				else 'false' end                                   							as isAvailableToIssue,
+			  	when count(case when pi.user_id = :userId then 1 end) < p.limit_per_user
+				then 'true'	else 'false' end                                   				as isAvailableToIssue,
 		  	p.limit_total - count(pi.id)                           							as remainingQuantity,
 			p.limit_per_user - count(case when pi.user_id = :userId then 1 end) 			as availableIssueCount,
 			CAST(DATE_ADD(:issuedAt, INTERVAL p.valid_days_after_issue DAY) as DATETIME)	as expiresAtIfIssuedNow
@@ -85,5 +89,41 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 			c.name,
 			c.discount_value
 		""", nativeQuery = true)
-	Optional<PromotionDetailProjection> findActivePromotionDetailById(Long userId, Long promotionId, LocalDateTime issuedAt, String activeStatus);
+	Optional<PromotionDetail> findActivePromotionDetail(@Param("userId") Long userId,@Param("promotionId") Long promotionId,@Param("issuedAt") LocalDateTime issuedAt, @Param("activeStatus") String activeStatus);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query(value = """
+		select p
+		from Promotion p join fetch p.coupon
+		where
+			p.id = :promotionId
+			and p.promotionStatus = :activeStatus
+			and p.promotionStartAt <= :now
+			and p.promotionEndAt >= :now
+	""")
+	Optional<Promotion> findActivePromotionWithPessimisticLock(@Param("promotionId") Long promotionId, @Param("now") LocalDateTime now, @Param("activeStatus") PromotionStatus activeStatus);
+
+	@Modifying
+	@Query("""
+		update Promotion p
+		set p.promotionStatus = :targetStatus
+		where
+			p.promotionEndAt <= :currentDateTime
+			and p.promotionStatus = :currentStatus
+	""")
+	int bulkUpdatePromotionStatusToEndedByCurrentDateTime(@Param("currentDateTime") LocalDateTime currentDateTime,@Param("currentStatus") PromotionStatus currentStatus,@Param("targetStatus") PromotionStatus targetStatus);
+
+	@Modifying
+	@Query("""
+		update Promotion p
+		set p.promotionStatus = :targetStatus
+		where
+			p.limitTotal <= (
+				select count(pi)
+				from PromotionIssue pi
+				where pi.promotion.id = p.id
+			)
+			and p.promotionStatus = :currentStatus
+	""")
+	int bulkUpdatePromotionStatusToEndedIfSoldOut(@Param("currentStatus") PromotionStatus currentStatus,@Param("targetStatus") PromotionStatus targetStatus);
 }

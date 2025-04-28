@@ -28,6 +28,9 @@ public class ReservationRequest {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd HH:mm")
     private LocalDateTime endDateTime;
 
+    @Schema(description = "발급된 쿠폰 ID (선택 값, 없으면 할인 미적용)", example = "1")
+    private Long promotionIssueId;
+
     @Builder
     public ReservationRequest(Long parkingZoneId, LocalDateTime startDateTime, LocalDateTime endDateTime) {
         this.parkingZoneId = parkingZoneId;

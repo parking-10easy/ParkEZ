@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import com.parkez.promotion.domain.enums.PromotionType;
 
-public interface PromotionDetailProjection {
+public interface PromotionDetail {
 	Long getId();
 
 	String getPromotionName();
