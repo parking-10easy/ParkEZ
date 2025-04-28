@@ -60,7 +60,7 @@ public class PushService {
     }
 
     private String fetchDeviceToken(Long userId) {
-        return fcmDeviceRepository.findFirstByUserId(userId)
+        return fcmDeviceRepository.findFirstByUserIdAndStatusTrue(userId)
                 .map(FcmDevice::getToken)
                 .orElseThrow(() -> new IllegalArgumentException("FCM 토큰이 존재하지 않습니다. userId=" + userId));
     }

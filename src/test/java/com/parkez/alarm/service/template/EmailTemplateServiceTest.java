@@ -1,4 +1,4 @@
-package com.parkez.alarm.service.templete;
+package com.parkez.alarm.service.template;
 
 import org.junit.jupiter.api.Test;
 

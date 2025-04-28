@@ -5,11 +5,9 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.parkez.alarm.domain.entity.Alarm;
 import com.parkez.alarm.domain.entity.FcmDevice;
-import com.parkez.alarm.domain.enums.AlarmChannel;
-import com.parkez.alarm.domain.enums.AlarmTargetType;
-import com.parkez.alarm.domain.enums.NotificationType;
 import com.parkez.alarm.domain.repository.AlarmRepository;
 import com.parkez.alarm.domain.repository.FcmDeviceRepository;
+import com.parkez.alarm.util.AlarmTestFactory;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,25 +37,11 @@ class PushServiceTest {
     @InjectMocks
     private PushService pushService;
 
-    private Alarm createTestAlarm() {
-        return Alarm.builder()
-                .userId(1L)
-                .targetId(100L)
-                .targetType(AlarmTargetType.RESERVATION)
-                .channel(AlarmChannel.FCM)
-                .title("Test Title")
-                .message("Test Message")
-                .deviceToken("test-token")
-                .notificationType(NotificationType.UPCOMING)
-                .sent(false)
-                .build();
-    }
-
     @Nested
     class SendReservationPush{
         @Test
         void 예약_푸시알림_전송_성공() throws Exception {
-            Alarm alarm = createTestAlarm();
+            Alarm alarm = AlarmTestFactory.createPushTestAlarm();
 
             try (MockedStatic<FirebaseMessaging> firebaseMessagingStatic = mockStatic(FirebaseMessaging.class)) {
                 firebaseMessagingStatic.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
@@ -73,7 +57,7 @@ class PushServiceTest {
 
         @Test
         void 예약_푸시알림_전송_실패시_실패사유_저장() throws Exception {
-            Alarm alarm = createTestAlarm();
+            Alarm alarm = AlarmTestFactory.createPushTestAlarm();
 
             try (MockedStatic<FirebaseMessaging> firebaseMessagingStatic = mockStatic(FirebaseMessaging.class)) {
                 firebaseMessagingStatic.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
@@ -98,7 +82,7 @@ class PushServiceTest {
         Long userId = 1L;
         String token = "payment-token";
 
-        when(fcmDeviceRepository.findFirstByUserId(userId))
+        when(fcmDeviceRepository.findFirstByUserIdAndStatusTrue(userId))
                 .thenReturn(Optional.of(FcmDevice.of(userId, token)));
 
         try (MockedStatic<FirebaseMessaging> firebaseMessagingStatic = mockStatic(FirebaseMessaging.class)) {
@@ -117,7 +101,7 @@ class PushServiceTest {
         void 결제_푸시알림_토큰없음_예외발생() {
             Long userId = 2L;
 
-            when(fcmDeviceRepository.findFirstByUserId(userId)).thenReturn(Optional.empty());
+            when(fcmDeviceRepository.findFirstByUserIdAndStatusTrue(userId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() ->
                     pushService.sendPaymentPush(userId, "결제 알림", "결제가 완료되었습니다.")
@@ -130,7 +114,7 @@ class PushServiceTest {
             Long userId = 1L;
             String token = "payment-token";
 
-            when(fcmDeviceRepository.findFirstByUserId(userId))
+            when(fcmDeviceRepository.findFirstByUserIdAndStatusTrue(userId))
                     .thenReturn(Optional.of(FcmDevice.of(userId, token)));
 
             try (MockedStatic<FirebaseMessaging> firebaseMessagingStatic = mockStatic(FirebaseMessaging.class)) {

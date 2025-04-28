@@ -36,7 +36,7 @@ public class AlarmService {
         }
 
         // FCM 알림 생성
-        fcmDeviceRepository.findFirstByUserId(userId).ifPresent(device -> {
+        fcmDeviceRepository.findFirstByUserIdAndStatusTrue(userId).ifPresent(device -> {
             boolean fcmExists = alarmRepository.existsAlarm(reservationId, AlarmTargetType.RESERVATION, notificationType, AlarmChannel.FCM);
             if (!fcmExists) {
                 Alarm fcmAlarm = Alarm.createFcmAlarm(userId, reservationId, AlarmTargetType.RESERVATION, device.getToken(), title, message, notificationType);

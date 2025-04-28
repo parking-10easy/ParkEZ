@@ -6,7 +6,7 @@ import com.parkez.alarm.domain.enums.NotificationType;
 import com.parkez.alarm.dto.ReservationAlarmInfo;
 import com.parkez.alarm.service.email.SesEmailService;
 import com.parkez.alarm.service.email.SmtpEmailService;
-import com.parkez.alarm.service.templete.EmailTemplateService;
+import com.parkez.alarm.service.template.EmailTemplateService;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.service.ReservationReader;
 import lombok.RequiredArgsConstructor;
@@ -51,17 +51,7 @@ public class EmailAlarmProcessor {
                 reservationAlarmInfo.getReservationId(),
                 notificationType == NotificationType.CANCELED ? "취소" : "실패");
 
-        Map<String, String> data = Map.of(
-                "userName", reservationAlarmInfo.getUserName(),
-                "reservationId", reservationAlarmInfo.getReservationId().toString(),
-                "parkingLotName", reservationAlarmInfo.getParkingLotName(),
-                "parkingZoneName", reservationAlarmInfo.getParkingZoneName(),
-                "startTime", reservationAlarmInfo.getStartDateTime().toString(),
-                "endTime", reservationAlarmInfo.getEndDateTime().toString(),
-                "now", LocalDateTime.now().toString(),
-                "message", notificationType == NotificationType.CANCELED ? "결제가 취소되었습니다." : "결제가 실패했습니다.",
-                "additionalGuide", "다른 예약이 필요하시면 ParkEZ를 다시 이용해주세요."
-        );
+        Map<String, String> data = getPaymentData(reservationAlarmInfo, notificationType);
 
         String content = emailTemplateService.generateEmailContent(templateName, data);
 
@@ -93,5 +83,20 @@ public class EmailAlarmProcessor {
         if (alarm.getTargetType() != AlarmTargetType.RESERVATION) {
             throw new IllegalArgumentException("해당 기능은 예약 알림만 지원합니다.");
         }
+    }
+
+    private Map<String, String> getPaymentData(ReservationAlarmInfo reservationAlarmInfo, NotificationType notificationType) {
+        Map<String, String> data = Map.of(
+                "userName", reservationAlarmInfo.getUserName(),
+                "reservationId", reservationAlarmInfo.getReservationId().toString(),
+                "parkingLotName", reservationAlarmInfo.getParkingLotName(),
+                "parkingZoneName", reservationAlarmInfo.getParkingZoneName(),
+                "startTime", reservationAlarmInfo.getStartDateTime().toString(),
+                "endTime", reservationAlarmInfo.getEndDateTime().toString(),
+                "now", LocalDateTime.now().toString(),
+                "message", notificationType == NotificationType.CANCELED ? "결제가 취소되었습니다." : "결제가 실패했습니다.",
+                "additionalGuide", "다른 예약이 필요하시면 ParkEZ를 다시 이용해주세요."
+        );
+        return data;
     }
 }

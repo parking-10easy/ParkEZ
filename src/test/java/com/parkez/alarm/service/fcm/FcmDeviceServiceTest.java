@@ -10,8 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,5 +55,16 @@ class FcmDeviceServiceTest {
         assertNotNull(result);
         assertEquals(userId, result.getUserId());
         verify(deviceRepository, times(1)).save(any());
+    }
+
+    @Test
+    void 토큰이_null_또는_빈값일때_예외발생() {
+        // when & then
+        assertThrows(IllegalArgumentException.class, () -> fcmDeviceService.registerDevice(userId, null));
+        assertThrows(IllegalArgumentException.class, () -> fcmDeviceService.registerDevice(userId, ""));
+        assertThrows(IllegalArgumentException.class, () -> fcmDeviceService.registerDevice(userId, "   "));
+
+        // 저장소 호출 없어야 함
+        verifyNoInteractions(deviceRepository);
     }
 }
