@@ -1,5 +1,6 @@
 package com.parkez.queue.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -10,7 +11,12 @@ import java.time.LocalDateTime;
 public class MyWaitingQueueDetailResponse {
     private Long parkingZoneId;
     private String parkingZoneName;
-    private LocalDateTime startDateTime;
-    private LocalDateTime endDateTime;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime reservationStartDateTime;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime reservationEndDateTime;
+
     private Integer myQueue;
 }

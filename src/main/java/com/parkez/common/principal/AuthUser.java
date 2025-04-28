@@ -39,4 +39,8 @@ public class AuthUser {
 	public boolean isSignupCompleted() {
 		return signupCompleted;
 	}
+
+	public boolean isMine(Long dtoUserId, Long authUserId) {
+		return dtoUserId.equals(authUserId);
+	}
 }

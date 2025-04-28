@@ -85,6 +85,7 @@ public class ReservationService {
 
 				if (existed) {
 					handleJoinQueue(user, request);
+					return null;
 				}
 
 				long hours = calculateUsedHour(request.getStartDateTime(), request.getEndDateTime());
@@ -126,8 +127,9 @@ public class ReservationService {
 
 		} catch (ParkingEasyException e) {
 			if (e.getErrorCode() == ReservationErrorCode.RESERVATION_LOCK_FAILED) {
-				// 락 못 잡았으면 대기열에 넣기
-				return handleQueueOnLockFail(authUser, request);
+				// 락 선점 실패 → 대기열 등록은 완료했으므로 예약 생성 결과 데이터는 null 반환
+				handleQueueOnLockFail(authUser, request);
+				return null;
 			}
 			throw e;
 		}
@@ -276,22 +278,19 @@ public class ReservationService {
 
 	private void handleJoinQueue(User user, ReservationRequest request) {
 		JoinQueueResult result = queueService.joinWaitingQueue(user.getId(), request);
-		switch (result) {
-			case JOINED -> throw new ParkingEasyException(QueueErrorCode.JOINED_WAITING_QUEUE);
-			case ALREADY_JOINED -> throw new ParkingEasyException(QueueErrorCode.ALREADY_IN_QUEUE);
+
+		if (result == JoinQueueResult.ALREADY_JOINED) {
+			throw new ParkingEasyException(QueueErrorCode.ALREADY_IN_QUEUE);
 		}
 	}
 
-	private ReservationResponse handleQueueOnLockFail(AuthUser authUser, ReservationRequest request) {
+	private void handleQueueOnLockFail(AuthUser authUser, ReservationRequest request) {
 		User user = userReader.getActiveUserById(authUser.getId());
 
 		JoinQueueResult result = queueService.joinWaitingQueue(user.getId(), request);
 
-		switch (result) {
-			case JOINED -> throw new ParkingEasyException(QueueErrorCode.JOINED_WAITING_QUEUE);
-			case ALREADY_JOINED -> throw new ParkingEasyException(QueueErrorCode.ALREADY_IN_QUEUE);
+		if (result == JoinQueueResult.ALREADY_JOINED) {
+			throw new ParkingEasyException(QueueErrorCode.ALREADY_IN_QUEUE);
 		}
-
-		throw new ParkingEasyException(QueueErrorCode.UNKNOWN_QUEUE_ERROR);
 	}
 }

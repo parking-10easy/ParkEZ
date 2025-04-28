@@ -39,7 +39,11 @@ public class ReservationController {
             @Valid @RequestBody ReservationRequest request
     ) {
         LocalDateTime now = LocalDateTime.now();
-        return Response.of(reservationService.createReservation(authUser, request, now));
+        ReservationResponse response = reservationService.createReservation(authUser, request, now);
+        if (response == null) {
+            return Response.empty(); //대기열 등록
+        }
+        return Response.of(response);
     }
 
     // 나의 예약 내역 조회

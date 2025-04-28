@@ -5,7 +5,7 @@ import com.parkez.common.principal.AuthUser;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.queue.domain.enums.JoinQueueResult;
-import com.parkez.queue.domain.repository.QueueRepository;
+import com.parkez.queue.domain.repository.QueueRedisRepository;
 import com.parkez.queue.dto.WaitingUserDto;
 import com.parkez.queue.dto.response.MyWaitingQueueDetailResponse;
 import com.parkez.queue.dto.response.MyWaitingQueueListResponse;
@@ -14,7 +14,6 @@ import com.parkez.queue.redis.QueueKey;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.dto.request.ReservationRequest;
 import com.parkez.reservation.service.ReservationReader;
-import com.parkez.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -32,7 +31,7 @@ import java.util.stream.IntStream;
 public class QueueService {
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final QueueRepository queueRepository;
+    private final QueueRedisRepository queueRedisRepository;
     private final ReservationReader reservationReader;
     private final ParkingZoneReader parkingZoneReader;
 
@@ -42,21 +41,21 @@ public class QueueService {
 
     // 예약 대기열 등록 로직
     public JoinQueueResult joinWaitingQueue(Long userId, ReservationRequest request) {
-        String queueKey = generateQueueKey(request.getParkingZoneId(), request.getStartDateTime(), request.getEndDateTime());
+        String queueKey = QueueKey.generateKey(request.getParkingZoneId(), request.getStartDateTime(), request.getEndDateTime());
 
-        if (queueRepository.isAlreadyInQueue(queueKey, userId)) {
+        if (queueRedisRepository.isAlreadyInQueue(queueKey, userId)) {
             return JoinQueueResult.ALREADY_JOINED;
         }
 
         WaitingUserDto dto = new WaitingUserDto(userId, request.getParkingZoneId(), request.getStartDateTime(), request.getEndDateTime());
-        queueRepository.enqueue(queueKey, dto);
+        queueRedisRepository.enqueue(queueKey, dto);
 
         return JoinQueueResult.JOINED;
     }
 
     // 예약 취소 시 → 대기열에서 다음 사용자 꺼내 waitingUserDto로 변환
     public WaitingUserDto dequeueConvertToDto(String key) {
-        Object obj = queueRepository.dequeue(key);
+        Object obj = queueRedisRepository.dequeue(key);
         log.info("[대기열] dequeue 결과: {}", obj);
         return convertToDto(obj);
     }
@@ -85,23 +84,23 @@ public class QueueService {
     }
 
     public void deleteExpiredQueues() {
-        Set<String> queueKeys = redisTemplate.keys(QUEUE_KEY_PREFIX + "*");
+        Set<String> queueKeys = redisTemplate.keys(String.format("%s*", QUEUE_KEY_PREFIX));
 
         if (queueKeys.isEmpty()) return;
 
         for (String queueKey : queueKeys) {
             try {
-                LocalDateTime startTime = extractStartTimeFromKey(queueKey);
+                LocalDateTime reservationStartDateTime = extractStartTimeFromKey(queueKey);
 
-                if (isQueueExpired(startTime)) {
+                if (isQueueExpired(reservationStartDateTime)) {
                     log.info("[대기열 만료] queueKey={} → 1시간 전 도달, 대기열 삭제 진행", queueKey);
 
-                    List<Object> waitingList = queueRepository.getAll(queueKey);
-                    queueRepository.deleteQueue(queueKey);
+                    List<Object> waitingList = queueRedisRepository.getAll(queueKey);
+                    queueRedisRepository.deleteQueue(queueKey);
 
                     for (Object obj : waitingList) {
                         WaitingUserDto dto = convertToDto(obj);
-                        log.info("[알림] userId={} 대기열 만료 안내 메일 전송 (예정)", dto.getUserId()); //todo
+                        log.info("[알림] userId={} 대기열 만료 안내 메일 전송 (예정)", dto.getUserId()); //todo 메일 전송
                     }
                 }
             } catch (Exception e) {
@@ -116,12 +115,12 @@ public class QueueService {
         return LocalDateTime.parse(timeRange[0], FORMATTER);
     }
 
-    private boolean isQueueExpired(LocalDateTime startTime) {
-        return startTime.minusHours(CANCEL_LIMIT_HOURS).isBefore(LocalDateTime.now());
+    private boolean isQueueExpired(LocalDateTime reservationStartDateTime) {
+        return reservationStartDateTime.minusHours(CANCEL_LIMIT_HOURS).isBefore(LocalDateTime.now());
     }
 
     public List<MyWaitingQueueListResponse> findMyWaitingQueues(AuthUser authUser) {
-        Set<String> queueKeys = queueRepository.findAllQueueKeys();
+        Set<String> queueKeys = queueRedisRepository.findAllQueueKeys();
 
         if (queueKeys == null || queueKeys.isEmpty()) {
             return List.of();
@@ -130,13 +129,13 @@ public class QueueService {
         List<MyWaitingQueueListResponse> result = new ArrayList<>();
 
         for (String queueKey : queueKeys) {
-            List<Object> waitingList = queueRepository.getWaitingList(queueKey);
+            List<Object> waitingList = queueRedisRepository.getWaitingList(queueKey);
             if (waitingList == null || waitingList.isEmpty()) continue;
 
             for (int i = 0; i < waitingList.size(); i++) {
                 WaitingUserDto dto = convertToDto(waitingList.get(i));
 
-                if (isMine(dto, authUser)) {
+                if (authUser.isMine(dto.getUserId(), authUser.getId())) {
                     Reservation reservation = reservationReader.findReservationByQueueKey(
                             dto.getParkingZoneId(),
                             dto.getReservationStartDateTime(),
@@ -148,8 +147,8 @@ public class QueueService {
                             .reservationId(reservation.getId())
                             .parkingZoneId(zone.getId())
                             .parkingZoneName(zone.getName())
-                            .startDateTime(dto.getReservationStartDateTime())
-                            .endDateTime(dto.getReservationEndDateTime())
+                            .reservationStartDateTime(dto.getReservationStartDateTime())
+                            .reservationEndDateTime(dto.getReservationEndDateTime())
                             .myQueue(i + 1)
                             .build()
                     );
@@ -163,9 +162,9 @@ public class QueueService {
     public MyWaitingQueueDetailResponse findMyQueue(AuthUser authUser, Long reservationId) {
         Reservation reservation = reservationReader.findById(reservationId);
 
-        String queueKey = generateQueueKey(reservation.getParkingZoneId(), reservation.getStartDateTime(), reservation.getEndDateTime());
+        String queueKey = QueueKey.generateKey(reservation.getParkingZoneId(), reservation.getStartDateTime(), reservation.getEndDateTime());
 
-        List<Object> waitingList = queueRepository.getWaitingList(queueKey);
+        List<Object> waitingList = queueRedisRepository.getWaitingList(queueKey);
         if (waitingList == null || waitingList.isEmpty()) {
             throw new ParkingEasyException(QueueErrorCode.NOT_IN_QUEUE);
         }
@@ -178,8 +177,8 @@ public class QueueService {
         return MyWaitingQueueDetailResponse.builder()
                 .parkingZoneId(zone.getId())
                 .parkingZoneName(zone.getName())
-                .startDateTime(reservation.getStartDateTime())
-                .endDateTime(reservation.getEndDateTime())
+                .reservationStartDateTime(reservation.getStartDateTime())
+                .reservationEndDateTime(reservation.getEndDateTime())
                 .myQueue(myPosition)
                 .build();
     }
@@ -187,33 +186,25 @@ public class QueueService {
     public void cancelMyQueue(AuthUser authUser, Long reservationId) {
         Reservation reservation = reservationReader.findById(reservationId);
 
-        String queueKey = generateQueueKey(reservation.getParkingZoneId(), reservation.getStartDateTime(), reservation.getEndDateTime());
+        String queueKey = QueueKey.generateKey(reservation.getParkingZoneId(), reservation.getStartDateTime(), reservation.getEndDateTime());
 
-        List<Object> waitingList = queueRepository.getWaitingList(queueKey);
+        List<Object> waitingList = queueRedisRepository.getWaitingList(queueKey);
         if (waitingList == null || waitingList.isEmpty()) {
             throw new ParkingEasyException(QueueErrorCode.NOT_IN_QUEUE);
         }
 
         Object myWaiting = waitingList.stream()
-                .filter(obj -> isMine(convertToDto(obj), authUser))
+                .filter(obj -> authUser.isMine(convertToDto(obj).getUserId(), authUser.getId()))
                 .findFirst()
                 .orElseThrow(() -> new ParkingEasyException(QueueErrorCode.NOT_IN_QUEUE));
 
-        queueRepository.removeFromQueue(queueKey, myWaiting);
-        log.info("[대기열] userId={} 대기열 취소 완료", authUser.getId());
+        queueRedisRepository.removeFromQueue(queueKey, myWaiting);
     }
 
-    private String generateQueueKey(Long parkingZoneId, LocalDateTime start, LocalDateTime end) {
-        return QueueKey.generateKey(parkingZoneId, start, end);
-    }
-
-    private boolean isMine(WaitingUserDto dto, AuthUser authUser) {
-        return dto.getUserId() != null && dto.getUserId().equals(authUser.getId());
-    }
 
     private OptionalInt findMyPositionInQueue(List<Object> waitingList, AuthUser authUser) {
         return IntStream.range(0, waitingList.size())
-                .filter(i -> isMine(convertToDto(waitingList.get(i)), authUser))
+                .filter(i -> authUser.isMine(convertToDto(waitingList.get(i)).getUserId(), authUser.getId()))
                 .findFirst();
     }
 }

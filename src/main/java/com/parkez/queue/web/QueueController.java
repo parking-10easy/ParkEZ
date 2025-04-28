@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RequestMapping("/api")
+@RequestMapping("/api/waiting")
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "16. 대기열 API", description = "대기열 API")
