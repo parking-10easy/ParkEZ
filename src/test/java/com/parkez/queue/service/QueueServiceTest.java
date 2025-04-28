@@ -13,7 +13,7 @@ import com.parkez.common.principal.AuthUser;
 import com.parkez.parkingzone.domain.entity.ParkingZone;
 import com.parkez.parkingzone.service.ParkingZoneReader;
 import com.parkez.queue.domain.enums.JoinQueueResult;
-import com.parkez.queue.domain.repository.QueueRepository;
+import com.parkez.queue.domain.repository.QueueRedisRepository;
 import com.parkez.queue.dto.WaitingUserDto;
 import com.parkez.queue.dto.response.MyWaitingQueueDetailResponse;
 import com.parkez.queue.dto.response.MyWaitingQueueListResponse;
@@ -39,7 +39,7 @@ class QueueServiceTest {
     private QueueService queueService;
 
     @Mock
-    private QueueRepository queueRepository;
+    private QueueRedisRepository queueRedisRepository;
 
     @Mock
     private RedisTemplate<String, Object> redisTemplate;
@@ -93,7 +93,7 @@ class QueueServiceTest {
             Long userId = 1L;
             ReservationRequest request = createReservationRequest();
 
-            given(queueRepository.isAlreadyInQueue(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(userId))).willReturn(true);
+            given(queueRedisRepository.isAlreadyInQueue(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(userId))).willReturn(true);
 
             // when
             JoinQueueResult result = queueService.joinWaitingQueue(userId, request);
@@ -108,14 +108,14 @@ class QueueServiceTest {
             Long userId = 1L;
             ReservationRequest request = createReservationRequest();
 
-            given(queueRepository.isAlreadyInQueue(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(userId))).willReturn(false);
+            given(queueRedisRepository.isAlreadyInQueue(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(userId))).willReturn(false);
 
             // when
             JoinQueueResult result = queueService.joinWaitingQueue(userId, request);
 
             // then
             assertThat(result).isEqualTo(JoinQueueResult.JOINED);
-            verify(queueRepository).enqueue(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(WaitingUserDto.class));
+            verify(queueRedisRepository).enqueue(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(WaitingUserDto.class));
         }
     }
 
@@ -132,7 +132,7 @@ class QueueServiceTest {
             waitingUserMap.put("reservationStartDateTime", LocalDateTime.now().toString());
             waitingUserMap.put("reservationEndDateTime", LocalDateTime.now().plusHours(1).toString());
 
-            given(queueRepository.dequeue(queueKey)).willReturn(waitingUserMap);
+            given(queueRedisRepository.dequeue(queueKey)).willReturn(waitingUserMap);
 
             // when
             WaitingUserDto dto = queueService.dequeueConvertToDto(queueKey);
@@ -149,7 +149,7 @@ class QueueServiceTest {
             String queueKey = "queueKey";
             String invalidObject = "invalid-type";
 
-            given(queueRepository.dequeue(queueKey)).willReturn(invalidObject);
+            given(queueRedisRepository.dequeue(queueKey)).willReturn(invalidObject);
 
             // when & then
             assertThatThrownBy(() -> queueService.dequeueConvertToDto(queueKey))
@@ -249,7 +249,7 @@ class QueueServiceTest {
             queueService.deleteExpiredQueues();
 
             // then
-            verify(queueRepository, never()).deleteQueue(anyString());
+            verify(queueRedisRepository, never()).deleteQueue(anyString());
         }
 
         @Test
@@ -262,7 +262,7 @@ class QueueServiceTest {
             queueService.deleteExpiredQueues();
 
             // then
-            verify(queueRepository, never()).deleteQueue(anyString());
+            verify(queueRedisRepository, never()).deleteQueue(anyString());
         }
 
         @Test
@@ -273,7 +273,7 @@ class QueueServiceTest {
             String queueKey = "reservation:queue:1:" + formattedStart + "-" + formattedStart;
 
             given(redisTemplate.keys(anyString())).willReturn(Set.of(queueKey));
-            given(queueRepository.getAll(queueKey)).willReturn(List.of(
+            given(queueRedisRepository.getAll(queueKey)).willReturn(List.of(
                     Map.of(
                             "userId", "1",
                             "parkingZoneId", "1",
@@ -286,7 +286,7 @@ class QueueServiceTest {
             queueService.deleteExpiredQueues();
 
             // then
-            verify(queueRepository).deleteQueue(queueKey);
+            verify(queueRedisRepository).deleteQueue(queueKey);
         }
 
         @Test
@@ -307,7 +307,7 @@ class QueueServiceTest {
         void 대기열이_없으면_빈리스트를_반환한다() {
             // given
             AuthUser authUser = createAuthUser(1L);
-            given(queueRepository.findAllQueueKeys()).willReturn(Collections.emptySet());
+            given(queueRedisRepository.findAllQueueKeys()).willReturn(Collections.emptySet());
 
             // when
             List<MyWaitingQueueListResponse> result = queueService.findMyWaitingQueues(authUser);
@@ -320,8 +320,8 @@ class QueueServiceTest {
         void 대기열은_있지만_리스트가_비어있으면_결과_없음() {
             // given
             AuthUser authUser = createAuthUser(1L);
-            given(queueRepository.findAllQueueKeys()).willReturn(Set.of("queueKey"));
-            given(queueRepository.getWaitingList("queueKey")).willReturn(Collections.emptyList());
+            given(queueRedisRepository.findAllQueueKeys()).willReturn(Set.of("queueKey"));
+            given(queueRedisRepository.getWaitingList("queueKey")).willReturn(Collections.emptyList());
 
             // when
             List<MyWaitingQueueListResponse> result = queueService.findMyWaitingQueues(authUser);
@@ -343,8 +343,8 @@ class QueueServiceTest {
                     "reservationEndDateTime", reservation.getEndDateTime().toString()
             );
 
-            given(queueRepository.findAllQueueKeys()).willReturn(Set.of("queueKey"));
-            given(queueRepository.getWaitingList("queueKey")).willReturn(List.of(map));
+            given(queueRedisRepository.findAllQueueKeys()).willReturn(Set.of("queueKey"));
+            given(queueRedisRepository.getWaitingList("queueKey")).willReturn(List.of(map));
             given(reservationReader.findReservationByQueueKey(1L, reservation.getStartDateTime(), reservation.getEndDateTime())).willReturn(reservation);
             given(parkingZoneReader.getActiveByParkingZoneId(1L)).willReturn(reservation.getParkingZone());
 
@@ -369,8 +369,8 @@ class QueueServiceTest {
                     "reservationEndDateTime", reservation.getEndDateTime().toString()
             );
 
-            given(queueRepository.findAllQueueKeys()).willReturn(Set.of("queueKey"));
-            given(queueRepository.getWaitingList("queueKey")).willReturn(List.of(map));
+            given(queueRedisRepository.findAllQueueKeys()).willReturn(Set.of("queueKey"));
+            given(queueRedisRepository.getWaitingList("queueKey")).willReturn(List.of(map));
 
             // when
             List<MyWaitingQueueListResponse> result = queueService.findMyWaitingQueues(authUser);
@@ -393,7 +393,7 @@ class QueueServiceTest {
             ReflectionTestUtils.setField(parkingZone, "name", "테스트존");
 
             given(reservationReader.findById(anyLong())).willReturn(reservation);
-            given(queueRepository.getWaitingList(anyString())).willReturn(List.of(
+            given(queueRedisRepository.getWaitingList(anyString())).willReturn(List.of(
                     Map.of(
                             "userId", 1L,
                             "parkingZoneId", 1L,
@@ -419,7 +419,7 @@ class QueueServiceTest {
             Reservation reservation = createMockReservation(1L, 1L);
 
             given(reservationReader.findById(anyLong())).willReturn(reservation);
-            given(queueRepository.getWaitingList(anyString())).willReturn(Collections.emptyList());
+            given(queueRedisRepository.getWaitingList(anyString())).willReturn(Collections.emptyList());
 
             // when & then
             assertThatThrownBy(() -> queueService.findMyQueue(authUser, 1L))
@@ -438,7 +438,7 @@ class QueueServiceTest {
             Reservation reservation = createMockReservation(1L, 1L);
 
             given(reservationReader.findById(anyLong())).willReturn(reservation);
-            given(queueRepository.getWaitingList(anyString())).willReturn(List.of(
+            given(queueRedisRepository.getWaitingList(anyString())).willReturn(List.of(
                     Map.of(
                             "userId", 1L,
                             "parkingZoneId", 1L,
@@ -451,7 +451,7 @@ class QueueServiceTest {
             queueService.cancelMyQueue(authUser, 1L);
 
             // then
-            verify(queueRepository).removeFromQueue(anyString(), any());
+            verify(queueRedisRepository).removeFromQueue(anyString(), any());
         }
 
         @Test
@@ -461,7 +461,7 @@ class QueueServiceTest {
             Reservation reservation = createMockReservation(1L, 1L);
 
             given(reservationReader.findById(anyLong())).willReturn(reservation);
-            given(queueRepository.getWaitingList(anyString())).willReturn(Collections.emptyList());
+            given(queueRedisRepository.getWaitingList(anyString())).willReturn(Collections.emptyList());
 
             // when & then
             assertThatThrownBy(() -> queueService.cancelMyQueue(authUser, 1L))

@@ -76,8 +76,6 @@ class ReservationServiceTest {
     private ReviewReader reviewReader;
     @Mock
     private DistributedLockManager distributedLockManager;
-    @Mock
-    private PaymentService paymentService;
 
     @Mock
     private PromotionIssueReader promotionIssueReader;
@@ -788,7 +786,7 @@ class ReservationServiceTest {
         }
 
         @Test
-        void 특정_주차공간에_대한_예약_생성_시_이미_해당_시간에_예약이_존재하면_대기열_등록되고_JOINED_WAITING_QUEUE_예외_처리() {
+        void 특정_주차공간에_대한_예약_생성_시_이미_해당_시간에_예약이_존재하면_대기열_등록되고_null_반환() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
@@ -814,11 +812,34 @@ class ReservationServiceTest {
             given(reservationReader.existsReservationByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList())).willReturn(true);
             given(queueService.joinWaitingQueue(anyLong(), any())).willReturn(JoinQueueResult.JOINED);
 
-            // when & then
-            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.createReservation(authUser, request, LocalDateTime.now()));
-            assertThat(exception.getErrorCode()).isEqualTo(QueueErrorCode.JOINED_WAITING_QUEUE);
+            // when
+            ReservationResponse response = reservationService.createReservation(authUser, request, LocalDateTime.now());
+
+            // then
+            assertThat(response).isNull();
         }
+
+        @Test
+        void 락_선점_실패시_대기열_등록하고_null을_반환한다() {
+            // given
+            Long userId = 1L;
+            Long parkingZoneId = 1L;
+            AuthUser authUser = createAuthUser(userId);
+            ReservationRequest request = createRequest(parkingZoneId, null);
+
+            // 락 선점 실패 상황을 가짜로 만들어줌
+            given(distributedLockManager.executeWithLock(anyLong(), any()))
+                    .willThrow(new ParkingEasyException(ReservationErrorCode.RESERVATION_LOCK_FAILED));
+            given(userReader.getActiveUserById(anyLong())).willReturn(createUser(userId));
+            given(queueService.joinWaitingQueue(anyLong(), any())).willReturn(JoinQueueResult.JOINED);
+
+            // when
+            ReservationResponse result = reservationService.createReservation(authUser, request, LocalDateTime.now());
+
+            // then
+            assertThat(result).isNull();
+        }
+
 
 
         @Test
@@ -1293,7 +1314,7 @@ class ReservationServiceTest {
     class HandleQueueOnLockFailTest {
 
         @Test
-        void 락_선점실패시_대기열_등록되고_JOINED_WAITING_QUEUE_예외_발생() {
+        void 락_선점실패시_정상적으로_대기열_등록() {
             // given
             Long userId = 1L;
             AuthUser authUser = createAuthUser(1L);
@@ -1305,9 +1326,9 @@ class ReservationServiceTest {
             given(queueService.joinWaitingQueue(userId, request)).willReturn(JoinQueueResult.JOINED);
 
             // when & then
-            assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(reservationService, "handleQueueOnLockFail", authUser, request))
-                    .isInstanceOf(ParkingEasyException.class)
-                    .hasMessageContaining("해당 시간에 이미 예약이 존재하여 대기열에 저장되었습니다.");
+            assertThatCode(() ->
+                    ReflectionTestUtils.invokeMethod(reservationService, "handleQueueOnLockFail", authUser, request)
+            ).doesNotThrowAnyException();
         }
 
         @Test
@@ -1333,7 +1354,7 @@ class ReservationServiceTest {
     class HandleJoinQueueTest {
 
         @Test
-        void 예약_중복시_대기열_등록되고_JOINED_WAITING_QUEUE_예외_발생() {
+        void 예약_중복시_정상적으로_대기열_등록() {
             // given
             Long userId = 1L;
 
@@ -1343,9 +1364,9 @@ class ReservationServiceTest {
             given(queueService.joinWaitingQueue(userId, request)).willReturn(JoinQueueResult.JOINED);
 
             // when & then
-            assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(reservationService, "handleJoinQueue", user, request))
-                    .isInstanceOf(ParkingEasyException.class)
-                    .hasMessageContaining("해당 시간에 이미 예약이 존재하여 대기열에 저장되었습니다.");
+            assertThatCode(() ->
+                    ReflectionTestUtils.invokeMethod(reservationService, "handleJoinQueue", user, request)
+            ).doesNotThrowAnyException();
         }
 
         @Test
