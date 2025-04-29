@@ -94,4 +94,13 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     );
 
     Optional<Reservation> findByParkingZone_IdAndStartDateTimeAndEndDateTime(Long parkingZoneId, LocalDateTime startDateTime, LocalDateTime endDateTime);
+
+    @Query("""
+            SELECT r
+            FROM Reservation r
+            JOIN FETCH r.user
+            JOIN FETCH r.parkingZone
+            WHERE r.id = :id
+    """)
+    Optional<Reservation> findByIdWithUserAndParkingZone(@Param("id") Long reservationId);
 }
