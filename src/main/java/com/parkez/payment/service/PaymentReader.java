@@ -23,7 +23,7 @@ public class PaymentReader {
     private final PaymentRepository paymentRepository;
 
     public Payment getPayment(String orderId) {
-        return paymentRepository.findByOrderId(orderId).orElseThrow(
+        return paymentRepository.findByOrderIdWithUser(orderId).orElseThrow(
                 () -> new ParkingEasyException(PaymentErrorCode.PAYMENT_NOT_FOUND));
 
     }

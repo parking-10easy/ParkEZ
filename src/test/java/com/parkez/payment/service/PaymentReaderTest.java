@@ -42,7 +42,7 @@ class PaymentReaderTest {
             String orderId = "test-order-id";
             Payment payment = mock(Payment.class);
 
-            given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.of(payment));
+            given(paymentRepository.findByOrderIdWithUser(orderId)).willReturn(Optional.of(payment));
 
             // when
             Payment result = paymentReader.getPayment(orderId);
@@ -55,7 +55,7 @@ class PaymentReaderTest {
         void 주문번호로_결제내역_조회시_없으면_PAYMENT_NOT_FOUND_예외_발생() {
             // given
             String orderId = "non-existent-order";
-            given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
+            given(paymentRepository.findByOrderIdWithUser(orderId)).willReturn(Optional.empty());
 
             // when & then
             ParkingEasyException ex = assertThrows(ParkingEasyException.class,
