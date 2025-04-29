@@ -18,6 +18,10 @@ import com.parkez.promotion.domain.enums.PromotionType;
 import com.parkez.promotion.service.PromotionIssueReader;
 import com.parkez.promotion.service.PromotionIssueValidator;
 import com.parkez.promotion.service.PromotionIssueWriter;
+import com.parkez.queue.domain.enums.JoinQueueResult;
+import com.parkez.queue.dto.WaitingUserDto;
+import com.parkez.queue.exception.QueueErrorCode;
+import com.parkez.queue.service.QueueService;
 import com.parkez.reservation.distributedlockmanager.DistributedLockManager;
 import com.parkez.reservation.domain.entity.Reservation;
 import com.parkez.reservation.domain.enums.ReservationStatus;
@@ -31,7 +35,6 @@ import com.parkez.user.domain.entity.User;
 import com.parkez.user.domain.enums.UserRole;
 import com.parkez.user.service.UserReader;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,8 +56,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import static com.parkez.promotion.excption.PromotionIssueErrorCode.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -74,8 +76,6 @@ class ReservationServiceTest {
     private ReviewReader reviewReader;
     @Mock
     private DistributedLockManager distributedLockManager;
-    @Mock
-    private PaymentService paymentService;
 
     @Mock
     private PromotionIssueReader promotionIssueReader;
@@ -85,6 +85,12 @@ class ReservationServiceTest {
 
     @Mock
     private PromotionIssueWriter promotionIssueWriter;
+
+    @Mock
+    private PaymentService paymentService;
+
+    @Mock
+    private QueueService queueService;
 
     @InjectMocks
     private ReservationService reservationService;
@@ -222,6 +228,13 @@ class ReservationServiceTest {
         return coupon;
     }
 
+    private static ReservationRequest createReservationRequest() {
+        LocalDateTime start = LocalDateTime.now().plusHours(1);
+        LocalDateTime end = start.plusHours(1);
+
+        return new ReservationRequest(1L, start, end);
+    }
+
     @Nested
     class CreateReservation {
 
@@ -254,7 +267,7 @@ class ReservationServiceTest {
             given(promotionIssueReader.getWithPromotionAndCouponById(anyLong())).willThrow(new ParkingEasyException(PROMOTION_ISSUE_NOT_FOUND));
 
             // when & then
-            Assertions.assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
+            assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
                 .isInstanceOf(ParkingEasyException.class)
                 .hasMessage(PROMOTION_ISSUE_NOT_FOUND.getDefaultMessage());
 
@@ -314,7 +327,7 @@ class ReservationServiceTest {
             doThrow(new ParkingEasyException(EXPIRED_COUPON)).when(promotionIssueValidator).validateCanBeUsed(any(),any());
 
             // when & then
-            Assertions.assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
+            assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
                 .isInstanceOf(ParkingEasyException.class)
                 .hasMessage(EXPIRED_COUPON.getDefaultMessage());
 
@@ -374,7 +387,7 @@ class ReservationServiceTest {
             doThrow(new ParkingEasyException(ALREADY_USED)).when(promotionIssueValidator).validateCanBeUsed(any(),any());
 
             // when & then
-            Assertions.assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
+            assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
                 .isInstanceOf(ParkingEasyException.class)
                 .hasMessage(ALREADY_USED.getDefaultMessage());
 
@@ -434,7 +447,7 @@ class ReservationServiceTest {
             given(promotionIssueReader.getWithPromotionAndCouponById(anyLong())).willReturn(promotionIssue);
 
             // when & then
-            Assertions.assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
+            assertThatThrownBy(()->reservationService.createReservation(authUser, request, LocalDateTime.now()))
                 .isInstanceOf(ParkingEasyException.class)
                 .hasMessage(NOT_YOUR_COUPON.getDefaultMessage());
 
@@ -776,7 +789,7 @@ class ReservationServiceTest {
         }
 
         @Test
-        void 특정_주차공간에_대한_예약_생성_시_이미_해당_시간에_예약이_존재할_경우_ALREADY_RESERVED_예외_처리() {
+        void 특정_주차공간에_대한_예약_생성_시_이미_해당_시간에_예약이_존재하면_대기열_등록되고_null_반환() {
             // given
             Long ownerId = 1L;
             Long userId = 2L;
@@ -791,7 +804,6 @@ class ReservationServiceTest {
             User user = createUser(authUser.getId());
 
             ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
-
             ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
 
             given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
@@ -801,12 +813,37 @@ class ReservationServiceTest {
             given(userReader.getActiveUserById(anyLong())).willReturn(user);
             given(parkingZoneReader.getActiveByParkingZoneId(anyLong())).willReturn(parkingZone);
             given(reservationReader.existsReservationByConditions(any(ParkingZone.class), any(LocalDateTime.class), any(LocalDateTime.class), anyList())).willReturn(true);
+            given(queueService.joinWaitingQueue(anyLong(), any())).willReturn(JoinQueueResult.JOINED);
 
-            // when & then
-            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
-                    () -> reservationService.createReservation(authUser, request, LocalDateTime.now()));
-            assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.ALREADY_RESERVED);
+            // when
+            ReservationResponse response = reservationService.createReservation(authUser, request, LocalDateTime.now());
+
+            // then
+            assertThat(response).isNull();
         }
+
+        @Test
+        void 락_선점_실패시_대기열_등록하고_null을_반환한다() {
+            // given
+            Long userId = 1L;
+            Long parkingZoneId = 1L;
+            AuthUser authUser = createAuthUser(userId);
+            ReservationRequest request = createRequest(parkingZoneId, null);
+
+            // 락 선점 실패 상황을 가짜로 만들어줌
+            given(distributedLockManager.executeWithLock(anyLong(), any()))
+                    .willThrow(new ParkingEasyException(ReservationErrorCode.RESERVATION_LOCK_FAILED));
+            given(userReader.getActiveUserById(anyLong())).willReturn(createUser(userId));
+            given(queueService.joinWaitingQueue(anyLong(), any())).willReturn(JoinQueueResult.JOINED);
+
+            // when
+            ReservationResponse result = reservationService.createReservation(authUser, request, LocalDateTime.now());
+
+            // then
+            assertThat(result).isNull();
+        }
+
+
 
         @Test
         void 올바른_예약_요청_시간에_대한_검증_테스트() {
@@ -1072,6 +1109,7 @@ class ReservationServiceTest {
             Long userId = 2L;
             Long reservationId = 1L;
             LocalDateTime startDateTime = LocalDateTime.now().plusHours(3);
+            LocalDateTime endDateTime = LocalDateTime.now().plusHours(4);
             Long parkingLotId = 1L;
             Long parkingZoneId = 1L;
 
@@ -1086,6 +1124,7 @@ class ReservationServiceTest {
             Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
             ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
             ReflectionTestUtils.setField(reservation, "startDateTime", startDateTime);
+            ReflectionTestUtils.setField(reservation, "endDateTime", endDateTime);
             ReflectionTestUtils.setField(reservation, "promotionIssueId", 1L);
 
             Long promotionId = 1L;
@@ -1131,6 +1170,7 @@ class ReservationServiceTest {
             Long userId = 2L;
             Long reservationId = 1L;
             LocalDateTime startDateTime = LocalDateTime.now().plusHours(3);
+            LocalDateTime endDateTime = LocalDateTime.now().plusHours(4);
             Long parkingLotId = 1L;
             Long parkingZoneId = 1L;
 
@@ -1145,6 +1185,7 @@ class ReservationServiceTest {
             Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
             ReflectionTestUtils.setField(reservation, "status", ReservationStatus.PENDING);
             ReflectionTestUtils.setField(reservation, "startDateTime", startDateTime);
+            ReflectionTestUtils.setField(reservation, "endDateTime", endDateTime);
 
             given(reservationReader.findMyReservation(anyLong(), any(Long.class))).willReturn(reservation);
             doNothing().when(reservationWriter).cancel(reservation);
@@ -1152,6 +1193,7 @@ class ReservationServiceTest {
             // when
             ReservationCancelRequest request = new ReservationCancelRequest();
             reservationService.cancelReservation(authUser, reservationId, request, LocalDateTime.now());
+
 
             // then
             verify(reservationWriter, times(1)).cancel(reservation);
@@ -1164,6 +1206,7 @@ class ReservationServiceTest {
             Long userId = 2L;
             Long reservationId = 1L;
             LocalDateTime startDateTime = LocalDateTime.now().plusHours(3);
+            LocalDateTime endDateTime = LocalDateTime.now().plusHours(4);
             Long parkingLotId = 1L;
             Long parkingZoneId = 1L;
 
@@ -1178,6 +1221,7 @@ class ReservationServiceTest {
             Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
             ReflectionTestUtils.setField(reservation, "status", ReservationStatus.CONFIRMED);
             ReflectionTestUtils.setField(reservation, "startDateTime", startDateTime);
+            ReflectionTestUtils.setField(reservation, "endDateTime", endDateTime);
 
             given(reservationReader.findMyReservation(anyLong(), any(Long.class))).willReturn(reservation);
             doNothing().when(reservationWriter).cancel(reservation);
@@ -1268,4 +1312,133 @@ class ReservationServiceTest {
             verify(reservationWriter, times(1)).expire(any(LocalDateTime.class));
         }
     }
+
+    @Nested
+    class HandleQueueOnLockFailTest {
+
+        @Test
+        void 락_선점실패시_정상적으로_대기열_등록() {
+            // given
+            Long userId = 1L;
+            AuthUser authUser = createAuthUser(1L);
+
+            ReservationRequest request = createReservationRequest();
+            User user = mock(User.class);
+            given(user.getId()).willReturn(userId);
+            given(userReader.getActiveUserById(userId)).willReturn(user);
+            given(queueService.joinWaitingQueue(userId, request)).willReturn(JoinQueueResult.JOINED);
+
+            // when & then
+            assertThatCode(() ->
+                    ReflectionTestUtils.invokeMethod(reservationService, "handleQueueOnLockFail", authUser, request)
+            ).doesNotThrowAnyException();
+        }
+
+        @Test
+        void 락_선점실패시_이미_대기열_등록되어있으면_ALREADY_IN_QUEUE_예외_발생() {
+            // given
+            Long userId = 1L;
+            AuthUser authUser = createAuthUser(1L);
+
+            ReservationRequest request = createReservationRequest();
+            User user = mock(User.class);
+            given(user.getId()).willReturn(userId);
+            given(userReader.getActiveUserById(userId)).willReturn(user);
+            given(queueService.joinWaitingQueue(userId, request)).willReturn(JoinQueueResult.ALREADY_JOINED);
+
+            // when & then
+            assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(reservationService, "handleQueueOnLockFail", authUser, request))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasMessageContaining("이미 대기열에 등록된 사용자입니다.");
+        }
+    }
+
+    @Nested
+    class HandleJoinQueueTest {
+
+        @Test
+        void 예약_중복시_정상적으로_대기열_등록() {
+            // given
+            Long userId = 1L;
+
+            ReservationRequest request = createReservationRequest();
+            User user = mock(User.class);
+            given(user.getId()).willReturn(userId);
+            given(queueService.joinWaitingQueue(userId, request)).willReturn(JoinQueueResult.JOINED);
+
+            // when & then
+            assertThatCode(() ->
+                    ReflectionTestUtils.invokeMethod(reservationService, "handleJoinQueue", user, request)
+            ).doesNotThrowAnyException();
+        }
+
+        @Test
+        void 예약_중복시_이미_대기열_등록되어있으면_ALREADY_IN_QUEUE_예외_발생() {
+            // given
+            Long userId = 1L;
+
+            ReservationRequest request = createReservationRequest();
+            User user = mock(User.class);
+            given(user.getId()).willReturn(userId);
+            given(queueService.joinWaitingQueue(userId, request)).willReturn(JoinQueueResult.ALREADY_JOINED);
+
+            // when & then
+            assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(reservationService, "handleJoinQueue", user, request))
+                    .isInstanceOf(ParkingEasyException.class)
+                    .hasMessageContaining("이미 대기열에 등록된 사용자입니다.");
+        }
+    }
+
+    @Nested
+    class HandleNextInQueueTest {
+
+        @Test
+        void 대기열에_사용자없으면_아무일도_일어나지_않는다() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+
+            given(reservation.getParkingZoneId()).willReturn(1L);
+            given(reservation.getStartDateTime()).willReturn(LocalDateTime.now().plusHours(1));
+            given(reservation.getEndDateTime()).willReturn(LocalDateTime.now().plusHours(2));
+            given(queueService.dequeueConvertToDto(anyString())).willReturn(null);
+
+            // when & then
+            assertThatCode(() ->
+                    ReflectionTestUtils.invokeMethod(reservationService, "handleNextInQueue", reservation)
+            ).doesNotThrowAnyException();
+
+            verify(userReader, never()).getActiveUserById(any());
+        }
+
+        @Test
+        void 대기열에_사용자있으면_예약생성된다() {
+            // given
+            Reservation reservation = mock(Reservation.class);
+
+            WaitingUserDto waitingUserDto = new WaitingUserDto(
+                    1L,
+                    1L,
+                    LocalDateTime.now().plusHours(1),
+                    LocalDateTime.now().plusHours(2)
+            );
+
+            User user = mock(User.class);
+
+            given(reservation.getParkingZoneId()).willReturn(1L);
+            given(reservation.getStartDateTime()).willReturn(waitingUserDto.getReservationStartDateTime());
+            given(reservation.getEndDateTime()).willReturn(waitingUserDto.getReservationEndDateTime());
+
+            given(queueService.dequeueConvertToDto(anyString())).willReturn(waitingUserDto);
+            given(userReader.getActiveUserById(waitingUserDto.getUserId())).willReturn(user);
+
+            // when
+            ReflectionTestUtils.invokeMethod(reservationService, "handleNextInQueue", reservation);
+
+            // then
+            verify(userReader).getActiveUserById(waitingUserDto.getUserId());
+            verify(parkingZoneReader).getActiveByParkingZoneId(waitingUserDto.getParkingZoneId());
+        }
+    }
+
+
 }
