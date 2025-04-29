@@ -11,7 +11,8 @@ import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long>, PaymentQueryDslRepository {
 
-    Optional<Payment> findByOrderId(String orderId);
+    @Query("SELECT p FROM Payment p JOIN FETCH p.user WHERE p.orderId = :orderId")
+    Optional<Payment> findByOrderIdWithUser(String orderId);
 
     Optional<Payment> findByReservation(Reservation reservation);
 
