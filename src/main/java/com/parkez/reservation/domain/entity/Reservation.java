@@ -129,7 +129,7 @@ public class Reservation extends BaseEntity {
     }
 
     public boolean canBeCanceled() {
-        return this.status == ReservationStatus.PENDING || this.status == ReservationStatus.CONFIRMED;
+        return this.status == ReservationStatus.CONFIRMED;
     }
 
     public boolean isAfter(LocalDateTime cancelLimitHour, LocalDateTime now) {

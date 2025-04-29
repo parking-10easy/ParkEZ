@@ -81,6 +81,11 @@ public class ReservationService {
 				}
 
 				List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
+
+				if (reservationReader.existsReservationByConditionsForUser(parkingZone, request.getStartDateTime(), request.getEndDateTime(), user.getId(), statusList)) {
+					throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED_BY_YOURSELF);
+				}
+
 				boolean existed = reservationReader.existsReservationByConditions(parkingZone, request.getStartDateTime(), request.getEndDateTime(), statusList);
 
 				if (existed) {
@@ -190,7 +195,7 @@ public class ReservationService {
 
         Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);
 
-        // 결제 대기 중 또는 결제 완료 된 예약만 취소할 수 있음
+        // 결제 완료 된 예약만 취소할 수 있음
         if (!reservation.canBeCanceled()) {
             throw new ParkingEasyException(ReservationErrorCode.CANT_CANCEL_RESERVATION);
         }
@@ -217,7 +222,11 @@ public class ReservationService {
 
 	public void expireReservation() {
 		LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(EXPIRATION_TIME);
-		reservationWriter.expire(expiredTime);
+		List<Reservation> expiredReservations = reservationWriter.expire(expiredTime);
+
+		for (Reservation reservation : expiredReservations) {
+			handleNextInQueue(reservation);
+		}
 	}
 
 	public boolean validateRequestTime(ReservationRequest request) {
@@ -263,14 +272,18 @@ public class ReservationService {
     public void createFromQueue(User user, ReservationRequest request) {
         ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
 
+		long hours = calculateUsedHour(request.getStartDateTime(), request.getEndDateTime());
+
+		BigDecimal originalPrice = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
+
         reservationWriter.create(
                 user,
                 parkingZone,
                 request.getStartDateTime(),
                 request.getEndDateTime(),
-                null,
-                null,
-                null,
+				originalPrice,
+				BigDecimal.ZERO,
+				originalPrice,
                 null
         );
 

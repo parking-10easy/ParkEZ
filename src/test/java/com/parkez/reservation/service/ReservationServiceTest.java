@@ -857,6 +857,42 @@ class ReservationServiceTest {
             // then
             assertThat(result).isTrue();
         }
+
+        @Test
+        void 본인이_이미_예약한_경우_예외발생() {
+            // given
+            Long ownerId = 1L;
+            Long userId = 2L;
+            Long parkingLotId = 1L;
+            Long parkingZoneId = 1L;
+
+            AuthUser authUser = createAuthUser(userId);
+
+            ReservationRequest request = createRequest(parkingZoneId, null);
+
+            User owner = createOwner(ownerId);
+            User user = createUser(authUser.getId());
+
+            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
+            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
+
+            List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
+
+            given(distributedLockManager.executeWithLock(anyLong(), any())).willAnswer(invocation -> {
+                Callable<ReservationResponse> task = invocation.getArgument(1);
+                return task.call();
+            });
+            given(userReader.getActiveUserById(userId)).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(parkingZoneId)).willReturn(parkingZone);
+            given(reservationReader.existsReservationByConditionsForUser(parkingZone, request.getStartDateTime(), request.getEndDateTime(), userId, statusList))
+                    .willReturn(true);
+
+            // when & then
+            ParkingEasyException exception = assertThrows(ParkingEasyException.class,
+                    () -> reservationService.createReservation(authUser, request, LocalDateTime.now()));
+
+            assertThat(exception.getErrorCode()).isEqualTo(ReservationErrorCode.ALREADY_RESERVED_BY_YOURSELF);
+        }
     }
 
     @Nested
@@ -1164,42 +1200,6 @@ class ReservationServiceTest {
         }
 
         @Test
-        void 특정_예약_취소_시_PENDING_상태의_특정_예약_취소_테스트() {
-            // given
-            Long ownerId = 1L;
-            Long userId = 2L;
-            Long reservationId = 1L;
-            LocalDateTime startDateTime = LocalDateTime.now().plusHours(3);
-            LocalDateTime endDateTime = LocalDateTime.now().plusHours(4);
-            Long parkingLotId = 1L;
-            Long parkingZoneId = 1L;
-
-            AuthUser authUser = createAuthUser(userId);
-            User user = createUser(authUser.getId());
-            User owner = createOwner(ownerId);
-
-            ParkingLot parkingLot = createParkingLot(parkingLotId, owner);
-
-            ParkingZone parkingZone = createParkingZone(parkingZoneId, parkingLot);
-
-            Reservation reservation = getReservation(parkingZoneId, user, parkingZone);
-            ReflectionTestUtils.setField(reservation, "status", ReservationStatus.PENDING);
-            ReflectionTestUtils.setField(reservation, "startDateTime", startDateTime);
-            ReflectionTestUtils.setField(reservation, "endDateTime", endDateTime);
-
-            given(reservationReader.findMyReservation(anyLong(), any(Long.class))).willReturn(reservation);
-            doNothing().when(reservationWriter).cancel(reservation);
-
-            // when
-            ReservationCancelRequest request = new ReservationCancelRequest();
-            reservationService.cancelReservation(authUser, reservationId, request, LocalDateTime.now());
-
-
-            // then
-            verify(reservationWriter, times(1)).cancel(reservation);
-        }
-
-        @Test
         void 특정_예약_취소_시_CONFIRMED_상태의_특정_예약_취소_테스트() {
             // given
             Long ownerId = 1L;
@@ -1303,7 +1303,14 @@ class ReservationServiceTest {
         @Test
         void 예약_생성_후_10분_이내_결제_요청_생성하지_않을_경우_예약_만료() {
             // given
-            doNothing().when(reservationWriter).expire(any(LocalDateTime.class));
+            Reservation expiredReservation = mock(Reservation.class);
+            given(reservationWriter.expire(any(LocalDateTime.class)))
+                    .willReturn(List.of(expiredReservation)); // << 여기! List 반환!
+
+            given(expiredReservation.getParkingZoneId()).willReturn(1L);
+            given(expiredReservation.getStartDateTime()).willReturn(LocalDateTime.now().plusHours(1));
+            given(expiredReservation.getEndDateTime()).willReturn(LocalDateTime.now().plusHours(2));
+            given(queueService.dequeueConvertToDto(anyString())).willReturn(null); // 대기열 비어있게
 
             // when
             reservationService.expireReservation();
@@ -1423,6 +1430,7 @@ class ReservationServiceTest {
             );
 
             User user = mock(User.class);
+            ParkingZone parkingZone = mock(ParkingZone.class);
 
             given(reservation.getParkingZoneId()).willReturn(1L);
             given(reservation.getStartDateTime()).willReturn(waitingUserDto.getReservationStartDateTime());
@@ -1430,6 +1438,8 @@ class ReservationServiceTest {
 
             given(queueService.dequeueConvertToDto(anyString())).willReturn(waitingUserDto);
             given(userReader.getActiveUserById(waitingUserDto.getUserId())).willReturn(user);
+            given(parkingZoneReader.getActiveByParkingZoneId(waitingUserDto.getParkingZoneId())).willReturn(parkingZone);
+            given(parkingZone.getParkingLotPricePerHour()).willReturn(BigDecimal.valueOf(1000));
 
             // when
             ReflectionTestUtils.invokeMethod(reservationService, "handleNextInQueue", reservation);
@@ -1437,7 +1447,18 @@ class ReservationServiceTest {
             // then
             verify(userReader).getActiveUserById(waitingUserDto.getUserId());
             verify(parkingZoneReader).getActiveByParkingZoneId(waitingUserDto.getParkingZoneId());
+            verify(reservationWriter).create(
+                    eq(user),
+                    eq(parkingZone),
+                    eq(waitingUserDto.getReservationStartDateTime()),
+                    eq(waitingUserDto.getReservationEndDateTime()),
+                    any(BigDecimal.class),
+                    eq(BigDecimal.ZERO),
+                    any(BigDecimal.class),
+                    isNull()
+            );
         }
+
     }
 
 

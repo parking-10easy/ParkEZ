@@ -373,4 +373,55 @@ class ReservationReaderTest {
                     .hasFieldOrPropertyWithValue("errorCode", ReservationErrorCode.NOT_FOUND_RESERVATION);
         }
     }
+
+
+    @Nested
+    class ExistsReservationByConditionsForUser {
+
+        @Test
+        void 예약_존재함() {
+            // given
+            ParkingZone parkingZone = mock(ParkingZone.class);
+            LocalDateTime startDateTime = LocalDateTime.now();
+            LocalDateTime endDateTime = startDateTime.plusHours(1);
+            Long userId = 1L;
+            List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
+
+            given(reservationRepository.existsReservationByConditionsForUser(
+                    parkingZone, startDateTime, endDateTime, userId, statusList
+            )).willReturn(true);
+
+            // when
+            boolean result = reservationReader.existsReservationByConditionsForUser(
+                    parkingZone, startDateTime, endDateTime, userId, statusList
+            );
+
+            // then
+            assertThat(result).isTrue();
+            verify(reservationRepository).existsReservationByConditionsForUser(parkingZone, startDateTime, endDateTime, userId, statusList);
+        }
+
+        @Test
+        void 예약_존재하지_않음() {
+            // given
+            ParkingZone parkingZone = mock(ParkingZone.class);
+            LocalDateTime startDateTime = LocalDateTime.now();
+            LocalDateTime endDateTime = startDateTime.plusHours(1);
+            Long userId = 1L;
+            List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
+
+            given(reservationRepository.existsReservationByConditionsForUser(
+                    parkingZone, startDateTime, endDateTime, userId, statusList
+            )).willReturn(false);
+
+            // when
+            boolean result = reservationReader.existsReservationByConditionsForUser(
+                    parkingZone, startDateTime, endDateTime, userId, statusList
+            );
+
+            // then
+            assertThat(result).isFalse();
+            verify(reservationRepository).existsReservationByConditionsForUser(parkingZone, startDateTime, endDateTime, userId, statusList);
+        }
+    }
 }

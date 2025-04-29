@@ -46,23 +46,27 @@ public class ReservationWriter {
 
 	public void cancel(Reservation reservation) {
 		reservation.cancel();
+		reservationRepository.save(reservation);
 	}
 
 	public void updateStatusConfirm(Reservation reservation) {
 		reservation.confirm();
+		reservationRepository.save(reservation);
 	}
 
 	public void expirePaymentTimeout(Reservation reservation) {
 		reservation.expire();
 	}
 
-	public void expire(LocalDateTime expiredTime) {
+	public List<Reservation> expire(LocalDateTime expiredTime) {
 		List<Reservation> expireToReservation = reservationRepository.findReservationsToExpire(expiredTime);
 
 		if (!expireToReservation.isEmpty()) {
 			expireToReservation.forEach(Reservation::expire);
 			reservationRepository.saveAll(expireToReservation);
 		}
+
+		return expireToReservation;
 	}
 
 }

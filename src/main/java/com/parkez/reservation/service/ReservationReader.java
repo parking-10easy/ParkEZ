@@ -93,4 +93,10 @@ public class ReservationReader {
     public Reservation findById(Long reservationId) {
         return reservationRepository.findById(reservationId).orElseThrow(()-> new ParkingEasyException(ReservationErrorCode.NOT_FOUND_RESERVATION));
     }
+
+    public boolean existsReservationByConditionsForUser(ParkingZone parkingZone, LocalDateTime startDateTime, LocalDateTime endDateTime, Long userId,  List<ReservationStatus> statusList) {
+        return reservationRepository.existsReservationByConditionsForUser(
+                parkingZone, startDateTime, endDateTime, userId, statusList
+        );
+    }
 }

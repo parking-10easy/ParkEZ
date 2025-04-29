@@ -1,5 +1,6 @@
 package com.parkez.payment.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.parkez.payment.domain.enums.PaymentType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ public class PaymentConfirmResponse {
 
     private String orderId;
 
+    @JsonProperty("totalAmount")
     private Integer amount;
 
     private String approvedAt;
