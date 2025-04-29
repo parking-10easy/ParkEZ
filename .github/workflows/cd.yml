@@ -86,7 +86,10 @@ jobs:
         run: tar -czvf $GITHUB_SHA.tar.gz appspec.yml scripts
 
       - name: S3에 프로젝트 폴더 업로드하기
-        run: aws s3 cp --region ap-northeast-2 ./$GITHUB_SHA.tar.gz s3://${{ secrets.S3_BUCKET }}/$GITHUB_SHA.tar.gz
+        run: |
+          aws s3 cp --region ap-northeast-2 ./$GITHUB_SHA.tar.gz s3://${{ secrets.S3_BUCKET }}/$GITHUB_SHA.tar.gz
+          # 추가: 항상 최신 파일로도 업로드
+          aws s3 cp --region ap-northeast-2 ./$GITHUB_SHA.tar.gz s3://${{ secrets.S3_BUCKET }}/latest.tar.gz
 
       - name: Code Deploy를 활용해 EC2에 프로젝트 코드 배포
         run: aws deploy create-deployment
@@ -94,6 +97,7 @@ jobs:
           --deployment-config-name CodeDeployDefault.AllAtOnce
           --deployment-group-name Production
           --s3-location bucket=${{ secrets.S3_BUCKET }},bundleType=tgz,key=$GITHUB_SHA.tar.gz
+
 
       - name: 배포 완료 상태 기다리기
         run: |
