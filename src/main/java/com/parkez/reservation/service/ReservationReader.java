@@ -37,7 +37,7 @@ public class ReservationReader {
 
     public Reservation findMyReservation(Long userId, Long reservationId) {
 
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(
+        Reservation reservation = reservationRepository.findByIdWithUserAndParkingZone(reservationId).orElseThrow(
                 () -> new ParkingEasyException(ReservationErrorCode.NOT_FOUND_RESERVATION)
         );
 
