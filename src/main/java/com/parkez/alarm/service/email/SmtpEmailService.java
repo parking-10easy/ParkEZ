@@ -1,4 +1,4 @@
-package com.parkez.alarm.service;
+package com.parkez.alarm.service.email;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class EmailService {
+public class SmtpEmailService {
 
     private final JavaMailSender mailSender;
 

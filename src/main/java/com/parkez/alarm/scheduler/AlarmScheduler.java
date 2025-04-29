@@ -18,6 +18,6 @@ public class AlarmScheduler {
     @SchedulerLock(name = "alarmScheduler_scheduleAlarmsInOrder", lockAtLeastFor = "55s", lockAtMostFor = "2m")
     public void scheduleAlarmsInOrder() {
         reservationAlarmService.checkReservations();
-        alarmSender.processAlarms();
+        alarmSender.processReservationAlarms();
     }
 }

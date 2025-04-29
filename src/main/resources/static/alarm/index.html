@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>FCM Web Push</title>
+</head>
+<body>
+<h1>FCM Web Push</h1>
+<button onclick="Notification.requestPermission()">Notification</button>
+<!-- Firebase SDK (모듈 방식) -->
+<script type="module">
+    // 1. Firebase 모듈 가져오기
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging.js";
+
+    // 2. Firebase 구성 객체 (Firebase 콘솔에서 확인)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCzEr1maXbPtYRHxwDnD75yDILtwHxHT0U",
+        authDomain: "parking-10easy.firebaseapp.com",
+        projectId: "parking-10easy",
+        storageBucket: "parking-10easy.firebasestorage.app",
+        messagingSenderId: "834731642110",
+        appId: "1:834731642110:web:04c07f7c8bdb7e3fbc69af",
+        measurementId: "G-B1YY4TW0E8"
+    };
+
+    // 3. Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const messaging = getMessaging(app);
+
+    // 4. 서비스 워커 등록 (firebase-messaging-sw.js 파일이 루트에 있어야 합니다)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            .then((registration) => {
+                console.log("Service Worker 등록 성공", registration);
+                // messaging을 사용할 때 등록된 serviceWorker를 지정
+                // (옵션에 따라 사용 가능)
+            })
+            .catch((error) => {
+                console.error("Service Worker 등록 실패", error);
+            });
+    }
+
+    // 5. 알림 권한 요청 및 push token 획득
+    Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+            console.log("알림 권한 허용됨.");
+            // 토큰 요청 (VAPID key는 Firebase 콘솔에서 Web Push Certificates 메뉴에서 확인)
+            getToken(messaging, { vapidKey: 'BIzR_7VvNzFayBg6_VprqivEPuJWApx_Dp3pT-OLH3IRF9NJhFk65Q7e8j_YPczp3mf-XGRSdJvCzdBk6VHNDKU' })
+                .then((currentToken) => {
+                    if (currentToken) {
+                        console.log("FCM 등록 토큰:", currentToken);
+                        sendTokenToServer(currentToken);
+                    } else {
+                        console.log("등록 토큰이 존재하지 않습니다. 알림 권한 요청을 확인하세요.");
+                    }
+                })
+                .catch((err) => {
+                    console.error("토큰 획득 실패:", err);
+                });
+        } else {
+            console.log("알림 권한이 거부되었습니다.");
+        }
+    });
+
+    // 6. 서버에 토큰 전송
+    function decodeJwtUserId(token) {
+        try {
+            const payload = token.split('.')[1];
+            const decoded = JSON.parse(atob(payload));
+            return decoded.sub;
+        } catch (e) {
+            console.error("JWT 디코딩 실패:", e);
+            return null;
+        }
+    }
+
+    function sendTokenToServer(token) {
+        const jwt = localStorage.getItem("token");
+        console.log("→ 서버로 보낼 token 값:", token);
+
+        if (!jwt) {
+            console.error("JWT 토큰이 없습니다. 로그인 후 다시 시도하세요.");
+            return;
+        }
+
+        const userId = decodeJwtUserId(jwt);
+
+        if (!userId) {
+            console.error("JWT에서 userId 추출 실패");
+            return;
+        }
+
+        // userId와 FCM 토큰 함께 서버로 전송
+        fetch("/api/v1/fcm-devices/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${jwt}`
+            },
+            body: JSON.stringify({
+                userId: userId,
+                token: token
+            })
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("서버 응답 오류");
+                return res.json();
+            })
+            .then(data => {
+                console.log("서버 응답:", data);
+            })
+            .catch(err => {
+                console.error("토큰 등록 실패:", err);
+            });
+    }
+</script>
+</body>
+</html>

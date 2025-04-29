@@ -60,6 +60,11 @@ public class SecurityConfig {
 					.requestMatchers(new AntPathRequestMatcher("/api/*/auth/**")).permitAll()
 					.requestMatchers(new AntPathRequestMatcher("/api/*/auth/signup/social/**")).authenticated()
 					.requestMatchers("/toss-test/**").permitAll()
+					.requestMatchers(
+							new AntPathRequestMatcher("/firebase-messaging-sw.js"),
+							new AntPathRequestMatcher("/favicon.ico"),
+							new AntPathRequestMatcher("/alarm/**")
+					).permitAll()
 					.anyRequest().authenticated()
 			)
 			.build();

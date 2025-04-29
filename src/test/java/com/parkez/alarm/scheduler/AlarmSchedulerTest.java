@@ -29,6 +29,6 @@ class AlarmSchedulerTest {
 
         // then
         verify(reservationAlarmService).checkReservations();
-        verify(alarmSender).processAlarms();
+        verify(alarmSender).processReservationAlarms();
     }
 }

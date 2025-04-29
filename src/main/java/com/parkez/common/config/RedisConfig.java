@@ -18,17 +18,20 @@ public class RedisConfig {
     public static final Duration PARKING_LOT_SEARCH_TTL = Duration.ofMinutes(5);
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
+    public GenericJackson2JsonRedisSerializer redisSerializer() {
+        ObjectMapper redisObjectMapper = new ObjectMapper();
+        redisObjectMapper.registerModule(new JavaTimeModule());
+        redisObjectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return new GenericJackson2JsonRedisSerializer(redisObjectMapper);
+    }
+
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory,
+                                                       GenericJackson2JsonRedisSerializer redisSerializer) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
         template.setKeySerializer(new StringRedisSerializer());
-
-        ObjectMapper redisObjectMapper = new ObjectMapper();
-        redisObjectMapper.registerModule(new JavaTimeModule()); // LocalDateTime, LocalDate, LocalTime 지원
-        redisObjectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // 사람이 읽기 쉬운 ISO-8601 형식 유지
-
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper));
-
+        template.setValueSerializer(redisSerializer);
         return template;
     }
 }

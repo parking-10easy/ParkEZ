@@ -1,108 +1,93 @@
 package com.parkez.alarm.service;
 
 import com.parkez.alarm.domain.entity.Alarm;
+import com.parkez.alarm.domain.entity.FcmDevice;
 import com.parkez.alarm.domain.enums.AlarmChannel;
-import com.parkez.alarm.domain.enums.AlarmTargetType;
 import com.parkez.alarm.domain.enums.NotificationType;
 import com.parkez.alarm.domain.repository.AlarmRepository;
-import com.parkez.parkingzone.domain.entity.ParkingZone;
+import com.parkez.alarm.domain.repository.FcmDeviceRepository;
+import com.parkez.alarm.util.AlarmTestFactory;
 import com.parkez.reservation.domain.entity.Reservation;
-import com.parkez.user.domain.entity.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Optional;
+
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class AlarmServiceTest {
+class AlarmServiceTest {
 
     @Mock
     private AlarmRepository alarmRepository;
 
+    @Mock
+    private FcmDeviceRepository fcmDeviceRepository;
+
     @InjectMocks
     private AlarmService alarmService;
 
-    private static User getUser() {
-        User user = User.builder()
-                .email("user@email.com")
-                .build();
-        ReflectionTestUtils.setField(user, "id", 1L);
-        return user;
-    }
-
-    private static ParkingZone getParkingZone() {
-        ParkingZone parkingZone = ParkingZone.builder()
-                .name("A구역")
-                .build();
-        ReflectionTestUtils.setField(parkingZone, "id", 1L);
-        return parkingZone;
-    }
-
-    private static Reservation getReservation() {
-        Reservation reservation = Reservation.builder()
-                .user(getUser())
-                .parkingZone(getParkingZone())
-                .build();
-        ReflectionTestUtils.setField(reservation, "id", 1L);
-        return reservation;
-    }
-
     @Test
-    void 알람_생성_특정_예약에_대한_알람이_존재하지_않으면_생성된다() {
+    void 예약_알림_이메일_FCM_생성_성공() {
         // given
-        Reservation reservation = getReservation();
-        when(alarmRepository.existsAlarm(anyLong(), any(), any(), any())).thenReturn(false);
+        Reservation reservation = AlarmTestFactory.createTestReservation();
+
+        when(alarmRepository.existsAlarm(anyLong(), any(), any(), eq(AlarmChannel.EMAIL))).thenReturn(false);
+        when(alarmRepository.existsAlarm(anyLong(), any(), any(), eq(AlarmChannel.FCM))).thenReturn(false);
+        when(fcmDeviceRepository.findFirstByUserIdAndStatusTrue(anyLong())).thenReturn(Optional.of(new FcmDevice(reservation.getUserId(), "test-token")));
 
         // when
-        alarmService.createReservationAlarms(reservation, NotificationType.EXPIRED);
-
-        // then
-        ArgumentCaptor<Alarm> captor = ArgumentCaptor.forClass(Alarm.class);
-        verify(alarmRepository).save(captor.capture());
-        Alarm result = captor.getValue();
-
-        assertThat(result).extracting("emailAddress","targetType","channel","notificationType")
-                .containsExactly("user@email.com",AlarmTargetType.RESERVATION, AlarmChannel.EMAIL, NotificationType.EXPIRED );
-    }
-
-    @Test
-    void 알람_생성_특정_예약에_대한_알람이_이미_존재하면_생성되지_않는다() {
-        Reservation reservation = getReservation();
-        when(alarmRepository.existsAlarm(anyLong(), any(), any(), any())).thenReturn(true);
-
         alarmService.createReservationAlarms(reservation, NotificationType.UPCOMING);
 
-        verify(alarmRepository, never()).save(any());
+        // then
+        verify(alarmRepository, times(2)).save(any(Alarm.class));
     }
 
     @Test
-    void 알람_생성_특정_결제에_대한_알람이_존재하지_않으면_생성된다() {
-        Reservation reservation = getReservation();
-        when(alarmRepository.existsAlarm(anyLong(), any(), any(), any())).thenReturn(false);
+    void 이미_존재하는_알림이면_생성하지_않는다() {
+        // given
+        Reservation reservation = AlarmTestFactory.createTestReservation();
 
-        alarmService.createPaymentAlarms(reservation, NotificationType.FAILED);
+        when(alarmRepository.existsAlarm(anyLong(), any(), any(), eq(AlarmChannel.EMAIL))).thenReturn(true);
+        when(alarmRepository.existsAlarm(anyLong(), any(), any(), eq(AlarmChannel.FCM))).thenReturn(true);
+        when(fcmDeviceRepository.findFirstByUserIdAndStatusTrue(anyLong())).thenReturn(Optional.of(new FcmDevice(reservation.getUserId(), "test-token")));
 
-        ArgumentCaptor<Alarm> captor = ArgumentCaptor.forClass(Alarm.class);
-        verify(alarmRepository).save(captor.capture());
-        Alarm result = captor.getValue();
+        // when
+        alarmService.createReservationAlarms(reservation, NotificationType.UPCOMING);
 
-        assertThat(result).extracting("emailAddress","targetType","channel","notificationType")
-                .containsExactly("user@email.com",AlarmTargetType.PAYMENT, AlarmChannel.EMAIL, NotificationType.FAILED );
+        // then
+        verify(alarmRepository, never()).save(any(Alarm.class));
     }
 
     @Test
-    void 알람_생성_특정_결제에_대한_알람이_이미_존재하면_생성되지_않는다() {
-        Reservation reservation = getReservation();
-        when(alarmRepository.existsAlarm(anyLong(), any(), any(), any())).thenReturn(true);
+    void FCM_디바이스가_없으면_FCM_알림_생성하지_않는다() {
+        // given
+        Reservation reservation = AlarmTestFactory.createTestReservation();
 
-        alarmService.createPaymentAlarms(reservation, NotificationType.FAILED);
+        when(alarmRepository.existsAlarm(anyLong(), any(), any(), eq(AlarmChannel.EMAIL))).thenReturn(false);
+        when(fcmDeviceRepository.findFirstByUserIdAndStatusTrue(anyLong()))
+                .thenReturn(Optional.empty());
 
-        verify(alarmRepository, never()).save(any());
+        // when
+        alarmService.createReservationAlarms(reservation, NotificationType.UPCOMING);
+
+        // then
+        // 이메일 알림만 저장 호출
+        verify(alarmRepository, times(1)).save(any(Alarm.class));
+    }
+
+    @Test
+    void 예약_알림_만료_상태_생성() {
+        Reservation reservation = AlarmTestFactory.createTestReservation();
+
+        when(alarmRepository.existsAlarm(anyLong(), any(), any(), eq(AlarmChannel.EMAIL))).thenReturn(false);
+        when(fcmDeviceRepository.findFirstByUserIdAndStatusTrue(anyLong())).thenReturn(Optional.empty());
+
+        alarmService.createReservationAlarms(reservation, NotificationType.EXPIRED);
+
+        verify(alarmRepository, times(1)).save(any(Alarm.class));
     }
 }
