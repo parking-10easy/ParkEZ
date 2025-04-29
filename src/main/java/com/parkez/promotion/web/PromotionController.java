@@ -1,6 +1,9 @@
 package com.parkez.promotion.web;
 
+import static com.parkez.user.domain.enums.UserRole.Authority.*;
+
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,7 +36,7 @@ public class PromotionController {
 
 	private final PromotionService promotionService;
 
-	// @Secured(ADMIN)
+	@Secured(ADMIN)
 	@PostMapping("/v1/promotions")
 	@Operation(summary = "프로모션 등록", description = "프로모션을 등록한다")
 	public Response<PromotionCreateResponse> createPromotion(
@@ -42,18 +45,21 @@ public class PromotionController {
 		return Response.of(promotionService.createPromotion(request));
 	}
 
+	@Secured(USER)
 	@GetMapping("/v1/promotions")
 	@Operation(summary = "진행중인 프로모션 목록 조회", description = "진행중인 프로모션을 조회합니다.")
 	public Response<ActivePromotionResponse> getActivePromotions(@Valid @ParameterObject PageRequest pageRequest) {
 		return Response.fromPage(promotionService.getActivePromotions(pageRequest.getPage(), pageRequest.getSize()));
 	}
 
+	@Secured(USER)
 	@GetMapping("/v1/promotions/{promotionId}")
 	@Operation(summary = "진행중인 프로모션 상세 조회", description = "진행중인 프로모션의 상세 정보를 조회합니다.")
 	public Response<PromotionDetailResponse> getActivePromotion(@AuthenticatedUser @Parameter(hidden = true)  AuthUser authUser, @PathVariable Long promotionId) {
 		return Response.of(promotionService.getActivePromotion(authUser.getId(), promotionId));
 	}
 
+	@Secured(USER)
 	@PostMapping("/v1/promotions/{promotionId}/issue")
 	@Operation(summary = "프로모션 쿠폰 발급", description = "지정된 프로모션에 대해 쿠폰을 발급받습니다.")
 	public Response<PromotionIssueResponse> issuePromotionCoupon(@PathVariable Long promotionId, @AuthenticatedUser @Parameter(hidden = true)  AuthUser authUser) {

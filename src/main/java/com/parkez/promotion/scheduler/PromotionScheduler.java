@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+
 import com.parkez.promotion.domain.enums.PromotionStatus;
 import com.parkez.promotion.service.PromotionService;
 
@@ -19,6 +21,7 @@ public class PromotionScheduler {
 	private final PromotionService promotionService;
 
 	@Scheduled(cron = "0 */10 * * * *")
+	@SchedulerLock(name = "promotionScheduler_expireEndedPromotionStatus", lockAtLeastFor = "55s", lockAtMostFor = "2m")
 	public void expireEndedPromotionStatus() {
 
 		LocalDateTime currentDateTime = LocalDateTime.now();
@@ -31,6 +34,7 @@ public class PromotionScheduler {
 	}
 
 	@Scheduled(cron = "0 */10 * * * *")
+	@SchedulerLock(name = "promotionScheduler_expireSoldOutPromotionStatus", lockAtLeastFor = "55s", lockAtMostFor = "2m")
 	public void expireSoldOutPromotionStatus() {
 
 		PromotionStatus currentStatus = PromotionStatus.ACTIVE;

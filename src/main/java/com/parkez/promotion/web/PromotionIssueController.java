@@ -1,6 +1,9 @@
 package com.parkez.promotion.web;
 
+import static com.parkez.user.domain.enums.UserRole.Authority.*;
+
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,6 +30,7 @@ public class PromotionIssueController {
 
 	private final PromotionIssueService promotionIssueService;
 
+	@Secured(USER)
 	@GetMapping("/v1/promotion-issues/me")
 	@Operation(summary = "내 발급 쿠폰 조회", description = "로그인한 사용자가 발급받은 쿠폰 목록을 조회합니다.")
 	public Response<MyCouponResponse> getMyIssuedCoupons(@ParameterObject MyCouponSearchCondition condition,@ParameterObject @Valid  PageRequest pageRequest, @AuthenticatedUser @Parameter(hidden = true) AuthUser authUser) {
