@@ -28,6 +28,9 @@ public class ParkingLotDataResponse {
     @JsonProperty("data")
     private List<ParkingLotData> data;
 
+    public ParkingLotDataResponse() {
+    }
+
     @Builder
     private ParkingLotDataResponse(int page, int perPage, int totalCount, int currentCount, int matchCount, List<ParkingLotData> data) {
         this.page = page;

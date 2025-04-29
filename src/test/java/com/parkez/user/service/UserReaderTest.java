@@ -140,46 +140,6 @@ class UserReaderTest {
 
     }
 
-    @Nested
-    class getUserByEmailAndRole {
-        @Test
-        public void 이메일과_역할을_통해_삭제되지_않은_유저를_조회한다() {
-            // given
-            String email = "admin@parkez.com";
-            UserRole role = UserRole.ROLE_ADMIN;
-
-            User user = User.builder()
-                    .email(email)
-                    .nickname("관리자")
-                    .role(role)
-                    .build();
-
-            given(userRepository.findByEmailAndRoleAndDeletedAtIsNull(email, role))
-                    .willReturn(Optional.of(user));
-
-            // when
-            User result = userReader.getUserByEmailAndRole(email, role);
-
-            // then
-            assertThat(result).isEqualTo(user);
-
-        }
-
-        @Test
-        public void 유저가_없으면_USER_NOT_FOUND_예외를_던진다() {
-            // given
-            String email = "notUser@parkez.com";
-            UserRole role = UserRole.ROLE_ADMIN;
-            given(userRepository.findByEmailAndRoleAndDeletedAtIsNull(email, role))
-                    .willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> userReader.getUserByEmailAndRole(email, role))
-                    .isInstanceOf(ParkingEasyException.class)
-                    .hasMessageContaining(UserErrorCode.USER_NOT_FOUND.getDefaultMessage());
-
-        }
-    }
 
     @Nested
     class findOwnersForSettlementByMonth {

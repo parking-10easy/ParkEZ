@@ -133,6 +133,14 @@ public class User extends BaseDeleteEntity {
 			.build();
 	}
 
+	public static User ofIdEmailRole(Long id, String email, UserRole role) {
+		User user = new User();
+		user.id = id;
+		user.email = email;
+		user.role = role;
+		return user;
+	}
+
 	public static User from(AuthUser authUser) {
 		return new User(authUser.getId(), authUser.getEmail(), authUser.getNickname(), UserRole.of(authUser.getFirstAuthority()));
 	}

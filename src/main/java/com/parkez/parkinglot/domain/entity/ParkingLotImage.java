@@ -10,7 +10,12 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@Table(name = "parking_lot_image")
+@Table(
+        name = "parking_lot_image",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_parking_lot_image_url", columnNames = {"parking_lot_id", "image_url"})
+        }
+)
 public class ParkingLotImage extends BaseEntity {
 
     @Id
