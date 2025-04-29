@@ -35,10 +35,12 @@ public class PaymentWriter {
 
     public void savePayment(Payment payment, PaymentConfirmResponse response) {
         payment.approvePaymentInfo(response.getPaymentKey(), response.getApprovedAt(), response.getType());
+        paymentRepository.save(payment);
     }
 
     public void cancelPayment(Payment payment){
         payment.cancel(LocalDateTime.now());
+        paymentRepository.save(payment);
     }
 
 }

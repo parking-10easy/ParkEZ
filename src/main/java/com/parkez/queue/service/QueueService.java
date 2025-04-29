@@ -57,6 +57,11 @@ public class QueueService {
     public WaitingUserDto dequeueConvertToDto(String key) {
         Object obj = queueRedisRepository.dequeue(key);
         log.info("[대기열] dequeue 결과: {}", obj);
+
+        if (obj == null) {
+            return null;
+        }
+
         return convertToDto(obj);
     }
 

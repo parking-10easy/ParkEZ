@@ -68,7 +68,7 @@ public class SettlementController {
     @Secured(UserRole.Authority.OWNER)
     @Operation(summary = "확정 정산 내역 조회", description = "지정한 연월 기준으로 정산 정보를 확인합니다.")
     public Response<SettlementResponse> getConfirmedSettlement(
-            @AuthenticatedUser AuthUser authUser,
+            @Parameter(hidden = true) @AuthenticatedUser AuthUser authUser,
             @RequestParam int year,
             @RequestParam int month
     ) {

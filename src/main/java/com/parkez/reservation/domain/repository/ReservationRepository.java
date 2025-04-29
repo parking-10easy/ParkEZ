@@ -103,4 +103,26 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             WHERE r.id = :id
     """)
     Optional<Reservation> findByIdWithUserAndParkingZone(@Param("id") Long reservationId);
+
+    @Query("""
+    SELECT
+        CASE
+            WHEN COUNT(r) > 0 THEN true
+            ELSE false
+        END
+    FROM Reservation r
+    WHERE r.parkingZone = :parkingZone
+      AND r.user.id = :userId
+      AND r.status IN :statusList
+      AND (
+        (:start < r.endDateTime AND :end > r.startDateTime)
+      )
+""")
+    boolean existsReservationByConditionsForUser(
+            @Param("parkingZone") ParkingZone parkingZone,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("userId") Long userId,
+            @Param("statusList") List<ReservationStatus> statusList
+    );
 }
