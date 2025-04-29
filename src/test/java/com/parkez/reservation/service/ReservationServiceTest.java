@@ -87,6 +87,9 @@ class ReservationServiceTest {
     private PromotionIssueWriter promotionIssueWriter;
 
     @Mock
+    private PaymentService paymentService;
+
+    @Mock
     private QueueService queueService;
 
     @InjectMocks
