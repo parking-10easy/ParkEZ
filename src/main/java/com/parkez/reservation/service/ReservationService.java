@@ -35,6 +35,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -61,6 +62,7 @@ public class ReservationService {
 	private static final long CANCEL_LIMIT_HOURS = 1L;
 	private static final long EXPIRATION_TIME = 10L;
 
+	@Transactional
 	public ReservationResponse createReservation(AuthUser authUser, ReservationRequest request, LocalDateTime now) {
 		try {
 			return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> {
@@ -190,6 +192,7 @@ public class ReservationService {
 		reservationWriter.complete(reservation);
 	}
 
+	@Transactional
 	public void cancelReservation(AuthUser authUser, Long reservationId, ReservationCancelRequest request,
 		LocalDateTime now) {
 
