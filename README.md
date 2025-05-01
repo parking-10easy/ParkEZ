@@ -128,11 +128,8 @@
 
 ## 👩🏻‍ 기술 고도화
 - [AWS Lambda로 특정 시간에 외부API 호출하기](https://dev-leonie.tistory.com/78)
-
 - [Spring Batch를 이용한 정산 기능](https://velog.io/@hyuk905/%EC%8A%A4%ED%94%84%EB%A7%81-%EB%B0%B0%EC%B9%98Spring-Batch%EC%97%90-%EB%8C%80%ED%95%B4-%EC%95%8C%EC%95%84%EB%B3%B4%EA%B8%B0)
-- 
 - [Amazon SES](https://codingtrip.tistory.com/137)
-- 
 - [EventListener → Redis Pub/Sub](https://codingtrip.tistory.com/141)
 
 ## 👩🏻‍ 성능 테스트
