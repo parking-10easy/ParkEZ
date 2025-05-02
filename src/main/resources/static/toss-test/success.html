@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <title>결제 성공</title>
+    <style>
+        button {
+            margin-left: 10px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .copied {
+            color: green;
+            font-size: 0.9em;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+<h1>✅ 결제 완료</h1>
+<p><strong>아래 값들을 복사하여 Swagger에서 결제 승인 or 실패 테스트를 진행하세요.</strong></p>
+
+<p>
+    🔑 paymentKey: <span id="paymentKey"></span>
+    <button onclick="copyToClipboard('paymentKey')">복사</button>
+    <span id="copied-paymentKey" class="copied"></span>
+</p>
+
+<p>
+    🧾 주문번호: <span id="orderId"></span>
+    <button onclick="copyToClipboard('orderId')">복사</button>
+    <span id="copied-orderId" class="copied"></span>
+</p>
+
+<p>
+    💳 결제 금액: <span id="amount"></span>원
+    <button onclick="copyToClipboard('amount')">복사</button>
+    <span id="copied-amount" class="copied"></span>
+</p>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentKey = urlParams.get("paymentKey");
+    const orderId = urlParams.get("orderId");
+    const amount = urlParams.get("amount");
+
+    document.getElementById("paymentKey").textContent = paymentKey;
+    document.getElementById("orderId").textContent = orderId;
+    document.getElementById("amount").textContent = amount;
+
+    function copyToClipboard(id) {
+        const value = document.getElementById(id).textContent;
+        navigator.clipboard.writeText(value).then(() => {
+            const copiedMsg = document.getElementById(`copied-${id}`);
+            copiedMsg.textContent = "복사됨!";
+            setTimeout(() => copiedMsg.textContent = "", 2000);
+        });
+    }
+</script>
+</body>
+</html>

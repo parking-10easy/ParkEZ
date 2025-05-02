@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <title>결제 실패</title>
+    <style>
+        button {
+            margin-left: 10px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .copied {
+            color: red;
+            font-size: 0.9em;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+
+<body>
+<h2>❌ 결제 실패</h2>
+
+<p>
+    📄 주문번호: <span id="orderId"></span>
+    <button onclick="copyToClipboard('orderId')">복사</button>
+    <span id="copied-orderId" class="copied"></span>
+</p>
+
+<p>
+    ⚠️ 에러코드: <span id="code"></span>
+    <button onclick="copyToClipboard('code')">복사</button>
+    <span id="copied-code" class="copied"></span>
+</p>
+
+<p>
+    📝 실패 사유: <span id="message"></span>
+    <button onclick="copyToClipboard('message')">복사</button>
+    <span id="copied-message" class="copied"></span>
+</p>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const orderId = urlParams.get("orderId");
+    const code = urlParams.get("code");
+    const message = urlParams.get("message");
+
+    document.getElementById("orderId").textContent = orderId;
+    document.getElementById("code").textContent = code;
+    document.getElementById("message").textContent = message;
+
+    function copyToClipboard(id) {
+        const value = document.getElementById(id).textContent;
+        navigator.clipboard.writeText(value).then(() => {
+            const copiedMsg = document.getElementById(`copied-${id}`);
+            copiedMsg.textContent = "복사됨!";
+            setTimeout(() => copiedMsg.textContent = "", 2000);
+        });
+    }
+</script>
+</body>
+</html>

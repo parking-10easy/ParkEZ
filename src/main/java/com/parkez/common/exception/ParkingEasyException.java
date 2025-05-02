@@ -5,21 +5,14 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public class ParkingEasyException extends RuntimeException {
-    private final HttpStatus status;
-    private final String errorCode;
-    private final String message;
+    private final ErrorCode errorCode;
+
+    public HttpStatus getStatus() {
+        return errorCode.getHttpStatus();
+    }
 
     public ParkingEasyException(ErrorCode errorCode) {
         super(errorCode.getDefaultMessage());
-        this.status = errorCode.getHttpStatus();
-        this.errorCode = errorCode.getCode();
-        this.message = errorCode.getDefaultMessage();
-    }
-
-    public ParkingEasyException(ErrorCode errorCode, String message) {
-        super(message);
-        this.status = errorCode.getHttpStatus();
-        this.errorCode = errorCode.getCode();
-        this.message = message;
+        this.errorCode = errorCode;
     }
 }

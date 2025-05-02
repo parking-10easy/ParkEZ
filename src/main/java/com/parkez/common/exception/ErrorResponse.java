@@ -12,6 +12,10 @@ public class ErrorResponse {
         this.message = message;
     }
 
+    public static ErrorResponse of(ErrorCode errorCode) {
+        return new ErrorResponse(errorCode.getCode(), errorCode.getDefaultMessage());
+    }
+
     public static ErrorResponse of(String code, String message) {
         return new ErrorResponse(code, message);
     }

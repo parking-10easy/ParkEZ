@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.4'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'com'
@@ -23,16 +24,31 @@ repositories {
     mavenCentral()
 }
 
+jacoco {
+    toolVersion = "0.8.12"
+}
+
 dependencies {
+    //spring data jpa
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    //validation
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    //spring web
     implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // lombok
     compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'com.h2database:h2'
-    runtimeOnly 'com.mysql:mysql-connector-j'
     annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    //h2
+    runtimeOnly 'com.h2database:h2'
+
+    //mysql driver
+    runtimeOnly 'com.mysql:mysql-connector-j'
 
     // Querydsl
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
@@ -42,12 +58,93 @@ dependencies {
 
     // swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
+
+    // Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    // jjwt
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // redis & redisson
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.37.0'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // aws s3
+    implementation platform('software.amazon.awssdk:bom:2.31.2')
+    implementation 'software.amazon.awssdk:s3'
+
+    // webclient 사용
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // webclient 테스트
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+
+    //actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+
+    // JavaMailSender
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // FCM
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
+
+    // AWS SDK for SES
+    implementation 'software.amazon.awssdk:ses:2.25.0'
+
+    // shed lock
+    implementation 'net.javacrumbs.shedlock:shedlock-spring:5.12.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.12.0'
+
+
+    // AWS Lambda
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.1'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.2'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    // spring batch
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    testImplementation 'org.springframework.batch:spring-batch-test'
 }
 
 clean {
     delete file('src/main/generated')
 }
 
+tasks.register('buildZip', Zip) {
+    into('lib') {
+        from(jar)
+        from(configurations.runtimeClasspath)
+    }
+}
+
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    afterEvaluate {
+        classDirectories.setFrom(
+                files(classDirectories.files.collect {
+                    fileTree(dir: it, exclude: [
+                            "**/controller/**",
+                            "**/config/**",
+                            "**/dto/**",
+                            "**/exception/**",
+                            "**/Q*.class"
+                    ])
+                })
+        )
+    }
 }

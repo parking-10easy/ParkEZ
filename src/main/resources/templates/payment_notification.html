@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ParkEZ 결제 알림</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #333;">
+<h2>📢 결제 알림</h2>
+<p><strong>${userName}</strong>님, 결제 정보를 확인해주세요.</p>
+
+<ul>
+    <li><strong>예약 번호 :</strong> ${reservationId}</li>
+    <li><strong>주차장 :</strong> ${parkingLotName}</li>
+    <li><strong>주차공간 :</strong> ${parkingZoneName}</li>
+    <li><strong>예약 시간 :</strong> ${startTime} ~ ${endTime}</li>
+    <li><strong>일시 :</strong> ${now}</li>
+</ul>
+
+<p>💡 <strong>사유 :</strong> ${message}</p>
+
+<p>${additionalGuide}</p>
+
+<hr>
+<small>본 메일은 ParkEZ 시스템에서 자동 발송되었습니다.<br>
+    문의사항이 있으시면 고객센터로 연락주시기 바랍니다.</small>
+</body>
+</html>
