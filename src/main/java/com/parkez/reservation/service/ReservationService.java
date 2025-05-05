@@ -36,6 +36,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -58,80 +59,14 @@ public class ReservationService {
 	private final PromotionIssueValidator promotionIssueValidator;
 	private final PromotionIssueWriter promotionIssueWriter;
     private final QueueService queueService;
+	private final ReservationProcessor reservationProcessor;
 
 	private static final long CANCEL_LIMIT_HOURS = 1L;
 	private static final long EXPIRATION_TIME = 10L;
 
-	@Transactional
 	public ReservationResponse createReservation(AuthUser authUser, ReservationRequest request, LocalDateTime now) {
 		try {
-			return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> {
-
-				User user = userReader.getActiveUserById(authUser.getId());
-				ParkingZone parkingZone = parkingZoneReader.getActiveByParkingZoneId(request.getParkingZoneId());
-
-				if (!validateRequestTime(request)) {
-					throw new ParkingEasyException(ReservationErrorCode.NOT_VALID_REQUEST_TIME);
-				}
-
-				if (!parkingZone.getStatus().equals(ParkingZoneStatus.AVAILABLE)) {
-					throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_UNAVAILABLE_PARKING_ZONE);
-				}
-
-				if (!parkingZone.isOpened(request.getStartDateTime(), request.getEndDateTime())) {
-					throw new ParkingEasyException(ReservationErrorCode.CANT_RESERVE_AT_CLOSE_TIME);
-				}
-
-				List<ReservationStatus> statusList = List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED);
-
-				if (reservationReader.existsReservationByConditionsForUser(parkingZone, request.getStartDateTime(), request.getEndDateTime(), user.getId(), statusList)) {
-					throw new ParkingEasyException(ReservationErrorCode.ALREADY_RESERVED_BY_YOURSELF);
-				}
-
-				boolean existed = reservationReader.existsReservationByConditions(parkingZone, request.getStartDateTime(), request.getEndDateTime(), statusList);
-
-				if (existed) {
-					handleJoinQueue(user, request);
-					return null;
-				}
-
-				long hours = calculateUsedHour(request.getStartDateTime(), request.getEndDateTime());
-
-				BigDecimal originalPrice = parkingZone.getParkingLotPricePerHour().multiply(BigDecimal.valueOf(hours));
-				BigDecimal discountAmount = BigDecimal.ZERO;
-
-				Long promotionIssueId = null;
-				if (request.getPromotionIssueId() != null) {
-					PromotionIssue promotionIssue = promotionIssueReader.getWithPromotionAndCouponById(request.getPromotionIssueId());
-
-					if (!promotionIssue.isOwnedBy(authUser.getId())) {
-						throw new ParkingEasyException(PromotionIssueErrorCode.NOT_YOUR_COUPON);
-					}
-
-					promotionIssueId = promotionIssue.getId();
-					promotionIssueValidator.validateCanBeUsed(promotionIssue, now);
-					Coupon coupon = promotionIssue.getCoupon();
-					discountAmount = coupon.calculateDiscount(originalPrice);
-
-					promotionIssueWriter.use(promotionIssue, now);
-				}
-
-				BigDecimal finalPrice = originalPrice.subtract(discountAmount);
-
-				Reservation reservation = reservationWriter.create(
-						user,
-						parkingZone,
-						request.getStartDateTime(),
-						request.getEndDateTime(),
-						originalPrice,
-						discountAmount,
-						finalPrice,
-						promotionIssueId
-				);
-
-				return ReservationResponse.from(reservation);
-			});
-
+			return distributedLockManager.executeWithLock(request.getParkingZoneId(), () -> reservationProcessor.create(authUser, request, now));
 		} catch (ParkingEasyException e) {
 			if (e.getErrorCode() == ReservationErrorCode.RESERVATION_LOCK_FAILED) {
 				// 락 선점 실패 → 대기열 등록은 완료했으므로 예약 생성 결과 데이터는 null 반환
@@ -141,7 +76,6 @@ public class ReservationService {
 			throw e;
 		}
 	}
-
 
 	public Page<ReservationResponse> getMyReservations(AuthUser authUser, int page, int size) {
 
