@@ -129,6 +129,7 @@ public class SettlementService {
         return new SettlementAmounts(totalAmount, totalFee, netAmount);
     }
 
+    @Transactional
     public void completeSettlement(Long settlementId) {
 
         Settlement settlement = settlementReader.getById(settlementId);

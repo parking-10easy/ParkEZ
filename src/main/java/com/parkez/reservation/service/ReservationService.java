@@ -114,6 +114,7 @@ public class ReservationService {
 		return pageReservations.map(ReservationResponse::from);
 	}
 
+	@Transactional
 	public void completeReservation(AuthUser authUser, Long reservationId) {
 
 		Reservation reservation = reservationReader.findMyReservation(authUser.getId(), reservationId);

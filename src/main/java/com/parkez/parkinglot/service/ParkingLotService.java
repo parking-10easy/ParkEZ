@@ -196,6 +196,7 @@ public class ParkingLotService {
     }
 
     // 주차장 삭제
+    @Transactional
     public void deleteParkingLot(AuthUser authUser, Long parkingLotId) {
         Long userId = authUser.getId();
         ParkingLot parkingLot = parkingLotReader.getOwnedParkingLot(userId, parkingLotId);
